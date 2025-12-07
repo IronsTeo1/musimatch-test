@@ -1,7 +1,13 @@
 // public/js/app.js
 
 import { app } from './firebase-config.js';
-import { findMusiciansNearby } from './search.js';
+import {
+  findMusiciansNearby,
+  loadCityList,
+  filterCities,
+  findCityByName,
+  geocodeCityName
+} from './search.js';
 import { setupMusicianRegistrationForm } from './musicians.js';
 
 console.log('[MusiMatch] Firebase inizializzato:', app);
@@ -66,24 +72,107 @@ document.addEventListener('DOMContentLoaded', () => {
   // ─────────────────────────────────────────────
   const form = document.getElementById('search-form');
   const resultsList = document.getElementById('search-results');
+  const cityInput = document.getElementById('center-city');
+  const citySuggestionBox = document.getElementById('city-suggestions');
+  let cityList = [];
 
   if (!form || !resultsList) return;
+
+  // Carica il dataset dei comuni italiani per i suggerimenti
+  loadCityList()
+    .then((list) => {
+      cityList = list;
+    })
+    .catch((err) => {
+      console.error('[MusiMatch] Errore caricamento lista città:', err);
+    });
+
+  // ─────────────────────────────────────────
+  // Autocomplete città (apre solo mentre digiti)
+  // ─────────────────────────────────────────
+  const renderCitySuggestions = (term) => {
+    if (!citySuggestionBox) return;
+    citySuggestionBox.innerHTML = '';
+
+    if (!term) {
+      citySuggestionBox.hidden = true;
+      return;
+    }
+
+    const matches = filterCities(cityList, term, 8);
+    if (matches.length === 0) {
+      citySuggestionBox.hidden = true;
+      return;
+    }
+
+    matches.forEach((c) => {
+      const item = document.createElement('div');
+      item.className = 'autocomplete-item';
+      item.tabIndex = 0;
+      item.innerHTML = `
+        <span>${c.name}</span>
+        <small>${c.province || ''} ${c.region || ''}</small>
+      `;
+      item.addEventListener('mousedown', (e) => {
+        e.preventDefault(); // evita blur immediato
+        if (cityInput) {
+          cityInput.value = c.name;
+          cityInput.dataset.selectedCity = c.name;
+        }
+        citySuggestionBox.hidden = true;
+      });
+      item.addEventListener('keydown', (e) => {
+        if (e.key === 'Enter') {
+          e.preventDefault();
+          if (cityInput) {
+            cityInput.value = c.name;
+            cityInput.dataset.selectedCity = c.name;
+            cityInput.focus();
+          }
+          citySuggestionBox.hidden = true;
+        }
+      });
+      citySuggestionBox.appendChild(item);
+    });
+
+    citySuggestionBox.hidden = false;
+  };
+
+  if (cityInput) {
+    cityInput.addEventListener('input', (e) => {
+      cityInput.dataset.selectedCity = '';
+      renderCitySuggestions(e.target.value);
+    });
+
+    cityInput.addEventListener('blur', () => {
+      // ritardo per permettere click su suggerimento
+      setTimeout(() => {
+        if (citySuggestionBox) citySuggestionBox.hidden = true;
+      }, 150);
+    });
+  }
 
   form.addEventListener('submit', async (event) => {
     event.preventDefault();
 
     resultsList.innerHTML = '<li>Ricerca in corso...</li>';
 
-    const centerLat = parseFloat(document.getElementById('center-lat').value);
-    const centerLng = parseFloat(document.getElementById('center-lng').value);
+    const cityName = cityInput ? cityInput.value.trim() : '';
     const radiusKm = parseFloat(document.getElementById('radius-km').value);
     const instrumentRaw = document.getElementById('instrument').value.trim();
     const instrument = instrumentRaw !== '' ? instrumentRaw : null;
 
     try {
+      const chosenCity = findCityByName(cityList, cityName);
+      if (!chosenCity) {
+        throw new Error('Seleziona una città valida digitando e scegliendo un suggerimento.');
+      }
+
+      const coords = await geocodeCityName(cityName);
+
       const musicians = await findMusiciansNearby({
-        centerLat,
-        centerLng,
+        centerLat: coords.lat,
+        centerLng: coords.lng,
         radiusKm,
         instrument
       });
@@ -141,7 +230,7 @@ document.addEventListener('DOMContentLoaded', () => {
       }
     } catch (error) {
       console.error('[MusiMatch] Errore nella ricerca:', error);
-      resultsList.innerHTML = '<li>Errore nella ricerca (vedi console).</li>';
+      resultsList.innerHTML = `<li>${error.message || 'Errore nella ricerca (vedi console).'}</li>`;
     }
   });
 });

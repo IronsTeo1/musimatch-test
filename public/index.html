@@ -5,6 +5,10 @@
   <title>MusiMatch – MVP Test</title>
   <meta name="viewport" content="width=device-width, initial-scale=1">
 
+  <link rel="preconnect" href="https://fonts.googleapis.com">
+  <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+  <link href="https://fonts.googleapis.com/css2?family=Manrope:wght@400;500;600;700&display=swap" rel="stylesheet">
+
   <link rel="stylesheet" href="css/main.css">
 </head>
 <body>
@@ -214,13 +218,16 @@
     <h2>Ricerca musicisti/cantanti vicini (test)</h2>
     <form id="search-form">
       <div>
-        <span for="center-lat">Latitudine centro</span><br>
-        <input type="number" id="center-lat" step="0.000001" required placeholder="es. 45.6983">
-      </div>
-
-      <div>
-        <span for="center-lng">Longitudine centro</span><br>
-        <input type="number" id="center-lng" step="0.000001" required placeholder="es. 9.6773">
+        <span for="center-city">Città</span><br>
+        <div class="autocomplete">
+          <input
+            type="text"
+            id="center-city"
+            required
+            autocomplete="off"
+            placeholder="es. Milano, Brescia, Bagolino">
+          <div id="city-suggestions" class="autocomplete-list" hidden></div>
+        </div>
       </div>
 
       <div>
