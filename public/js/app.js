@@ -14,8 +14,6 @@ console.log('[MusiMatch] Firebase inizializzato:', app);
 
 document.addEventListener('DOMContentLoaded', () => {
   const statusEl = document.getElementById('firebase-status');
-  const rootEl = document.documentElement;
-  const themeToggleBtn = document.getElementById('theme-toggle');
 
   const isLocalhost =
     location.hostname === 'localhost' ||
@@ -27,41 +25,6 @@ document.addEventListener('DOMContentLoaded', () => {
       ? ' (EMULATORI attivi)'
       : ' (progetto remoto)';
     statusEl.textContent = text;
-  }
-
-  // ─────────────────────────────────────────
-  // Tema chiaro/scuro
-  // ─────────────────────────────────────────
-  const THEME_KEY = 'musimatch-theme';
-
-  const applyTheme = (theme) => {
-    const normalized = theme === 'light' ? 'light' : 'dark';
-    rootEl.setAttribute('data-theme', normalized);
-    if (themeToggleBtn) {
-      themeToggleBtn.textContent = normalized === 'dark' ? '🌗 Tema scuro' : '🌞 Tema chiaro';
-    }
-    try {
-      localStorage.setItem(THEME_KEY, normalized);
-    } catch (err) {
-      console.warn('[MusiMatch] Impossibile salvare tema in localStorage:', err);
-    }
-  };
-
-  const storedTheme = (() => {
-    try {
-      return localStorage.getItem(THEME_KEY);
-    } catch (err) {
-      return null;
-    }
-  })();
-
-  applyTheme(storedTheme);
-
-  if (themeToggleBtn) {
-    themeToggleBtn.addEventListener('click', () => {
-      const current = rootEl.getAttribute('data-theme') || 'dark';
-      applyTheme(current === 'dark' ? 'light' : 'dark');
-    });
   }
 
   // Inizializza il form di registrazione musicista/cantante

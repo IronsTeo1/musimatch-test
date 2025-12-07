@@ -319,6 +319,11 @@ small {
   color: var(--muted);
 }
 
+/* Nascondi banner emulator warning */
+.firebase-emulator-warning {
+  display: none !important;
+}
+
 /* utility: contenitore dei messaggi del form */
 #musician-form-message {
   margin-top: 0.5rem;

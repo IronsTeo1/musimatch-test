@@ -1,0 +1,73 @@
+<!doctype html>
+<html lang="it" data-theme="dark">
+<head>
+  <meta charset="utf-8">
+  <title>MusiMatch – Profilo</title>
+  <meta name="viewport" content="width=device-width, initial-scale=1">
+  <link rel="preconnect" href="https://fonts.googleapis.com">
+  <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+  <link href="https://fonts.googleapis.com/css2?family=Manrope:wght@400;500;600;700&display=swap" rel="stylesheet">
+  <link rel="stylesheet" href="css/main.css">
+  <link rel="stylesheet" href="css/ui.css">
+</head>
+<body>
+  <header class="page-header">
+    <div>
+      <p class="eyebrow">MusiMatch</p>
+      <h1>Il tuo profilo</h1>
+      <p>Gestisci i dati dell’account e aggiorna il tuo profilo musicista.</p>
+    </div>
+    <div class="header-actions">
+      <button type="button" id="btn-logout" class="ghost">Esci</button>
+    </div>
+  </header>
+
+  <main class="page-content">
+    <section class="card">
+      <h2>Dati account</h2>
+      <p id="user-email" class="muted"></p>
+      <p id="user-id" class="muted small"></p>
+    </section>
+
+    <section class="card">
+      <h2>Profilo musicista</h2>
+      <p class="muted">Sincronizzato con la collezione <code>users</code> (userType: musician).</p>
+      <form id="profile-form" class="stack">
+        <div class="grid">
+          <label class="field">
+            <span class="field-label">Nome pubblico</span>
+            <input type="text" id="profile-displayName" placeholder="es. Marco Bianchi">
+          </label>
+          <label class="field">
+            <span class="field-label">Strumento principale</span>
+            <input type="text" id="profile-mainInstrument" placeholder="es. Tromba">
+          </label>
+        </div>
+
+        <label class="field">
+          <span class="field-label">Bio</span>
+          <textarea id="profile-bio" rows="3" placeholder="Breve descrizione"></textarea>
+        </label>
+
+        <label class="field">
+          <span class="field-label">Foto profilo (URL)</span>
+          <input type="url" id="profile-photoUrl" placeholder="https://...">
+        </label>
+
+        <button type="submit" id="btn-save-profile">Salva profilo</button>
+        <p id="profile-message" class="helper-text"></p>
+      </form>
+    </section>
+  </main>
+
+  <script type="module" src="js/theme.js"></script>
+  <script type="module" src="js/profile.js"></script>
+  <nav class="floating-nav">
+    <button type="button" id="theme-toggle" class="theme-toggle" aria-label="Cambia tema">🌗 Tema scuro</button>
+    <a href="home.html">Home</a>
+    <a href="index.html">Ricerca</a>
+    <a href="login.html">Login</a>
+    <a href="profile.html">Profilo</a>
+  </nav>
+</body>
+</html>
