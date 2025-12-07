@@ -1,0 +1,8 @@
+{
+  "projects": {
+    "default": "musimatch-test",
+    "test": "musimatch-test"
+  },
+  "targets": {},
+  "etags": {}
+}
