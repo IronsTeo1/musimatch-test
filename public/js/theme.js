@@ -7,7 +7,7 @@ function applyTheme(theme) {
   const normalized = theme === 'light' ? 'light' : 'dark';
   rootEl.setAttribute('data-theme', normalized);
   if (themeToggleBtn) {
-    themeToggleBtn.textContent = normalized === 'dark' ? '🌗 Tema scuro' : '🌞 Tema chiaro';
+    themeToggleBtn.textContent = normalized === 'dark' ? '🌙' : '☀️';
   }
   try {
     localStorage.setItem(THEME_KEY, normalized);
@@ -31,4 +31,13 @@ if (themeToggleBtn) {
     const current = rootEl.getAttribute('data-theme') || 'dark';
     applyTheme(current === 'dark' ? 'light' : 'dark');
   });
+}
+
+if (themeToggleBtn) {
+  const updateLabel = () => {
+    const current = rootEl.getAttribute('data-theme') || 'dark';
+    themeToggleBtn.textContent = current === 'dark' ? '🌙' : '☀️';
+  };
+  updateLabel();
+  themeToggleBtn.addEventListener('click', updateLabel);
 }

@@ -178,6 +178,15 @@ button:disabled {
   cursor: default;
 }
 
+.danger {
+  background: #ef4444;
+  color: #fff;
+  border: 1px solid #ef4444;
+}
+
+.danger:hover {
+  background: #dc2626;
+}
 /* testo di servizio */
 
 small {
@@ -187,13 +196,11 @@ small {
 /* lista risultati ricerca */
 
 #search-results {
-  list-style: none;
-  padding-left: 1rem;
-  margin: 0.5rem 0 0;
-}
-
-#search-results li {
-  margin-bottom: 0.4rem;
+  display: grid;
+  grid-template-columns: repeat(auto-fit, minmax(280px, 1fr));
+  gap: 0.75rem;
+  padding: 0;
+  margin: 0.75rem 0 0;
 }
 
 /* Label in stile testo sopra i campi */
@@ -265,11 +272,10 @@ small {
 .theme-toggle {
   display: inline-flex;
   align-items: center;
-  gap: 0.4rem;
   background: transparent;
   color: var(--text);
   border: 1px solid var(--surface-border);
-  padding: 0.35rem 0.75rem;
+  padding: 0.28rem 0.5rem;
   border-radius: 999px;
   font-weight: 600;
 }

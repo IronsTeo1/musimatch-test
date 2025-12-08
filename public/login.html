@@ -46,13 +46,15 @@
   </main>
 
   <script type="module" src="js/theme.js"></script>
+  <script type="module" src="js/nav.js"></script>
   <script type="module" src="js/auth.js"></script>
   <nav class="floating-nav">
-    <button type="button" id="theme-toggle" class="theme-toggle" aria-label="Cambia tema">🌗 Tema scuro</button>
+    <button type="button" id="theme-toggle" class="theme-toggle" aria-label="Cambia tema">🌙</button>
     <a href="home.html">Home</a>
     <a href="index.html">Ricerca</a>
-    <a href="login.html">Login</a>
-    <a href="profile.html">Profilo</a>
+    <a href="login.html" id="nav-auth">Login</a>
+    <a href="settings.html" id="nav-settings" style="display: none;">Impostazioni</a>
+    <a href="profile.html" id="nav-profile" style="display: none;">Profilo</a>
   </nav>
 </body>
 </html>

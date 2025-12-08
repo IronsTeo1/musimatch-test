@@ -1,0 +1,206 @@
+<!doctype html>
+<html lang="it" data-theme="dark">
+<head>
+  <meta charset="utf-8">
+  <title>MusiMatch – Registrazione</title>
+  <meta name="viewport" content="width=device-width, initial-scale=1">
+  <link rel="preconnect" href="https://fonts.googleapis.com">
+  <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+  <link href="https://fonts.googleapis.com/css2?family=Manrope:wght@400;500;600;700&display=swap" rel="stylesheet">
+  <link rel="stylesheet" href="css/main.css">
+  <link rel="stylesheet" href="css/ui.css">
+</head>
+<body>
+  <header class="page-header">
+    <div>
+      <p class="eyebrow">MusiMatch</p>
+      <h1>Registrazione</h1>
+      <p>Seleziona chi sei e compila i dati per creare il profilo.</p>
+    </div>
+  </header>
+
+  <main class="page-content">
+    <section class="card">
+      <form id="register-form" class="stack">
+        <div class="field">
+          <span class="field-label">Chi sei?</span>
+          <div class="auth-actions">
+            <label><input type="radio" name="user-kind" value="musician"> Musicista</label>
+            <label><input type="radio" name="user-kind" value="singer"> Cantante</label>
+            <label><input type="radio" name="user-kind" value="choir"> Coro</label>
+            <label><input type="radio" name="user-kind" value="orchestra"> Orchestra</label>
+            <label><input type="radio" name="user-kind" value="band"> Banda</label>
+          </div>
+        </div>
+
+        <div class="grid" id="password-fields" style="display: none;">
+          <label class="field">
+            <span class="field-label">Password</span>
+            <input type="password" id="reg-password" placeholder="Minimo 6 caratteri" autocomplete="new-password">
+          </label>
+          <label class="field">
+            <span class="field-label">Conferma password</span>
+            <input type="password" id="reg-password-confirm" placeholder="Ripeti la password" autocomplete="new-password">
+          </label>
+        </div>
+
+        <div id="musician-fields" class="stack" style="display: none;">
+          <div class="grid">
+            <label class="field">
+              <span class="field-label">Nome pubblico</span>
+              <input type="text" id="m-displayName" placeholder="es. Marco Bianchi">
+            </label>
+            <label class="field">
+              <span class="field-label">Email</span>
+              <input type="email" id="m-email" placeholder="es. nome@example.com">
+            </label>
+          </div>
+
+          <div class="grid">
+            <label class="field">
+              <span class="field-label">Strumenti / voci</span>
+              <small>Separati da virgole (es. Tromba, Clarinetto).</small>
+              <input type="text" id="m-instruments" placeholder="Tromba, Clarinetto">
+            </label>
+            <label class="field">
+              <span class="field-label">Strumento / voce principale</span>
+              <input type="text" id="m-mainInstrument" placeholder="Tromba">
+            </label>
+          </div>
+
+          <div class="grid">
+            <label class="field">
+              <span class="field-label">Livello</span>
+              <div class="auth-actions">
+                <label><input type="radio" name="m-activityLevel" value="professional"> Professionista</label>
+                <label><input type="radio" name="m-activityLevel" value="amateur"> Amatore</label>
+              </div>
+            </label>
+            <label class="field">
+              <span class="field-label">Distanza massima (km)</span>
+              <input type="number" id="m-maxTravelKm" value="20" min="0">
+            </label>
+          </div>
+
+          <div class="grid">
+            <label class="field">
+              <span class="field-label">Anni di esperienza</span>
+              <input type="number" id="m-experience" value="0" min="0">
+            </label>
+            <label class="field">
+              <span class="field-label">Disponibile a unirsi a un gruppo</span>
+              <div class="auth-actions">
+                <label><input type="checkbox" id="m-willing"> Sì</label>
+              </div>
+            </label>
+          </div>
+
+          <div class="grid">
+            <label class="field">
+              <span class="field-label">Tariffa prova (€)</span>
+              <input type="number" id="rate-rehearsal" min="0" step="1">
+            </label>
+            <label class="field">
+              <span class="field-label">Tariffa concerto/messa (€)</span>
+              <input type="number" id="rate-concert" min="0" step="1">
+            </label>
+          </div>
+
+          <div class="grid">
+            <label class="field">
+              <span class="field-label">Tariffa servizio civile/religioso (€)</span>
+              <input type="number" id="rate-service" min="0" step="1">
+            </label>
+            <label class="field">
+              <span class="field-label">Tariffa servizio civile (squilli+silenzio) (€)</span>
+              <input type="number" id="rate-trumpet" min="0" step="1">
+            </label>
+            <label class="field">
+              <span class="field-label">Tariffa esibizione da solista (€)</span>
+              <input type="number" id="rate-solo" min="0" step="1">
+            </label>
+          </div>
+
+          <label class="field">
+            <span class="field-label">Bio</span>
+            <textarea id="m-bio" rows="3" placeholder="Breve descrizione"></textarea>
+          </label>
+
+          <label class="field">
+            <span class="field-label">Curriculum</span>
+            <textarea id="m-cv" rows="4" placeholder="Studi, esperienze, repertorio"></textarea>
+          </label>
+
+          <label class="field">
+            <span class="field-label">Foto profilo (URL)</span>
+            <input type="url" id="m-photoUrl" placeholder="https://...">
+          </label>
+        </div>
+
+        <div id="ensemble-fields" class="stack" style="display: none;">
+          <div class="grid">
+            <label class="field">
+              <span class="field-label">Nome ensemble</span>
+              <input type="text" id="e-name" placeholder="es. Coro Arcobaleno">
+            </label>
+            <label class="field">
+              <span class="field-label">Email di contatto</span>
+              <input type="email" id="e-email" placeholder="es. contatto@example.com">
+            </label>
+          </div>
+
+          <label class="field">
+            <span class="field-label">Descrizione</span>
+            <textarea id="e-description" rows="3" placeholder="Repertorio, formazione, disponibilità"></textarea>
+          </label>
+
+          <div class="grid">
+            <label class="field">
+              <span class="field-label">Numero componenti (opzionale)</span>
+              <input type="number" id="e-members" min="1">
+            </label>
+            <label class="field">
+              <span class="field-label">Sito web (opzionale)</span>
+              <input type="url" id="e-website" placeholder="https://...">
+            </label>
+          </div>
+
+          <label class="field">
+            <span class="field-label">Foto profilo/logo (URL)</span>
+            <input type="url" id="e-photoUrl" placeholder="https://...">
+          </label>
+        </div>
+
+        <div id="location-fields" class="stack" style="display: none;">
+          <span class="field-label">Città / paese</span>
+          <div class="autocomplete">
+            <input
+              type="text"
+              id="reg-city"
+              autocomplete="off"
+              placeholder="es. Milano, Brescia, Bagolino">
+            <div id="reg-city-suggestions" class="autocomplete-list" hidden></div>
+          </div>
+        </div>
+
+        <div class="stack" id="submit-row" style="display: none;">
+          <button type="submit" id="btn-register-user">Salva registrazione</button>
+          <p id="register-message" class="helper-text"></p>
+        </div>
+      </form>
+    </section>
+  </main>
+
+  <script type="module" src="js/theme.js"></script>
+  <script type="module" src="js/nav.js"></script>
+  <script type="module" src="js/register.js"></script>
+  <nav class="floating-nav">
+    <button type="button" id="theme-toggle" class="theme-toggle" aria-label="Cambia tema">🌙</button>
+    <a href="home.html">Home</a>
+    <a href="index.html">Ricerca</a>
+    <a href="login.html" id="nav-auth">Login</a>
+    <a href="settings.html" id="nav-settings" style="display: none;">Impostazioni</a>
+    <a href="profile.html" id="nav-profile" style="display: none;">Profilo</a>
+  </nav>
+</body>
+</html>

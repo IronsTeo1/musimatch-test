@@ -3,12 +3,12 @@
 import { app } from './firebase-config.js';
 import {
   findMusiciansNearby,
+  findEnsemblesNearby,
   loadCityList,
   filterCities,
   findCityByName,
   geocodeCityName
 } from './search.js';
-import { setupMusicianRegistrationForm } from './musicians.js';
 
 console.log('[MusiMatch] Firebase inizializzato:', app);
 
@@ -27,9 +27,6 @@ document.addEventListener('DOMContentLoaded', () => {
     statusEl.textContent = text;
   }
 
-  // Inizializza il form di registrazione musicista/cantante
-  setupMusicianRegistrationForm();
-
   // ─────────────────────────────────────────────
   // Gestione form di ricerca (test)
   // ─────────────────────────────────────────────
@@ -37,6 +34,10 @@ document.addEventListener('DOMContentLoaded', () => {
   const resultsList = document.getElementById('search-results');
   const cityInput = document.getElementById('center-city');
   const citySuggestionBox = document.getElementById('city-suggestions');
+  const instrumentField = document.getElementById('instrument-field');
+  const ensembleFilter = document.getElementById('ensemble-filter');
+  const ensembleTypeSelect = document.getElementById('ensemble-type');
+  const searchTargetRadios = document.querySelectorAll('input[name="search-target"]');
   let cityList = [];
 
   if (!form || !resultsList) return;
@@ -115,15 +116,25 @@ document.addEventListener('DOMContentLoaded', () => {
     });
   }
 
+  const syncFieldsVisibility = () => {
+    const target = document.querySelector('input[name="search-target"]:checked')?.value || 'musicians';
+    if (instrumentField) instrumentField.style.display = target === 'musicians' ? 'block' : 'none';
+    if (ensembleFilter) ensembleFilter.style.display = target === 'ensembles' ? 'block' : 'none';
+  };
+  searchTargetRadios.forEach((r) => r.addEventListener('change', syncFieldsVisibility));
+  syncFieldsVisibility();
+
   form.addEventListener('submit', async (event) => {
     event.preventDefault();
 
-    resultsList.innerHTML = '<li>Ricerca in corso...</li>';
+    resultsList.innerHTML = '<div class="result-card muted">Ricerca in corso...</div>';
 
     const cityName = cityInput ? cityInput.value.trim() : '';
     const radiusKm = parseFloat(document.getElementById('radius-km').value);
     const instrumentRaw = document.getElementById('instrument').value.trim();
     const instrument = instrumentRaw !== '' ? instrumentRaw : null;
+    const searchTarget = document.querySelector('input[name="search-target"]:checked')?.value || 'musicians';
+    const ensembleType = ensembleTypeSelect ? ensembleTypeSelect.value : '';
 
     try {
       const chosenCity = findCityByName(cityList, cityName);
@@ -133,67 +144,88 @@ document.addEventListener('DOMContentLoaded', () => {
 
       const coords = await geocodeCityName(cityName);
 
-      const musicians = await findMusiciansNearby({
-        centerLat: coords.lat,
-        centerLng: coords.lng,
-        radiusKm,
-        instrument
-      });
+      let results = [];
+      if (searchTarget === 'ensembles') {
+        results = await findEnsemblesNearby({
+          centerLat: coords.lat,
+          centerLng: coords.lng,
+          radiusKm,
+          ensembleType: ensembleType || null
+        });
+      } else {
+        results = await findMusiciansNearby({
+          centerLat: coords.lat,
+          centerLng: coords.lng,
+          radiusKm,
+          instrument
+        });
+      }
 
-      if (musicians.length === 0) {
-        resultsList.innerHTML = '<li>Nessun musicista disponibile in zona, prova ad allargare il raggio di ricerca.</li>';
+      if (results.length === 0) {
+        resultsList.innerHTML = '<div class="result-card muted">Nessun risultato, prova ad allargare il raggio o cambiare filtri.</div>';
         return;
       }
 
       resultsList.innerHTML = '';
 
-      for (const m of musicians) {
-        const li = document.createElement('li');
-        const data = m.data;
+      for (const r of results) {
+        const card = document.createElement('article');
+        card.className = 'result-card';
+
+        const data = r.data;
         const loc = data.location || {};
+        const profileUrl = `profile.html?id=${r.id}`;
+
         const instruments = Array.isArray(data.instruments)
           ? data.instruments.join(', ')
-          : 'strumento non indicato';
+          : null;
+        const activityLevel = data.activityLevel === 'professional'
+          ? 'Professionista'
+          : data.activityLevel === 'amateur'
+            ? 'Amatore'
+            : '';
 
-        const rates = data.rates || {};
-        const activityLevel = data.activityLevel || 'n.d.';
-        const willingFree = data.willingToJoinForFree ? 'In cerca di un gruppo stabile' : '';
+        const ensembleLabel = data.ensembleType === 'choir'
+          ? 'Coro'
+          : data.ensembleType === 'band'
+            ? 'Banda'
+            : data.ensembleType === 'orchestra'
+              ? 'Orchestra'
+              : 'Ensemble';
 
-        const rateRehearsal = rates.rehearsal != null ? `${rates.rehearsal}€ prova` : '';
-        const rateConcert = rates.concert_or_mass != null ? `${rates.concert_or_mass}€ concerto/messa` : '';
-        const rateService = rates.service_civil_religious != null ? `${rates.service_civil_religious}€ serv. civile/religioso` : '';
-        const rateTrumpet = rates.service_civil_trumpet_full != null ? `${rates.service_civil_trumpet_full}€ serv. civile (squilli+silenzio)` : '';
+        const title = document.createElement('a');
+        title.href = profileUrl;
+        title.textContent = data.displayName || 'Senza nome';
+        title.className = 'result-title';
 
-        const ratesParts = [
-          rateRehearsal,
-          rateConcert,
-          rateService,
-          rateTrumpet
-        ].filter(Boolean);
+        const subtitle = document.createElement('div');
+        subtitle.className = 'muted';
+        if (searchTarget === 'ensembles') {
+          subtitle.textContent = `${ensembleLabel} · ${loc.city || '?'} ${loc.province ? '(' + loc.province + ')' : ''}`;
+        } else {
+          subtitle.textContent = `${instruments || 'strumento non indicato'} · ${activityLevel || ''} · ${loc.city || '?'} ${loc.province ? '(' + loc.province + ')' : ''}`;
+        }
 
-        const ratesText = ratesParts.length > 0
-          ? ' | Tariffe: ' + ratesParts.join(' – ')
-          : '';
+        const meta = document.createElement('div');
+        meta.className = 'muted small';
+        meta.textContent = `Distanza: ${r.distanceKm.toFixed(1)} km`;
 
-        const activityLabel =
-          activityLevel === 'professional' ? 'Professionista' :
-          activityLevel === 'amateur' ? 'Amatore' :
-          activityLevel;
+        const thumb = document.createElement('div');
+        thumb.className = 'avatar-placeholder';
 
-        li.textContent =
-          `${data.displayName || 'Senza nome'} ` +
-          `– ${instruments} ` +
-          `– ${loc.city || '?'} (${loc.province || ''}) ` +
-          `– ${activityLabel} ` +
-          `– distanza: ${m.distanceKm.toFixed(1)} km` +
-          ratesText +
-          (willingFree ? ` | ${willingFree}` : '');
+        const body = document.createElement('div');
+        body.className = 'result-body';
+        body.appendChild(title);
+        body.appendChild(subtitle);
+        body.appendChild(meta);
 
-        resultsList.appendChild(li);
+        card.appendChild(thumb);
+        card.appendChild(body);
+        resultsList.appendChild(card);
       }
     } catch (error) {
       console.error('[MusiMatch] Errore nella ricerca:', error);
-      resultsList.innerHTML = `<li>${error.message || 'Errore nella ricerca (vedi console).'}</li>`;
+      resultsList.innerHTML = `<div class="result-card muted">${error.message || 'Errore nella ricerca (vedi console).'}</div>`;
     }
   });
 });

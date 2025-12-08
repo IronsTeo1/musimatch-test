@@ -135,7 +135,7 @@ export async function geocodeCityName(cityName) {
  * @param {number} options.centerLat
  * @param {number} options.centerLng
  * @param {number} options.radiusKm
- * @param {string|null} options.instrument   es. "trumpet", "voice_soprano"
+ * @param {string|null} options.instrument   es. "trumpet", "soprano"
  * @returns {Promise<Array<{id: string, distanceKm: number, data: any}>>}
  */
 export async function findMusiciansNearby({ centerLat, centerLng, radiusKm, instrument = null }) {
@@ -174,6 +174,72 @@ export async function findMusiciansNearby({ centerLat, centerLng, radiusKm, inst
     snapshot = await getDocs(q);
   } catch (err) {
     console.error('[MusiMatch] Errore Firestore nella query:', err);
+    throw err;
+  }
+
+  const results = [];
+
+  snapshot.forEach((doc) => {
+    const data = doc.data();
+    const loc = data.location || {};
+    const docLat = loc.lat;
+    const docLng = loc.lng;
+
+    if (typeof docLat !== 'number' || typeof docLng !== 'number') return;
+
+    const distanceKm = haversineDistanceKm(centerLat, centerLng, docLat, docLng);
+
+    if (distanceKm <= radiusKm) {
+      results.push({
+        id: doc.id,
+        distanceKm,
+        data
+      });
+    }
+  });
+
+  results.sort((a, b) => a.distanceKm - b.distanceKm);
+
+  return results;
+}
+
+/**
+ * Trova ensemble entro un raggio in km da un punto, filtrando per tipo.
+ */
+export async function findEnsemblesNearby({ centerLat, centerLng, radiusKm, ensembleType = null }) {
+  if (Number.isNaN(centerLat) || Number.isNaN(centerLng) || Number.isNaN(radiusKm)) {
+    throw new Error('Parametri geografici non validi');
+  }
+
+  const latDelta = radiusKm / 111.32;
+  const lngDelta = radiusKm / (111.32 * Math.cos(degToRad(centerLat)));
+
+  const minLat = centerLat - latDelta;
+  const maxLat = centerLat + latDelta;
+  const minLng = centerLng - lngDelta;
+  const maxLng = centerLng + lngDelta;
+
+  const usersRef = collection(db, 'users');
+
+  const constraints = [
+    where('userType', '==', 'ensemble'),
+    where('location.lat', '>=', minLat),
+    where('location.lat', '<=', maxLat),
+    where('location.lng', '>=', minLng),
+    where('location.lng', '<=', maxLng)
+  ];
+
+  if (ensembleType) {
+    constraints.push(where('ensembleType', '==', ensembleType));
+  }
+
+  const q = query(usersRef, ...constraints);
+
+  let snapshot;
+  try {
+    snapshot = await getDocs(q);
+  } catch (err) {
+    console.error('[MusiMatch] Errore Firestore nella query ensemble:', err);
     throw err;
   }
 

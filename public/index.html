@@ -24,197 +24,16 @@
     <p id="firebase-status">Inizializzazione Firebase...</p>
   </section>
 
-  <!-- REGISTRAZIONE MUSICISTA / CANTANTE -->
-  <section>
-    <h2>Registrazione musicista / cantante</h2>
-    <p>Compila il profilo. I dati vengono salvati nell'emulatore Firestore (ambiente di test).</p>
-
-    <form id="musician-form">
-      <fieldset>
-        <legend>Dati generali</legend>
-
-        <div>
-          <span for="musician-displayName">Nome pubblico</span><br>
-          <input type="text" id="musician-displayName" required placeholder="es. Marco Bianchi">
-        </div>
-
-        <div>
-          <span for="musician-email">Email</span><br>
-          <input type="email" id="musician-email" required placeholder="es. nome@example.com">
-        </div>
-
-        <div>
-          <span>Livello di preparazione</span><br>
-          <span>
-            <input type="radio" name="musician-activityLevel" value="professional" required>
-            Professionista
-          </span>
-          <span>
-            <input type="radio" name="musician-activityLevel" value="amateur" required>
-            Amatore
-          </span>
-        </div>
-
-        <div>
-          <span>
-            <input type="checkbox" id="musician-willingFree">
-            In cerca di un gruppo stabile
-          </span>
-        </div>
-
-        <div class="instrument-field">
-        <span class="field-label">Strumenti / voci</span><br>
-        <small>Scrivi gli strumenti separati da virgole.</small>
-        <div class="combo">
-            <input
-            type="text"
-            id="musician-instruments"
-            placeholder="es. Tromba, Clarinetto, Soprano">
-            <button
-            type="button"
-            id="musician-instruments-clear"
-            class="combo-toggle"
-            aria-label="Cancella strumenti"
-            style="display: none;">
-            ✕
-            </button>
-        </div>
-
-        <div class="instrument-field">
-            <span class="field-label">Strumento / voce principale</span><br>
-            <div class="combo">
-                <input
-                type="text"
-                id="musician-mainInstrument"
-                placeholder="es. Tromba, Soprano"
-                >
-                <button
-                type="button"
-                id="musician-mainInstrument-clear"
-                class="combo-toggle"
-                aria-label="Cancella strumento principale"
-                style="display: none;"
-                >
-                ✕
-                </button>
-            </div>
-        </div>
-
-        <div>
-          <span for="musician-experienceYears">Anni di esperienza</span><br>
-          <input type="number" id="musician-experienceYears" min="0" value="0">
-        </div>
-
-        <div>
-          <span for="musician-maxTravelKm">Distanza massima di spostamento (km)</span><br>
-          <input type="number" id="musician-maxTravelKm" min="0" value="20">
-        </div>
-      </fieldset>
-
-      <fieldset>
-        <legend>Posizione</legend>
-
-        <div>
-          <span for="musician-city">Città / paese</span><br>
-          <input type="text" id="musician-city" required placeholder="es. Bergamo">
-        </div>
-
-        <div>
-          <span for="musician-province">Provincia</span><br>
-          <input type="text" id="musician-province" required placeholder="es. BG">
-        </div>
-
-        <div>
-          <span for="musician-region">Regione</span><br>
-          <input type="text" id="musician-region" placeholder="es. Lombardia">
-        </div>
-
-        <div>
-          <span for="musician-countryCode">Paese (codice)</span><br>
-          <input type="text" id="musician-countryCode" value="IT">
-        </div>
-
-        <div>
-          <span for="musician-lat">Latitudine</span><br>
-          <input type="number" id="musician-lat" step="0.000001" required placeholder="es. 45.6983">
-        </div>
-
-        <div>
-          <span for="musician-lng">Longitudine</span><br>
-          <input type="number" id="musician-lng" step="0.000001" required placeholder="es. 9.6773">
-        </div>
-      </fieldset>
-
-      <fieldset>
-        <legend>Tariffe (in euro, lascia vuoto se non applicabile)</legend>
-
-        <div>
-          <span for="musician-rate-rehearsal">Prova</span><br>
-          <input type="number" id="musician-rate-rehearsal" min="0" step="1">
-        </div>
-
-        <div>
-          <span for="musician-rate-concert">Concerto / messa</span><br>
-          <input type="number" id="musician-rate-concert" min="0" step="1">
-        </div>
-
-        <div>
-          <span for="musician-rate-solo">Esibizione da solista</span><br>
-          <input type="number" id="musician-rate-solo" min="0" step="1">
-        </div>
-
-        <div>
-          <span for="musician-rate-service">
-            Servizio civile / religioso (generico)
-          </span><br>
-          <input type="number" id="musician-rate-service" min="0" step="1">
-        </div>
-
-        <div>
-          <span for="musician-rate-trumpetService">
-            Servizio civile con squilli + Silenzio (trombettista)
-          </span><br>
-          <input type="number" id="musician-rate-trumpetService" min="0" step="1">
-        </div>
-      </fieldset>
-
-      <fieldset>
-        <legend>Profilo</legend>
-
-        <div>
-          <span for="musician-photoUrl">URL foto profilo (MVP)</span><br>
-          <input
-            type="url"
-            id="musician-photoUrl"
-            placeholder="es. https://.../foto.jpg">
-        </div>
-
-        <div>
-          <span for="musician-bio">Breve descrizione</span><br>
-          <textarea
-            id="musician-bio"
-            rows="3"
-            placeholder="es. Tromba in banda di paese, disponibile per sostituzioni..."></textarea>
-        </div>
-
-        <div>
-          <span for="musician-cv">Curriculum (testo libero)</span><br>
-          <textarea
-            id="musician-cv"
-            rows="5"
-            placeholder="Studi, esperienze, repertorio, ecc."></textarea>
-        </div>
-      </fieldset>
-
-      <button type="submit">Salva profilo musicista</button>
-      <p id="musician-form-message"></p>
-    </form>
-  </section>
-
   <!-- SEZIONE DI RICERCA TEST (LA TENIAMO PER ORA) -->
   <section>
     <h2>Ricerca musicisti/cantanti vicini (test)</h2>
     <form id="search-form">
+      <div>
+        <span class="field-label">Chi vuoi cercare?</span><br>
+        <label><input type="radio" name="search-target" value="musicians" checked> Musicisti / Cantanti</label>
+        <label><input type="radio" name="search-target" value="ensembles"> Ensemble (coro, banda, orchestra)</label>
+      </div>
+
       <div>
         <span for="center-city">Città</span><br>
         <div class="autocomplete">
@@ -233,26 +52,38 @@
         <input type="number" id="radius-km" min="1" value="20" required>
       </div>
 
-      <div>
+      <div id="instrument-field">
         <span for="instrument">Strumento / voce (opzionale)</span><br>
-        <input type="text" id="instrument" placeholder="es. trumpet, voice_soprano">
+        <input type="text" id="instrument" placeholder="es. trumpet, soprano">
+      </div>
+
+      <div id="ensemble-filter" style="display: none;">
+        <span for="ensemble-type">Tipo di ensemble</span><br>
+        <select id="ensemble-type">
+          <option value="">Tutti</option>
+          <option value="choir">Coro</option>
+          <option value="band">Banda</option>
+          <option value="orchestra">Orchestra</option>
+        </select>
       </div>
 
       <button type="submit">Cerca</button>
     </form>
 
-    <ul id="search-results"></ul>
+    <div id="search-results" class="results-grid"></div>
   </section>
 </main>
 
   <script type="module" src="js/theme.js"></script>
+  <script type="module" src="js/nav.js"></script>
   <script type="module" src="js/app.js"></script>
   <nav class="floating-nav">
-    <button type="button" id="theme-toggle" class="theme-toggle" aria-label="Cambia tema">🌗 Tema scuro</button>
+    <button type="button" id="theme-toggle" class="theme-toggle" aria-label="Cambia tema">🌙</button>
     <a href="home.html">Home</a>
     <a href="index.html">Ricerca</a>
-    <a href="login.html">Login</a>
-    <a href="profile.html">Profilo</a>
+    <a href="login.html" id="nav-auth">Login</a>
+    <a href="settings.html" id="nav-settings" style="display: none;">Impostazioni</a>
+    <a href="profile.html" id="nav-profile" style="display: none;">Profilo</a>
   </nav>
 </body>
 </html>

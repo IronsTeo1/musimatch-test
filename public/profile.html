@@ -17,9 +17,6 @@
       <h1>Il tuo profilo</h1>
       <p>Gestisci i dati dell’account e aggiorna il tuo profilo musicista.</p>
     </div>
-    <div class="header-actions">
-      <button type="button" id="btn-logout" class="ghost">Esci</button>
-    </div>
   </header>
 
   <main class="page-content">
@@ -30,8 +27,29 @@
     </section>
 
     <section class="card">
-      <h2>Profilo musicista</h2>
-      <p class="muted">Sincronizzato con la collezione <code>users</code> (userType: musician).</p>
+      <div style="display: flex; align-items: center; gap: 0.75rem;">
+        <div class="profile-avatar" id="profile-avatar">
+          <div class="avatar-fallback">👤</div>
+          <button type="button" class="avatar-menu-toggle" id="avatar-menu-toggle" aria-label="Opzioni foto" style="display: none;">▾</button>
+          <div class="avatar-menu" id="avatar-menu">
+            <button type="button" id="avatar-change">Cambia immagine</button>
+            <button type="button" id="avatar-view">Visualizza immagine</button>
+          </div>
+        </div>
+        <div>
+          <h2 style="margin: 0;">Profilo musicista</h2>
+          <p class="muted" style="margin: 0.2rem 0 0;">Sincronizzato con la collezione <code>users</code> (userType: musician).</p>
+        </div>
+      </div>
+      <input type="file" id="avatar-file" accept="image/*" style="display: none;">
+
+      <div class="modal-backdrop" id="avatar-modal">
+        <div class="modal-content">
+          <button class="modal-close" id="avatar-modal-close">✕</button>
+          <img id="avatar-modal-img" alt="Foto profilo">
+        </div>
+      </div>
+
       <form id="profile-form" class="stack">
         <div class="grid">
           <label class="field">
@@ -58,16 +76,25 @@
         <p id="profile-message" class="helper-text"></p>
       </form>
     </section>
+
+    <section class="card">
+      <h2>Tariffe (solo lettura)</h2>
+      <p class="muted small">Mostrate per riferimento; modifica tramite registrazione iniziale.</p>
+      <ul id="rates-list" class="muted"></ul>
+    </section>
+
   </main>
 
   <script type="module" src="js/theme.js"></script>
+  <script type="module" src="js/nav.js"></script>
   <script type="module" src="js/profile.js"></script>
   <nav class="floating-nav">
     <button type="button" id="theme-toggle" class="theme-toggle" aria-label="Cambia tema">🌗 Tema scuro</button>
     <a href="home.html">Home</a>
     <a href="index.html">Ricerca</a>
-    <a href="login.html">Login</a>
-    <a href="profile.html">Profilo</a>
+    <a href="login.html" id="nav-auth">Login</a>
+    <a href="settings.html" id="nav-settings" style="display: none;">Impostazioni</a>
+    <a href="profile.html" id="nav-profile" style="display: none;">Profilo</a>
   </nav>
 </body>
 </html>

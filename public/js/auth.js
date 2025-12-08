@@ -48,25 +48,8 @@ async function login() {
   }
 }
 
-async function register() {
-  if (!emailEl || !pwdEl) return;
-  const email = emailEl.value.trim();
-  const pwd = pwdEl.value;
-  if (!email || !pwd) {
-    setMessage('Inserisci email e password.', true);
-    return;
-  }
-  setLoading(true);
-  setMessage('Registrazione in corso...');
-  try {
-    await createUserWithEmailAndPassword(auth, email, pwd);
-    setMessage('Account creato. Ti portiamo al profilo...');
-    window.location.href = 'profile.html';
-  } catch (err) {
-    setMessage(err.message || 'Errore di registrazione.', true);
-  } finally {
-    setLoading(false);
-  }
+function goToRegisterPage() {
+  window.location.href = 'register.html';
 }
 
 async function resetPwd() {
@@ -96,7 +79,7 @@ if (form) {
 }
 
 if (btnRegister) {
-  btnRegister.addEventListener('click', register);
+  btnRegister.addEventListener('click', goToRegisterPage);
 }
 
 if (btnReset) {

@@ -1,0 +1,124 @@
+<!doctype html>
+<html lang="it" data-theme="dark">
+<head>
+  <meta charset="utf-8">
+  <title>MusiMatch – Impostazioni</title>
+  <meta name="viewport" content="width=device-width, initial-scale=1">
+  <link rel="preconnect" href="https://fonts.googleapis.com">
+  <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+  <link href="https://fonts.googleapis.com/css2?family=Manrope:wght@400;500;600;700&display=swap" rel="stylesheet">
+  <link rel="stylesheet" href="css/main.css">
+  <link rel="stylesheet" href="css/ui.css">
+</head>
+<body>
+  <header class="page-header">
+    <div>
+      <p class="eyebrow">MusiMatch</p>
+      <h1>Impostazioni account</h1>
+      <p>Gestisci email, password e dati del tuo account.</p>
+    </div>
+  </header>
+
+  <main class="page-content">
+    <section class="card">
+      <h2>Cambia email</h2>
+      <div class="stack">
+        <div class="grid">
+          <label class="field">
+            <span class="field-label">Nuova email</span>
+            <input type="email" id="new-email" placeholder="nuova email">
+          </label>
+          <label class="field">
+            <span class="field-label">Password</span>
+            <input type="password" id="current-pwd-email" placeholder="Per confermare la modifica">
+          </label>
+        </div>
+        <button type="button" id="btn-update-email" class="ghost">Aggiorna email</button>
+        <p id="email-message" class="helper-text"></p>
+      </div>
+    </section>
+
+    <section class="card">
+      <h2>Cambia password</h2>
+      <div class="stack">
+        <div class="grid">
+          <label class="field">
+            <span class="field-label">Password attuale</span>
+            <input type="password" id="current-pwd-pass" placeholder="Per confermare la modifica">
+          </label>
+          <label class="field">
+            <span class="field-label">Nuova password</span>
+            <input type="password" id="new-pass" placeholder="Minimo 6 caratteri">
+          </label>
+          <label class="field">
+            <span class="field-label">Conferma nuova password</span>
+            <input type="password" id="new-pass-confirm" placeholder="Ripeti la password">
+          </label>
+        </div>
+        <button type="button" id="btn-update-pass" class="ghost">Aggiorna password</button>
+        <p id="pass-message" class="helper-text"></p>
+      </div>
+    </section>
+
+    <section class="card">
+      <h2>Bio e Curriculum</h2>
+      <div class="stack">
+        <label class="field">
+          <span class="field-label">Bio</span>
+          <textarea id="set-bio" rows="3" placeholder="Breve descrizione"></textarea>
+        </label>
+        <label class="field">
+          <span class="field-label">Curriculum</span>
+          <textarea id="set-cv" rows="4" placeholder="Studi, esperienze, repertorio"></textarea>
+        </label>
+        <button type="button" id="btn-update-bio" class="ghost">Aggiorna Bio e Curriculum</button>
+        <p id="bio-message" class="helper-text"></p>
+      </div>
+    </section>
+
+    <section class="card">
+      <h2>Tariffe</h2>
+      <div class="grid">
+        <label class="field">
+          <span class="field-label">Prova (€)</span>
+          <input type="number" id="set-rate-rehearsal" min="0" step="1">
+        </label>
+        <label class="field">
+          <span class="field-label">Concerto / messa (€)</span>
+          <input type="number" id="set-rate-concert" min="0" step="1">
+        </label>
+        <label class="field">
+          <span class="field-label">Servizio civile/religioso (€)</span>
+          <input type="number" id="set-rate-service" min="0" step="1">
+        </label>
+        <label class="field">
+          <span class="field-label">Servizio civile (squilli+silenzio) (€)</span>
+          <input type="number" id="set-rate-trumpet" min="0" step="1">
+        </label>
+        <label class="field">
+          <span class="field-label">Esibizione solista (€)</span>
+          <input type="number" id="set-rate-solo" min="0" step="1">
+        </label>
+      </div>
+      <button type="button" id="btn-update-rates" class="ghost">Aggiorna tariffe</button>
+      <p id="rates-message" class="helper-text"></p>
+    </section>
+
+    <section class="card">
+      <button type="button" id="btn-logout" class="danger">Logout</button>
+    </section>
+  </main>
+
+  <script type="module" src="js/theme.js"></script>
+  <script type="module" src="js/nav.js"></script>
+  <script type="module" src="js/settings.js"></script>
+  <nav class="floating-nav">
+    <button type="button" id="theme-toggle" class="theme-toggle" aria-label="Cambia tema">🌙</button>
+    <a href="home.html">Home</a>
+    <a href="index.html">Ricerca</a>
+    <a href="login.html" id="nav-auth">Login</a>
+    <a href="settings.html" id="nav-settings" style="display: none;">Impostazioni</a>
+    <a href="profile.html" id="nav-profile" style="display: none;">Profilo</a>
+  </nav>
+</body>
+</html>
