@@ -1,9 +1,35 @@
 <!doctype html>
-<html lang="it" data-theme="dark">
+<html lang="it" data-theme="light">
 <head>
   <meta charset="utf-8">
   <title>MusiMatch – Login</title>
   <meta name="viewport" content="width=device-width, initial-scale=1">
+  <script>
+    (function() {
+      const KEY = 'musimatch-theme';
+      let theme = 'light';
+      try {
+        const stored = localStorage.getItem(KEY);
+        if (stored === 'dark' || stored === 'light') theme = stored;
+      } catch (e) {}
+      document.documentElement.setAttribute('data-theme', theme);
+    })();
+  </script>
+  <script>
+    (function() {
+      const KEY = 'musimatch-nav-state';
+      try {
+        const state = sessionStorage.getItem(KEY) || localStorage.getItem(KEY);
+        if (state === 'logged-in' || state === 'logged-out') {
+          document.documentElement.setAttribute('data-nav-state', state);
+        } else {
+          document.documentElement.setAttribute('data-nav-state', 'pending');
+        }
+      } catch (e) {
+        document.documentElement.setAttribute('data-nav-state', 'pending');
+      }
+    })();
+  </script>
   <link rel="preconnect" href="https://fonts.googleapis.com">
   <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
   <link href="https://fonts.googleapis.com/css2?family=Manrope:wght@400;500;600;700&display=swap" rel="stylesheet">
@@ -14,8 +40,15 @@
   <main class="auth-layout">
     <section class="auth-card">
       <header class="auth-header">
-        <p class="eyebrow">MusiMatch</p>
-        <h1>Accedi o registrati</h1>
+        <div class="logo-link">
+          <a href="home.html" class="logo-link">
+            <img src="assets/img/logo.png" alt="MusiMatch">
+          </a>
+          <div>
+            <p class="eyebrow" style="margin: 0;">MusiMatch</p>
+            <h1 style="margin: 0;">Accedi o registrati</h1>
+          </div>
+        </div>
         <p>Entra con email e password. Se non hai un profilo, puoi crearne uno subito.</p>
       </header>
 
@@ -40,7 +73,7 @@
       </form>
 
       <footer class="auth-footer">
-        <a href="index.html">← Torna alla home</a>
+        <a href="home.html">← Torna alla home</a>
       </footer>
     </section>
   </main>
@@ -51,7 +84,7 @@
   <nav class="floating-nav">
     <button type="button" id="theme-toggle" class="theme-toggle" aria-label="Cambia tema">🌙</button>
     <a href="home.html">Home</a>
-    <a href="index.html">Ricerca</a>
+    <a href="ricerca.html">Ricerca</a>
     <a href="login.html" id="nav-auth">Login</a>
     <a href="settings.html" id="nav-settings" style="display: none;">Impostazioni</a>
     <a href="profile.html" id="nav-profile" style="display: none;">Profilo</a>

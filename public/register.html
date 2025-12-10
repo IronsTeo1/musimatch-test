@@ -1,9 +1,35 @@
 <!doctype html>
-<html lang="it" data-theme="dark">
+<html lang="it" data-theme="light">
 <head>
   <meta charset="utf-8">
   <title>MusiMatch – Registrazione</title>
   <meta name="viewport" content="width=device-width, initial-scale=1">
+  <script>
+    (function() {
+      const KEY = 'musimatch-theme';
+      let theme = 'light';
+      try {
+        const stored = localStorage.getItem(KEY);
+        if (stored === 'dark' || stored === 'light') theme = stored;
+      } catch (e) {}
+      document.documentElement.setAttribute('data-theme', theme);
+    })();
+  </script>
+  <script>
+    (function() {
+      const KEY = 'musimatch-nav-state';
+      try {
+        const state = sessionStorage.getItem(KEY) || localStorage.getItem(KEY);
+        if (state === 'logged-in' || state === 'logged-out') {
+          document.documentElement.setAttribute('data-nav-state', state);
+        } else {
+          document.documentElement.setAttribute('data-nav-state', 'pending');
+        }
+      } catch (e) {
+        document.documentElement.setAttribute('data-nav-state', 'pending');
+      }
+    })();
+  </script>
   <link rel="preconnect" href="https://fonts.googleapis.com">
   <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
   <link href="https://fonts.googleapis.com/css2?family=Manrope:wght@400;500;600;700&display=swap" rel="stylesheet">
@@ -12,10 +38,15 @@
 </head>
 <body>
   <header class="page-header">
-    <div>
-      <p class="eyebrow">MusiMatch</p>
-      <h1>Registrazione</h1>
-      <p>Seleziona chi sei e compila i dati per creare il profilo.</p>
+    <div class="logo-link">
+      <a href="home.html" class="logo-link">
+        <img src="assets/img/logo.png" alt="MusiMatch">
+      </a>
+      <div>
+        <p class="eyebrow" style="margin: 0;">MusiMatch</p>
+        <h1 style="margin: 0;">Registrazione</h1>
+        <p style="margin: 0;">Seleziona chi sei e compila i dati per creare il profilo.</p>
+      </div>
     </div>
   </header>
 
@@ -47,7 +78,7 @@
         <div id="musician-fields" class="stack" style="display: none;">
           <div class="grid">
             <label class="field">
-              <span class="field-label">Nome pubblico</span>
+              <span class="field-label">Nome</span>
               <input type="text" id="m-displayName" placeholder="es. Marco Bianchi">
             </label>
             <label class="field">
@@ -58,16 +89,60 @@
 
           <div class="grid">
             <label class="field">
-              <span class="field-label">Strumenti / voci</span>
-              <small>Separati da virgole (es. Tromba, Clarinetto).</small>
-              <input type="text" id="m-instruments" placeholder="Tromba, Clarinetto">
+              <span class="field-label">Sesso (opzionale)</span>
+              <select id="m-gender">
+                <option value="">Preferisco non rispondere</option>
+                <option value="male">Uomo</option>
+                <option value="female">Donna</option>
+                <option value="non_binary">Non binario</option>
+              </select>
+              <div class="inline-check" style="margin-top: -0.3rem;">
+                <input type="checkbox" id="m-gender-visible">
+                <span class="muted small">Visibile nel profilo pubblico</span>
+              </div>
             </label>
             <label class="field">
-              <span class="field-label">Strumento / voce principale</span>
-              <input type="text" id="m-mainInstrument" placeholder="Tromba">
+              <span class="field-label">Nazionalità (opzionale)</span>
+              <div class="autocomplete">
+                <input type="text" id="m-nationality" autocomplete="off" placeholder="Digita per cercare">
+                <button type="button" class="combo-toggle" id="m-nationality-toggle" aria-label="Apri elenco">▼</button>
+                <div id="nationality-suggestions" class="autocomplete-list" hidden></div>
+              </div>
+              <div class="inline-check" style="margin-top: -0.3rem;">
+                <input type="checkbox" id="m-nationality-visible">
+                <span class="muted small">Visibile nel profilo pubblico</span>
+              </div>
+            </label>
+            <label class="field">
+              <span class="field-label">Città / paese</span>
+              <div class="autocomplete">
+                <input
+                  type="text"
+                  id="m-city"
+                  autocomplete="off"
+                  placeholder="es. Milano, Brescia, Bagolino">
+                <div id="m-city-suggestions" class="autocomplete-list" hidden></div>
+              </div>
             </label>
           </div>
 
+          <div class="grid" id="instrument-block">
+            <label class="field">
+              <span class="field-label" id="label-instruments">Strumenti / voci</span>
+              <small>Separati da virgole (es. Tromba, Clarinetto).</small>
+              <div class="autocomplete">
+                <input type="text" id="m-instruments" placeholder="Tromba, Clarinetto" autocomplete="off">
+                <div id="m-instruments-suggestions" class="autocomplete-list" hidden></div>
+              </div>
+            </label>
+            <label class="field">
+              <span class="field-label" id="label-mainInstrument">Strumento / voce principale</span>
+              <div class="autocomplete">
+                <input type="text" id="m-mainInstrument" placeholder="Tromba" autocomplete="off">
+                <div id="m-mainInstrument-suggestions" class="autocomplete-list" hidden></div>
+              </div>
+            </label>
+          </div>
           <div class="grid">
             <label class="field">
               <span class="field-label">Livello</span>
@@ -75,6 +150,18 @@
                 <label><input type="radio" name="m-activityLevel" value="professional"> Professionista</label>
                 <label><input type="radio" name="m-activityLevel" value="amateur"> Amatore</label>
               </div>
+            </label>
+            <label class="field" id="voice-fields" style="display: none;">
+              <span class="field-label">Registro vocale</span>
+              <select id="m-voiceType">
+                <option value="">Seleziona</option>
+                <option value="Soprano">Soprano</option>
+                <option value="Mezzosoprano">Mezzosoprano</option>
+                <option value="Contralto">Contralto</option>
+                <option value="Tenore">Tenore</option>
+                <option value="Baritono">Baritono</option>
+                <option value="Basso">Basso</option>
+              </select>
             </label>
             <label class="field">
               <span class="field-label">Distanza massima (km)</span>
@@ -111,7 +198,7 @@
               <span class="field-label">Tariffa servizio civile/religioso (€)</span>
               <input type="number" id="rate-service" min="0" step="1">
             </label>
-            <label class="field">
+            <label class="field" id="rate-trumpet-field">
               <span class="field-label">Tariffa servizio civile (squilli+silenzio) (€)</span>
               <input type="number" id="rate-trumpet" min="0" step="1">
             </label>
@@ -132,8 +219,8 @@
           </label>
 
           <label class="field">
-            <span class="field-label">Foto profilo (URL)</span>
-            <input type="url" id="m-photoUrl" placeholder="https://...">
+            <span class="field-label">Carica foto profilo</span>
+            <input type="file" id="m-photoFile" accept="image/*">
           </label>
         </div>
 
@@ -144,8 +231,30 @@
               <input type="text" id="e-name" placeholder="es. Coro Arcobaleno">
             </label>
             <label class="field">
-              <span class="field-label">Email di contatto</span>
+              <span class="field-label">Email</span>
               <input type="email" id="e-email" placeholder="es. contatto@example.com">
+            </label>
+          </div>
+
+          <div class="grid">
+            <label class="field">
+              <span class="field-label">Città / paese</span>
+              <div class="autocomplete">
+                <input
+                  type="text"
+                  id="e-city"
+                  autocomplete="off"
+                  placeholder="es. Milano, Brescia, Bagolino">
+                <div id="e-city-suggestions" class="autocomplete-list" hidden></div>
+              </div>
+            </label>
+            <label class="field">
+              <span class="field-label">Via e numero civico</span>
+              <div class="grid" style="grid-template-columns: 2fr 1fr; gap: 0.5rem;">
+                <input type="text" id="e-street" placeholder="es. Via Verdi">
+                <input type="text" id="e-street-number" placeholder="es. 12B">
+              </div>
+              <span class="field-hint muted xsmall">Visibile nel profilo pubblico (solo ensemble).</span>
             </label>
           </div>
 
@@ -166,25 +275,15 @@
           </div>
 
           <label class="field">
-            <span class="field-label">Foto profilo/logo (URL)</span>
-            <input type="url" id="e-photoUrl" placeholder="https://...">
+            <span class="field-label">Carica foto profilo/logo</span>
+            <input type="file" id="e-photoFile" accept="image/*">
           </label>
         </div>
 
-        <div id="location-fields" class="stack" style="display: none;">
-          <span class="field-label">Città / paese</span>
-          <div class="autocomplete">
-            <input
-              type="text"
-              id="reg-city"
-              autocomplete="off"
-              placeholder="es. Milano, Brescia, Bagolino">
-            <div id="reg-city-suggestions" class="autocomplete-list" hidden></div>
-          </div>
-        </div>
+        <div id="country-datalist-placeholder" hidden></div>
 
         <div class="stack" id="submit-row" style="display: none;">
-          <button type="submit" id="btn-register-user">Salva registrazione</button>
+          <button type="submit" id="btn-register-user">Registrati</button>
           <p id="register-message" class="helper-text"></p>
         </div>
       </form>
@@ -197,7 +296,7 @@
   <nav class="floating-nav">
     <button type="button" id="theme-toggle" class="theme-toggle" aria-label="Cambia tema">🌙</button>
     <a href="home.html">Home</a>
-    <a href="index.html">Ricerca</a>
+    <a href="ricerca.html">Ricerca</a>
     <a href="login.html" id="nav-auth">Login</a>
     <a href="settings.html" id="nav-settings" style="display: none;">Impostazioni</a>
     <a href="profile.html" id="nav-profile" style="display: none;">Profilo</a>

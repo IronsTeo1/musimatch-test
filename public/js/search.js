@@ -39,6 +39,15 @@ function normalizeInstrumentName(raw) {
     .join(' ');
 }
 
+function normalizeInstrumentForMatch(raw) {
+  return (raw || '')
+    .toString()
+    .toLowerCase()
+    .normalize('NFD')
+    .replace(/\p{Diacritic}/gu, '')
+    .trim();
+}
+
 function normalizeCity(str) {
   return (str || '')
     .trim()
@@ -136,10 +145,31 @@ export async function geocodeCityName(cityName) {
  * @param {number} options.centerLng
  * @param {number} options.radiusKm
  * @param {string|null} options.instrument   es. "trumpet", "soprano"
+ * @param {Array<string>} [activityLevels] Opzionale: filtra per livello (professional|amateur)
  * @returns {Promise<Array<{id: string, distanceKm: number, data: any}>>}
  */
-export async function findMusiciansNearby({ centerLat, centerLng, radiusKm, instrument = null }) {
-  const normalizedInstrument = normalizeInstrumentName(instrument) || null;
+export async function findMusiciansNearby({
+  centerLat,
+  centerLng,
+  radiusKm,
+  instrument = null,
+  activityLevels = [],
+  includeSecondary = false
+}) {
+  const normalizedInstrument = normalizeInstrumentName(instrument) || '';
+  const normalizedInstrumentLower = normalizeInstrumentForMatch(normalizedInstrument);
+  const singerKeywords = ['cantante', 'voce', 'vocalist'];
+  const voiceVariants = [
+    'Soprano', 'Mezzosoprano', 'Contralto',
+    'Tenore', 'Baritono', 'Basso'
+  ];
+  const isSingerSearch = normalizedInstrumentLower && singerKeywords.includes(normalizedInstrumentLower);
+  const voiceFilters = isSingerSearch ? voiceVariants : [];
+  const levelFilters = Array.isArray(activityLevels)
+    ? activityLevels
+        .map((l) => (l || '').toString().toLowerCase())
+        .filter((l) => l === 'professional' || l === 'amateur')
+    : [];
 
   if (Number.isNaN(centerLat) || Number.isNaN(centerLng) || Number.isNaN(radiusKm)) {
     throw new Error('Parametri geografici non validi');
@@ -163,8 +193,11 @@ export async function findMusiciansNearby({ centerLat, centerLng, radiusKm, inst
     where('location.lng', '<=', maxLng)
   ];
 
-  if (normalizedInstrument) {
-    constraints.push(where('instruments', 'array-contains', normalizedInstrument));
+  // Filtri Firestore solo per voci, altrimenti filtriamo lato client (parziali/case-insensitive)
+  if (voiceFilters.length === 1) {
+    constraints.push(where('instruments', 'array-contains', voiceFilters[0]));
+  } else if (voiceFilters.length > 1) {
+    constraints.push(where('instruments', 'array-contains-any', voiceFilters));
   }
 
   const q = query(usersRef, ...constraints);
@@ -189,13 +222,27 @@ export async function findMusiciansNearby({ centerLat, centerLng, radiusKm, inst
 
     const distanceKm = haversineDistanceKm(centerLat, centerLng, docLat, docLng);
 
-    if (distanceKm <= radiusKm) {
-      results.push({
-        id: doc.id,
-        distanceKm,
-        data
-      });
-    }
+    if (distanceKm > radiusKm) return;
+
+    // Filtro lato client per strumento parziale/case-insensitive (solo se richiesto)
+    if (normalizedInstrument) {
+    const allInstruments = Array.isArray(data.instruments) ? data.instruments : [];
+    const main = data.mainInstrument ? [data.mainInstrument] : [];
+    const haystackSource = includeSecondary ? [...allInstruments, ...main] : main;
+    const haystack = haystackSource.map((s) => normalizeInstrumentForMatch(s));
+
+    const matches = haystack.some((s) => s.includes(normalizedInstrumentLower));
+    if (!matches) return;
+  }
+
+    // filtro livello opzionale
+    if (levelFilters.length && !levelFilters.includes((data.activityLevel || '').toLowerCase())) return;
+
+    results.push({
+      id: doc.id,
+      distanceKm,
+      data
+    });
   });
 
   results.sort((a, b) => a.distanceKm - b.distanceKm);

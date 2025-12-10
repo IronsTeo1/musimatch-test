@@ -1,9 +1,35 @@
 <!doctype html>
-<html lang="it" data-theme="dark">
+<html lang="it" data-theme="light">
 <head>
   <meta charset="utf-8">
   <title>MusiMatch – Profilo</title>
   <meta name="viewport" content="width=device-width, initial-scale=1">
+  <script>
+    (function() {
+      const KEY = 'musimatch-theme';
+      let theme = 'light';
+      try {
+        const stored = localStorage.getItem(KEY);
+        if (stored === 'dark' || stored === 'light') theme = stored;
+      } catch (e) {}
+      document.documentElement.setAttribute('data-theme', theme);
+    })();
+  </script>
+  <script>
+    (function() {
+      const KEY = 'musimatch-nav-state';
+      try {
+        const state = sessionStorage.getItem(KEY) || localStorage.getItem(KEY);
+        if (state === 'logged-in' || state === 'logged-out') {
+          document.documentElement.setAttribute('data-nav-state', state);
+        } else {
+          document.documentElement.setAttribute('data-nav-state', 'pending');
+        }
+      } catch (e) {
+        document.documentElement.setAttribute('data-nav-state', 'pending');
+      }
+    })();
+  </script>
   <link rel="preconnect" href="https://fonts.googleapis.com">
   <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
   <link href="https://fonts.googleapis.com/css2?family=Manrope:wght@400;500;600;700&display=swap" rel="stylesheet">
@@ -12,36 +38,30 @@
 </head>
 <body>
   <header class="page-header">
-    <div>
-      <p class="eyebrow">MusiMatch</p>
-      <h1>Il tuo profilo</h1>
-      <p>Gestisci i dati dell’account e aggiorna il tuo profilo musicista.</p>
+    <div class="logo-link">
+      <a href="home.html" class="logo-link">
+        <img src="assets/img/logo.png" alt="MusiMatch">
+      </a>
+      <div>
+        <p class="eyebrow" style="margin: 0;">MusiMatch</p>
+        <h1 style="margin: 0;" id="profile-page-title"></h1>
+        <p style="margin: 0;" id="profile-page-subtitle"></p>
+      </div>
     </div>
   </header>
 
   <main class="page-content">
     <section class="card">
-      <h2>Dati account</h2>
-      <p id="user-email" class="muted"></p>
-      <p id="user-id" class="muted small"></p>
-    </section>
-
-    <section class="card">
-      <div style="display: flex; align-items: center; gap: 0.75rem;">
-        <div class="profile-avatar" id="profile-avatar">
-          <div class="avatar-fallback">👤</div>
-          <button type="button" class="avatar-menu-toggle" id="avatar-menu-toggle" aria-label="Opzioni foto" style="display: none;">▾</button>
-          <div class="avatar-menu" id="avatar-menu">
-            <button type="button" id="avatar-change">Cambia immagine</button>
-            <button type="button" id="avatar-view">Visualizza immagine</button>
+      <div class="profile-header">
+        <div class="avatar-block">
+          <div class="profile-avatar" id="profile-avatar">
+            <div class="avatar-fallback">👤</div>
           </div>
         </div>
         <div>
-          <h2 style="margin: 0;">Profilo musicista</h2>
-          <p class="muted" style="margin: 0.2rem 0 0;">Sincronizzato con la collezione <code>users</code> (userType: musician).</p>
+          <h2 id="profile-title" style="margin: 0; display: none;"></h2>
         </div>
       </div>
-      <input type="file" id="avatar-file" accept="image/*" style="display: none;">
 
       <div class="modal-backdrop" id="avatar-modal">
         <div class="modal-content">
@@ -49,37 +69,59 @@
           <img id="avatar-modal-img" alt="Foto profilo">
         </div>
       </div>
-
-      <form id="profile-form" class="stack">
+      <div class="stack">
         <div class="grid">
-          <label class="field">
-            <span class="field-label">Nome pubblico</span>
-            <input type="text" id="profile-displayName" placeholder="es. Marco Bianchi">
-          </label>
-          <label class="field">
-            <span class="field-label">Strumento principale</span>
-            <input type="text" id="profile-mainInstrument" placeholder="es. Tromba">
-          </label>
+          <div class="field">
+            <span class="field-label" id="profile-label-mainInstrument">Strumento / voce principale</span>
+            <p id="profile-mainInstrument" class="muted"></p>
+          </div>
+          <div class="field">
+            <span class="field-label" id="profile-label-instruments">Strumenti suonati</span>
+            <p id="profile-instruments" class="muted"></p>
+          </div>
+          <div class="field">
+            <span class="field-label">Livello</span>
+            <p id="profile-level" class="muted"></p>
+          </div>
+          <div class="field">
+            <span class="field-label">Città / paese</span>
+            <p id="profile-location" class="muted"></p>
+          </div>
+          <div class="field">
+            <span class="field-label">Distanza massima (km)</span>
+            <p id="profile-maxTravel" class="muted"></p>
+          </div>
+          <div class="field" id="profile-gender-field">
+            <span class="field-label">Genere</span>
+            <p id="profile-gender" class="muted"></p>
+          </div>
+          <div class="field" id="profile-nationality-field">
+            <span class="field-label">Nazionalità</span>
+            <p id="profile-nationality" class="muted"></p>
+          </div>
         </div>
 
-        <label class="field">
+        <div class="field">
           <span class="field-label">Bio</span>
-          <textarea id="profile-bio" rows="3" placeholder="Breve descrizione"></textarea>
-        </label>
+          <p id="profile-bio" class="muted"></p>
+        </div>
 
-        <label class="field">
-          <span class="field-label">Foto profilo (URL)</span>
-          <input type="url" id="profile-photoUrl" placeholder="https://...">
-        </label>
+        <div class="field">
+          <span class="field-label">Curriculum</span>
+          <p id="profile-cv" class="muted"></p>
+        </div>
 
-        <button type="submit" id="btn-save-profile">Salva profilo</button>
+        <div class="field">
+          <span class="field-label">Disponibile a unirsi a un gruppo</span>
+          <p id="profile-willing" class="muted"></p>
+        </div>
+
         <p id="profile-message" class="helper-text"></p>
-      </form>
+      </div>
     </section>
 
     <section class="card">
-      <h2>Tariffe (solo lettura)</h2>
-      <p class="muted small">Mostrate per riferimento; modifica tramite registrazione iniziale.</p>
+      <h2>Tariffe</h2>
       <ul id="rates-list" class="muted"></ul>
     </section>
 
@@ -89,9 +131,9 @@
   <script type="module" src="js/nav.js"></script>
   <script type="module" src="js/profile.js"></script>
   <nav class="floating-nav">
-    <button type="button" id="theme-toggle" class="theme-toggle" aria-label="Cambia tema">🌗 Tema scuro</button>
+    <button type="button" id="theme-toggle" class="theme-toggle" aria-label="Cambia tema">🌙</button>
     <a href="home.html">Home</a>
-    <a href="index.html">Ricerca</a>
+    <a href="ricerca.html">Ricerca</a>
     <a href="login.html" id="nav-auth">Login</a>
     <a href="settings.html" id="nav-settings" style="display: none;">Impostazioni</a>
     <a href="profile.html" id="nav-profile" style="display: none;">Profilo</a>

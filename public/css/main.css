@@ -38,6 +38,31 @@
   --radius: 14px;
 }
 
+:root.theme-transition body,
+:root.theme-transition header,
+:root.theme-transition section,
+:root.theme-transition .card,
+:root.theme-transition .floating-nav,
+:root.theme-transition .floating-nav a,
+:root.theme-transition .top-nav a,
+:root.theme-transition .primary,
+:root.theme-transition .ghost,
+:root.theme-transition button,
+:root.theme-transition input,
+:root.theme-transition textarea,
+:root.theme-transition select,
+:root.theme-transition .autocomplete,
+:root.theme-transition .autocomplete input,
+:root.theme-transition .autocomplete-list,
+:root.theme-transition .combo-toggle {
+  transition: background-color 0.28s ease, border-color 0.28s ease, color 0.28s ease, box-shadow 0.28s ease, outline-color 0.28s ease;
+}
+
+:root.theme-transition input::placeholder,
+:root.theme-transition textarea::placeholder {
+  transition: color 0.28s ease;
+}
+
 *,
 *::before,
 *::after {
@@ -101,6 +126,29 @@ label {
   font-weight: 500;
 }
 
+/* evita focus su click etichetta */
+label.field {
+  pointer-events: none;
+}
+label.field input,
+label.field textarea,
+label.field select,
+label.field .autocomplete {
+  pointer-events: auto;
+}
+
+.inline-check {
+  display: flex;
+  align-items: center;
+  justify-content: flex-start;
+  gap: 0.5rem;
+}
+
+.inline-check input[type="checkbox"] {
+  margin: 0;
+  align-self: center;
+}
+
 p {
   margin: 0.2rem 0 0.8rem;
   color: var(--muted);
@@ -154,17 +202,19 @@ input[type="radio"] {
 /* bottoni */
 
 button {
-  padding: 0.6rem 1.1rem;
+  padding: 0.5rem 1rem;
   background: var(--primary);
   color: white;
-  border: none;
+  border: 1px solid var(--primary);
   border-radius: calc(var(--radius) - 6px);
   cursor: pointer;
   font-size: 0.95rem;
   font-weight: 700;
   letter-spacing: -0.01em;
+  line-height: 1.2;
+  min-height: 42px;
   box-shadow: 0 6px 18px rgba(37, 99, 235, 0.18);
-  transition: transform 0.1s ease, box-shadow 0.1s ease, background 0.12s ease;
+  transition: transform 0.1s ease, box-shadow 0.1s ease, background 0.12s ease, color 0.12s ease, border-color 0.12s ease;
 }
 
 button:hover {
@@ -173,9 +223,87 @@ button:hover {
   box-shadow: 0 8px 20px rgba(37, 99, 235, 0.22);
 }
 
+button:active {
+  transform: translateY(0);
+  box-shadow: 0 3px 10px rgba(0, 0, 0, 0.12);
+}
+
 button:disabled {
   opacity: 0.6;
   cursor: default;
+}
+
+.ghost,
+label.ghost {
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  padding: 0.5rem 1rem;
+  background: transparent;
+  color: var(--text);
+  border: 1px solid var(--surface-border);
+  border-radius: calc(var(--radius) - 6px);
+  min-height: 42px;
+  box-shadow: 0 3px 10px rgba(0, 0, 0, 0.05);
+  font-weight: 700;
+  transition: background 0.15s ease, color 0.15s ease, border-color 0.15s ease, box-shadow 0.15s ease, transform 0.1s ease;
+}
+
+.ghost:hover {
+  background: var(--primary);
+  color: #fff;
+  border-color: var(--primary);
+  box-shadow: 0 6px 18px rgba(37, 99, 235, 0.18);
+  transform: translateY(-1px);
+}
+
+.ghost:active,
+label.ghost:active {
+  transform: translateY(0);
+  box-shadow: 0 3px 10px rgba(0, 0, 0, 0.12);
+}
+
+.ghost-primary {
+  color: var(--primary);
+  border-color: var(--primary);
+}
+
+.ghost-primary:hover {
+  background: var(--primary);
+  color: #fff;
+  border-color: var(--primary);
+}
+
+.ghost-success {
+  color: #16a34a;
+  border-color: #22c55e;
+}
+
+.ghost-success:hover {
+  background: #22c55e;
+  color: #fff;
+  border-color: #22c55e;
+  box-shadow: 0 6px 18px rgba(34, 197, 94, 0.25);
+}
+
+.ghost-danger {
+  color: #ef4444;
+  border-color: #ef4444;
+}
+
+.ghost-danger:hover {
+  background: #ef4444;
+  color: #fff;
+  border-color: #ef4444;
+  box-shadow: 0 6px 18px rgba(239, 68, 68, 0.25);
+}
+
+.btn-full {
+  width: 100%;
+}
+
+.btn-compact {
+  padding: 0.45rem 1rem;
 }
 
 .danger {
@@ -191,6 +319,7 @@ button:disabled {
 
 small {
   color: var(--muted);
+  font-size: 0.82rem;
 }
 
 /* lista risultati ricerca */

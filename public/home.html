@@ -1,9 +1,35 @@
 <!doctype html>
-<html lang="it" data-theme="dark">
+<html lang="it" data-theme="light">
 <head>
   <meta charset="utf-8">
   <title>MusiMatch – Home</title>
   <meta name="viewport" content="width=device-width, initial-scale=1">
+  <script>
+    (function() {
+      const KEY = 'musimatch-theme';
+      let theme = 'light';
+      try {
+        const stored = localStorage.getItem(KEY);
+        if (stored === 'dark' || stored === 'light') theme = stored;
+      } catch (e) {}
+      document.documentElement.setAttribute('data-theme', theme);
+    })();
+  </script>
+  <script>
+    (function() {
+      const KEY = 'musimatch-nav-state';
+      try {
+        const state = sessionStorage.getItem(KEY) || localStorage.getItem(KEY);
+        if (state === 'logged-in' || state === 'logged-out') {
+          document.documentElement.setAttribute('data-nav-state', state);
+        } else {
+          document.documentElement.setAttribute('data-nav-state', 'pending');
+        }
+      } catch (e) {
+        document.documentElement.setAttribute('data-nav-state', 'pending');
+      }
+    })();
+  </script>
   <link rel="preconnect" href="https://fonts.googleapis.com">
   <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
   <link href="https://fonts.googleapis.com/css2?family=Manrope:wght@400;500;600;700&display=swap" rel="stylesheet">
@@ -12,30 +38,107 @@
 </head>
 <body>
   <header class="page-header">
-    <div>
-      <p class="eyebrow">MusiMatch</p>
-      <h1>Benvenuto</h1>
-      <p>Accedi per gestire il tuo profilo o cercare musicisti.</p>
+    <div class="logo-link">
+      <a href="home.html" class="logo-link">
+        <img src="assets/img/logo.png" alt="MusiMatch">
+      </a>
+      <div>
+        <p class="eyebrow" style="margin: 0;">MusiMatch</p>
+        <h1 style="margin: 0;" id="home-title">Benvenuto</h1>
+        <p style="margin: 0;" id="home-subtitle">Accedi per gestire il tuo profilo o cercare musicisti.</p>
+      </div>
     </div>
   </header>
 
   <main class="page-content">
-    <section class="card">
-      <h2>Cosa puoi fare</h2>
-      <ul class="muted">
-        <li>Registrarti con email e password.</li>
-        <li>Compilare/aggiornare il profilo musicista.</li>
-        <li>Cercare musicisti vicini per città e strumento.</li>
-      </ul>
-    </section>
+    <div id="home-guest" style="display: none;">
+      <section class="card">
+        <p class="eyebrow" style="margin: 0;">Per chi arriva ora</p>
+        <h2 style="margin: 0 0 0.35rem 0;">Trova musicisti vicino a te</h2>
+        <p class="muted" style="margin: 0 0 1rem 0;">Crea un profilo in pochi minuti, aggiungi strumenti e città, poi contatta o fatti contattare.</p>
+        <div class="actions">
+          <a class="primary" href="register.html">Registrati</a>
+          <a class="ghost" href="login.html">Accedi</a>
+          <a class="ghost ghost-primary" href="ricerca.html">Inizia la ricerca</a>
+        </div>
+      </section>
+
+      <section class="card">
+        <h3 style="margin-top: 0;">Come funziona</h3>
+        <div class="grid">
+          <div>
+            <p class="eyebrow" style="margin: 0;">1 · Profilo</p>
+            <p class="muted" style="margin: 0;">Email, strumenti/voce, città e bio. Puoi cambiare tutto in seguito.</p>
+          </div>
+          <div>
+            <p class="eyebrow" style="margin: 0;">2 · Foto e tariffe</p>
+            <p class="muted" style="margin: 0;">Carica un avatar o usa quello predefinito. Opzionale: tariffe per prove, concerti, servizi.</p>
+          </div>
+          <div>
+            <p class="eyebrow" style="margin: 0;">3 · Trova o fatti trovare</p>
+            <p class="muted" style="margin: 0;">Filtra per città, strumento e raggio. Condividi il tuo profilo pubblico.</p>
+          </div>
+        </div>
+      </section>
+
+      <section class="card">
+        <h3 style="margin-top: 0;">Perché MusiMatch</h3>
+        <ul class="muted" style="margin: 0; padding-left: 1.1rem;">
+          <li>Profili ordinati per strumento/voce e città.</li>
+          <li>Controllo su cosa mostrare (bio, nazionalità, genere, tariffe).</li>
+          <li>Supporto a ensemble: cori, bande, orchestre.</li>
+          <li>Menu sempre a portata di mano per tema, ricerca, login.</li>
+        </ul>
+      </section>
+    </div>
+
+    <div id="home-user" style="display: none;">
+      <section class="card">
+        <h3 style="margin-top: 0;">Crea un annuncio</h3>
+        <div class="stack">
+          <label class="field">
+            <span class="field-label">Testo annuncio</span>
+            <textarea id="post-text" rows="3" maxlength="800" placeholder="Es. Cerco pianista per trio, prove serali zona centro."></textarea>
+          </label>
+          <div class="grid">
+            <label class="field">
+              <span class="field-label">Strumenti/ruoli richiesti (opzionale)</span>
+              <input type="text" id="post-instruments" placeholder="es. Pianoforte, Contrabbasso">
+              <span class="field-hint muted xsmall">Separa con virgole.</span>
+            </label>
+            <label class="field">
+              <span class="field-label">Raggio km</span>
+              <input type="number" id="post-radius" min="1" max="300" step="1">
+              <span class="field-hint muted xsmall">Usiamo la tua città/sede per calcolare la distanza.</span>
+            </label>
+          </div>
+          <button type="button" class="ghost ghost-primary" id="post-submit">Pubblica annuncio</button>
+          <p id="post-message" class="helper-text"></p>
+        </div>
+      </section>
+
+      <section class="card">
+        <div class="inline-header" style="justify-content: space-between; align-items: center;">
+          <div>
+            <p class="eyebrow" style="margin: 0;">Annunci vicino a te</p>
+            <h3 style="margin: 0;">Bacheca</h3>
+          </div>
+          <button type="button" class="ghost btn-compact" id="post-refresh">Aggiorna</button>
+        </div>
+        <div id="posts-feed" class="stack" style="min-height: 80px;">
+          <p class="muted" id="posts-empty" style="margin: 0;">Nessun annuncio recente nella tua zona.</p>
+        </div>
+      </section>
+    </div>
   </main>
 
   <script type="module" src="js/theme.js"></script>
   <script type="module" src="js/nav.js"></script>
+  <script type="module" src="js/home.js"></script>
   <nav class="floating-nav">
     <button type="button" id="theme-toggle" class="theme-toggle" aria-label="Cambia tema">🌙</button>
     <a href="home.html">Home</a>
-    <a href="index.html">Ricerca</a>
+    <a href="ricerca.html">Ricerca</a>
     <a href="login.html" id="nav-auth">Login</a>
     <a href="settings.html" id="nav-settings" style="display: none;">Impostazioni</a>
     <a href="profile.html" id="nav-profile" style="display: none;">Profilo</a>

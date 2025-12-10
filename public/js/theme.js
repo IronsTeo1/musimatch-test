@@ -2,6 +2,17 @@
 const rootEl = document.documentElement;
 const themeToggleBtn = document.getElementById('theme-toggle');
 const THEME_KEY = 'musimatch-theme';
+let transitionTimer = null;
+
+function startThemeTransition() {
+  if (!rootEl) return;
+  // keep transitions consistent also for form controls
+  rootEl.classList.add('theme-transition');
+  if (transitionTimer) clearTimeout(transitionTimer);
+  transitionTimer = setTimeout(() => {
+    rootEl.classList.remove('theme-transition');
+  }, 320);
+}
 
 function applyTheme(theme) {
   const normalized = theme === 'light' ? 'light' : 'dark';
@@ -24,11 +35,12 @@ const storedTheme = (() => {
   }
 })();
 
-applyTheme(storedTheme);
+applyTheme(storedTheme || 'light');
 
 if (themeToggleBtn) {
   themeToggleBtn.addEventListener('click', () => {
     const current = rootEl.getAttribute('data-theme') || 'dark';
+    startThemeTransition();
     applyTheme(current === 'dark' ? 'light' : 'dark');
   });
 }

@@ -4,6 +4,7 @@
 import { initializeApp } from 'https://www.gstatic.com/firebasejs/12.6.0/firebase-app.js';
 import { getAuth, connectAuthEmulator } from 'https://www.gstatic.com/firebasejs/12.6.0/firebase-auth.js';
 import { getFirestore, connectFirestoreEmulator } from 'https://www.gstatic.com/firebasejs/12.6.0/firebase-firestore.js';
+import { getStorage, connectStorageEmulator } from 'https://www.gstatic.com/firebasejs/12.6.0/firebase-storage.js';
 
 // ⚠️ CONFIGURAZIONE DEL PROGETTO TEST (musimatch-test)
 // Sostituisci con la tua config reale dalla console Firebase
@@ -22,6 +23,7 @@ const app = initializeApp(firebaseConfig);
 // Servizi
 const auth = getAuth(app);
 const db = getFirestore(app);
+const storage = getStorage(app);
 
 // Rileva se siamo in locale
 const isLocalhost =
@@ -29,11 +31,12 @@ const isLocalhost =
   location.hostname === '127.0.0.1';
 
 if (isLocalhost) {
-  console.log('[MusiMatch] Connessione agli EMULATORI (Auth 9099, Firestore 8080)...');
+  console.log('[MusiMatch] Connessione agli EMULATORI (Auth 9099, Firestore 8081, Storage 9199)...');
   connectAuthEmulator(auth, 'http://127.0.0.1:9099');
   connectFirestoreEmulator(db, '127.0.0.1', 8081);
+  connectStorageEmulator(storage, '127.0.0.1', 9199);
 } else {
   console.log('[MusiMatch] Connessione al progetto remoto:', firebaseConfig.projectId);
 }
 
-export { app, auth, db };
+export { app, auth, db, storage };

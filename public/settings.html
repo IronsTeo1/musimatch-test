@@ -1,9 +1,35 @@
 <!doctype html>
-<html lang="it" data-theme="dark">
+<html lang="it" data-theme="light">
 <head>
   <meta charset="utf-8">
   <title>MusiMatch – Impostazioni</title>
   <meta name="viewport" content="width=device-width, initial-scale=1">
+  <script>
+    (function() {
+      const KEY = 'musimatch-theme';
+      let theme = 'light';
+      try {
+        const stored = localStorage.getItem(KEY);
+        if (stored === 'dark' || stored === 'light') theme = stored;
+      } catch (e) {}
+      document.documentElement.setAttribute('data-theme', theme);
+    })();
+  </script>
+  <script>
+    (function() {
+      const KEY = 'musimatch-nav-state';
+      try {
+        const state = sessionStorage.getItem(KEY) || localStorage.getItem(KEY);
+        if (state === 'logged-in' || state === 'logged-out') {
+          document.documentElement.setAttribute('data-nav-state', state);
+        } else {
+          document.documentElement.setAttribute('data-nav-state', 'pending');
+        }
+      } catch (e) {
+        document.documentElement.setAttribute('data-nav-state', 'pending');
+      }
+    })();
+  </script>
   <link rel="preconnect" href="https://fonts.googleapis.com">
   <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
   <link href="https://fonts.googleapis.com/css2?family=Manrope:wght@400;500;600;700&display=swap" rel="stylesheet">
@@ -13,13 +39,65 @@
 <body>
   <header class="page-header">
     <div>
-      <p class="eyebrow">MusiMatch</p>
-      <h1>Impostazioni account</h1>
-      <p>Gestisci email, password e dati del tuo account.</p>
+      <div class="logo-link">
+        <a href="home.html" class="logo-link">
+          <img src="assets/img/logo.png" alt="MusiMatch">
+        </a>
+        <div>
+          <p class="eyebrow" style="margin: 0;">MusiMatch</p>
+          <h1 style="margin: 0;">Impostazioni account</h1>
+          <p style="margin: 0;">Gestisci email, password e dati del tuo account.</p>
+        </div>
+      </div>
     </div>
   </header>
 
   <main class="page-content">
+    <section class="card">
+      <h2>Foto profilo</h2>
+            <div class="avatar-settings">
+              <div class="profile-avatar small" id="settings-avatar">
+                <div class="avatar-fallback">👤</div>
+              </div>
+              <div class="avatar-actions">
+                <div class="avatar-buttons">
+                  <label class="ghost ghost-success btn-block btn-compact" style="justify-content: center;">
+                    Carica immagine
+                    <input type="file" id="settings-avatar-file" accept="image/*" style="display:none;">
+                  </label>
+                  <button type="button" class="ghost ghost-danger btn-block btn-compact" id="settings-avatar-remove">Rimuovi</button>
+                </div>
+                <p id="avatar-message" class="helper-text"></p>
+                <p class="muted small">Se rimuovi la foto, useremo automaticamente l’avatar predefinito in base allo strumento, voce tipo di ensemble selezionato.</p>
+              </div>
+            </div>
+    </section>
+
+    <section class="card" id="ensemble-location-card" style="display: none;">
+      <h2>Sede ensemble</h2>
+      <div class="stack">
+        <div class="grid">
+          <label class="field">
+            <span class="field-label">Città / paese</span>
+            <div class="autocomplete">
+              <input type="text" id="set-location-city" autocomplete="off" placeholder="es. Milano, Brescia, Bagolino">
+              <div id="set-location-suggestions" class="autocomplete-list" hidden></div>
+            </div>
+          </label>
+          <label class="field">
+            <span class="field-label">Via e numero civico</span>
+            <div class="grid" style="grid-template-columns: 2fr 1fr; gap: 0.5rem;">
+              <input type="text" id="set-location-street" placeholder="es. Via Verdi">
+              <input type="text" id="set-location-streetNumber" placeholder="es. 12B">
+            </div>
+            <span class="field-hint muted xsmall">Visibile nel profilo pubblico.</span>
+          </label>
+        </div>
+        <button type="button" id="btn-update-location" class="ghost ghost-primary">Aggiorna sede</button>
+        <p id="location-message" class="helper-text"></p>
+      </div>
+    </section>
+
     <section class="card">
       <h2>Cambia email</h2>
       <div class="stack">
@@ -33,7 +111,7 @@
             <input type="password" id="current-pwd-email" placeholder="Per confermare la modifica">
           </label>
         </div>
-        <button type="button" id="btn-update-email" class="ghost">Aggiorna email</button>
+        <button type="button" id="btn-update-email" class="ghost ghost-primary">Aggiorna email</button>
         <p id="email-message" class="helper-text"></p>
       </div>
     </section>
@@ -55,7 +133,7 @@
             <input type="password" id="new-pass-confirm" placeholder="Ripeti la password">
           </label>
         </div>
-        <button type="button" id="btn-update-pass" class="ghost">Aggiorna password</button>
+        <button type="button" id="btn-update-pass" class="ghost ghost-primary">Aggiorna password</button>
         <p id="pass-message" class="helper-text"></p>
       </div>
     </section>
@@ -63,6 +141,66 @@
     <section class="card">
       <h2>Bio e Curriculum</h2>
       <div class="stack">
+        <div class="grid">
+          <label class="field">
+            <span class="field-label" id="settings-label-instruments">Strumenti suonati</span>
+            <span class="field-hint muted xsmall">Separa gli strumenti con una virgola</span>
+            <div class="autocomplete with-clear">
+              <input type="text" id="set-instruments" placeholder="es. Chitarra, Pianoforte" autocomplete="off">
+              <button type="button" class="clear-input" id="clear-instruments" aria-label="Pulisci strumenti">✕</button>
+              <div id="set-instruments-suggestions" class="autocomplete-list" hidden></div>
+            </div>
+          </label>
+          <label class="field" id="settings-mainInstrument-field">
+            <span class="field-label" id="settings-label-mainInstrument">Strumento principale</span>
+            <div class="autocomplete with-clear">
+              <input type="text" id="set-mainInstrument" placeholder="es. Chitarra" autocomplete="off">
+              <button type="button" class="clear-input" id="clear-mainInstrument" aria-label="Pulisci strumento principale">✕</button>
+              <div id="set-mainInstrument-suggestions" class="autocomplete-list" hidden></div>
+            </div>
+          </label>
+        </div>
+        <div class="grid" id="voice-settings-fields" style="display: none;">
+          <label class="field">
+            <span class="field-label">Estensione vocale principale</span>
+            <select id="set-voiceType">
+              <option value="">Seleziona</option>
+              <option value="Soprano">Soprano</option>
+              <option value="Mezzosoprano">Mezzosoprano</option>
+              <option value="Contralto">Contralto</option>
+              <option value="Tenore">Tenore</option>
+              <option value="Baritono">Baritono</option>
+              <option value="Basso">Basso</option>
+            </select>
+          </label>
+        </div>
+        <div class="grid" id="personal-data-fields">
+          <label class="field">
+            <span class="field-label">Sesso (opzionale)</span>
+            <select id="set-gender">
+              <option value="">Preferisco non rispondere</option>
+              <option value="male">Uomo</option>
+              <option value="female">Donna</option>
+              <option value="non_binary">Non binario</option>
+            </select>
+            <div class="inline-check" style="margin-top: -0.3rem;">
+              <input type="checkbox" id="set-gender-visible">
+              <span class="muted small">Visibile nel profilo pubblico</span>
+            </div>
+          </label>
+          <label class="field">
+            <span class="field-label">Nazionalità (opzionale)</span>
+            <div class="autocomplete">
+              <input type="text" id="set-nationality" autocomplete="off" placeholder="Digita per cercare">
+              <button type="button" class="combo-toggle" id="set-nationality-toggle" aria-label="Apri elenco">▼</button>
+              <div id="set-nationality-suggestions" class="autocomplete-list" hidden></div>
+            </div>
+            <div class="inline-check" style="margin-top: -0.3rem;">
+              <input type="checkbox" id="set-nationality-visible">
+              <span class="muted small">Visibile nel profilo pubblico</span>
+            </div>
+          </label>
+        </div>
         <label class="field">
           <span class="field-label">Bio</span>
           <textarea id="set-bio" rows="3" placeholder="Breve descrizione"></textarea>
@@ -71,7 +209,7 @@
           <span class="field-label">Curriculum</span>
           <textarea id="set-cv" rows="4" placeholder="Studi, esperienze, repertorio"></textarea>
         </label>
-        <button type="button" id="btn-update-bio" class="ghost">Aggiorna Bio e Curriculum</button>
+        <button type="button" id="btn-update-bio" class="ghost ghost-primary">Aggiorna Bio e Curriculum</button>
         <p id="bio-message" class="helper-text"></p>
       </div>
     </section>
@@ -100,12 +238,16 @@
           <input type="number" id="set-rate-solo" min="0" step="1">
         </label>
       </div>
-      <button type="button" id="btn-update-rates" class="ghost">Aggiorna tariffe</button>
+      <div class="inline-check">
+        <span class="field-label">In cerca di un gruppo stabile</span>
+        <input type="checkbox" id="set-willing">
+      </div>
+      <button type="button" id="btn-update-rates" class="ghost ghost-primary btn-block">Aggiorna tariffe</button>
       <p id="rates-message" class="helper-text"></p>
     </section>
 
     <section class="card">
-      <button type="button" id="btn-logout" class="danger">Logout</button>
+      <button type="button" id="btn-logout" class="danger btn-block">Logout</button>
     </section>
   </main>
 
@@ -115,7 +257,7 @@
   <nav class="floating-nav">
     <button type="button" id="theme-toggle" class="theme-toggle" aria-label="Cambia tema">🌙</button>
     <a href="home.html">Home</a>
-    <a href="index.html">Ricerca</a>
+    <a href="ricerca.html">Ricerca</a>
     <a href="login.html" id="nav-auth">Login</a>
     <a href="settings.html" id="nav-settings" style="display: none;">Impostazioni</a>
     <a href="profile.html" id="nav-profile" style="display: none;">Profilo</a>

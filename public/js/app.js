@@ -10,23 +10,75 @@ import {
   geocodeCityName
 } from './search.js';
 
-console.log('[MusiMatch] Firebase inizializzato:', app);
+const LAST_PROFILE_NAME_KEY = 'musimatch-last-profile-name';
 
-document.addEventListener('DOMContentLoaded', () => {
-  const statusEl = document.getElementById('firebase-status');
+function slugifyInstrument(raw) {
+  if (!raw) return null;
+  const clean = raw
+    .normalize('NFD').replace(/[\u0300-\u036f]/g, '')
+    .toLowerCase()
+    .replace(/[\s_]+/g, '-')
+    .replace(/[^a-z0-9-]/g, '')
+    .replace(/-+/g, '-')
+    .replace(/^-|-$/g, '');
+  return clean || null;
+}
 
-  const isLocalhost =
-    location.hostname === 'localhost' ||
-    location.hostname === '127.0.0.1';
+function normalizeGenderSlug(raw) {
+  const g = (raw || '').toString().toLowerCase();
+  if (g === 'male' || g === 'female' || g === 'non_binary') return g;
+  return 'unknown';
+}
 
-  if (statusEl) {
-    let text = `Firebase inizializzato. Project ID: ${app.options.projectId}`;
-    text += isLocalhost
-      ? ' (EMULATORI attivi)'
-      : ' (progetto remoto)';
-    statusEl.textContent = text;
+function setLastProfileName(name) {
+  try {
+    sessionStorage.setItem(LAST_PROFILE_NAME_KEY, name || '');
+  } catch (e) {
+    // ignore
+  }
+}
+
+// Bust cache degli avatar locali automaticamente (una volta al giorno)
+const AVATAR_VERSION = (() => {
+  const key = 'musimatch-avatar-version';
+  const today = new Date().toISOString().slice(0, 10);
+  try {
+    const stored = sessionStorage.getItem(key);
+    if (stored) return stored;
+    sessionStorage.setItem(key, today);
+    return today;
+  } catch (e) {
+    return today;
+  }
+})();
+
+function buildAvatarCandidates(data, searchTarget) {
+  const base = 'assets/img/avatars';
+  const gender = normalizeGenderSlug(data?.gender);
+  const candidates = [];
+
+  if (data?.photoUrl) candidates.push(data.photoUrl);
+
+  if (searchTarget === 'ensembles') {
+    const ensembleSlug = (data?.ensembleType || '').toString().toLowerCase();
+    if (ensembleSlug) candidates.push(`${base}/avatar-ensemble/avatar-${ensembleSlug}.png?v=${AVATAR_VERSION}`);
+    candidates.push(`${base}/avatar-ensemble/avatar-ensemble.png?v=${AVATAR_VERSION}`);
+  } else {
+    if (data?.role === 'singer') {
+      candidates.push(`${base}/avatar-cantante-${gender}.png?v=${AVATAR_VERSION}`);
+      candidates.push(`${base}/avatar-cantante-unknown.png?v=${AVATAR_VERSION}`);
+    } else {
+      const instrumentSlug = data?.mainInstrumentSlug || slugifyInstrument(data?.mainInstrument || '');
+      if (instrumentSlug) candidates.push(`${base}/avatar-${instrumentSlug}-${gender}.png?v=${AVATAR_VERSION}`);
+    }
   }
 
+  candidates.push(`${base}/avatar-default/avatar-default-${gender}.png?v=${AVATAR_VERSION}`);
+  candidates.push(`${base}/avatar-default/avatar-default-unknown.png?v=${AVATAR_VERSION}`);
+  return candidates;
+}
+
+document.addEventListener('DOMContentLoaded', () => {
   // ─────────────────────────────────────────────
   // Gestione form di ricerca (test)
   // ─────────────────────────────────────────────
@@ -35,6 +87,10 @@ document.addEventListener('DOMContentLoaded', () => {
   const cityInput = document.getElementById('center-city');
   const citySuggestionBox = document.getElementById('city-suggestions');
   const instrumentField = document.getElementById('instrument-field');
+  const levelFiltersBox = document.getElementById('level-filters');
+  const levelFilterPro = document.getElementById('filter-level-pro');
+  const levelFilterAma = document.getElementById('filter-level-ama');
+  const includeSecondaryEl = document.getElementById('filter-include-secondary');
   const ensembleFilter = document.getElementById('ensemble-filter');
   const ensembleTypeSelect = document.getElementById('ensemble-type');
   const searchTargetRadios = document.querySelectorAll('input[name="search-target"]');
@@ -135,6 +191,10 @@ document.addEventListener('DOMContentLoaded', () => {
     const instrument = instrumentRaw !== '' ? instrumentRaw : null;
     const searchTarget = document.querySelector('input[name="search-target"]:checked')?.value || 'musicians';
     const ensembleType = ensembleTypeSelect ? ensembleTypeSelect.value : '';
+    const activityLevels = [];
+    if (levelFilterPro?.checked) activityLevels.push('professional');
+    if (levelFilterAma?.checked) activityLevels.push('amateur');
+    const includeSecondary = !!includeSecondaryEl?.checked;
 
     try {
       const chosenCity = findCityByName(cityList, cityName);
@@ -157,7 +217,9 @@ document.addEventListener('DOMContentLoaded', () => {
           centerLat: coords.lat,
           centerLng: coords.lng,
           radiusKm,
-          instrument
+          instrument,
+          activityLevels,
+          includeSecondary
         });
       }
 
@@ -179,6 +241,7 @@ document.addEventListener('DOMContentLoaded', () => {
         const instruments = Array.isArray(data.instruments)
           ? data.instruments.join(', ')
           : null;
+        const mainInstr = data.mainInstrument || '';
         const activityLevel = data.activityLevel === 'professional'
           ? 'Professionista'
           : data.activityLevel === 'amateur'
@@ -197,13 +260,23 @@ document.addEventListener('DOMContentLoaded', () => {
         title.href = profileUrl;
         title.textContent = data.displayName || 'Senza nome';
         title.className = 'result-title';
+        title.addEventListener('click', () => setLastProfileName(data.displayName || ''));
+        card.addEventListener('click', () => setLastProfileName(data.displayName || ''));
 
         const subtitle = document.createElement('div');
         subtitle.className = 'muted';
         if (searchTarget === 'ensembles') {
           subtitle.textContent = `${ensembleLabel} · ${loc.city || '?'} ${loc.province ? '(' + loc.province + ')' : ''}`;
         } else {
-          subtitle.textContent = `${instruments || 'strumento non indicato'} · ${activityLevel || ''} · ${loc.city || '?'} ${loc.province ? '(' + loc.province + ')' : ''}`;
+          const secondary = Array.isArray(data.instruments)
+            ? data.instruments.filter((inst) => inst && inst !== mainInstr)
+            : [];
+          const secondaryText = secondary.length ? secondary.join(', ') : '—';
+          subtitle.innerHTML = `
+            <div><strong>${mainInstr || 'Strumento non indicato'}</strong> · ${activityLevel || '—'}</div>
+            <div>Altri: ${secondaryText}</div>
+            <div>Residente in: ${loc.city || '?'} ${loc.province ? '(' + loc.province + ')' : ''}</div>
+          `;
         }
 
         const meta = document.createElement('div');
@@ -212,6 +285,21 @@ document.addEventListener('DOMContentLoaded', () => {
 
         const thumb = document.createElement('div');
         thumb.className = 'avatar-placeholder';
+        const img = document.createElement('img');
+        img.alt = data.displayName || 'Avatar';
+        const avatarQueue = buildAvatarCandidates(data, searchTarget);
+        const applyNext = () => {
+          const next = avatarQueue.shift();
+          if (!next) {
+            img.remove();
+            thumb.textContent = '👤';
+            return;
+          }
+          img.onerror = applyNext;
+          img.src = next;
+          thumb.appendChild(img);
+        };
+        applyNext();
 
         const body = document.createElement('div');
         body.className = 'result-body';
