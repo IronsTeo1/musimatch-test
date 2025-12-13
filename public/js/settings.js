@@ -72,6 +72,37 @@ const btnLogout = document.getElementById('btn-logout');
 
 let currentUserType = null;
 let cityList = [];
+const AVATAR_ROOT = '/assets/img/avatars';
+const AVATAR_VERSION = Date.now().toString();
+
+function normalizeGenderSlug(raw) {
+  const g = (raw || '').toString().toLowerCase();
+  if (g === 'male' || g === 'female' || g === 'non_binary') return g;
+  return 'unknown';
+}
+
+function buildAvatarPath({ nameParts = [] }) {
+  const name = ['avatar', ...nameParts.filter(Boolean)].join('-');
+  return `${AVATAR_ROOT}/${name}.png?v=${AVATAR_VERSION}`;
+}
+
+function pickPreferredAvatarUrl(data = {}) {
+  const gender = normalizeGenderSlug(data.gender);
+  const instrumentSlug =
+    data.mainInstrumentSlug ||
+    slugifyInstrument(data.mainInstrument || '') ||
+    (Array.isArray(data.instruments) && data.instruments.length ? slugifyInstrument(data.instruments[0]) : '');
+  const urls = [];
+  if (data.photoUrl) urls.push(data.photoUrl);
+  if (data.photoURL) urls.push(data.photoURL);
+  if (data.avatarUrl) urls.push(data.avatarUrl);
+  const aliases = { voce: 'cantante', vocalist: 'cantante', flauto: 'flute', corno: 'corno-francese', 'corno-francese': 'corno-francese' };
+  const variant = aliases[instrumentSlug] || instrumentSlug;
+  if (variant) urls.push(buildAvatarPath({ nameParts: [variant, gender] }));
+  urls.push(buildAvatarPath({ nameParts: ['default', gender] }));
+  urls.push(buildAvatarPath({ nameParts: ['default'] }));
+  return urls.find(Boolean) || null;
+}
 
 function applyEnsembleVisibility() {
   const isEnsemble = currentUserType === 'ensemble';
@@ -520,7 +551,12 @@ onAuthStateChanged(auth, async (user) => {
       if (nationalityEl) nationalityEl.value = docData.data.nationality || '';
       if (nationalityVisibleEl) nationalityVisibleEl.checked = !!docData.data.nationalityVisible;
       if (willingEl) willingEl.checked = !!docData.data.willingToJoinForFree;
-      if (docData.data.photoUrl) setAvatarPreview(docData.data.photoUrl);
+      const avatarUrl =
+        docData.data.photoUrl ||
+        docData.data.photoURL ||
+        docData.data.avatarUrl ||
+        pickPreferredAvatarUrl(docData.data);
+      if (avatarUrl) setAvatarPreview(avatarUrl);
       if (setInstrumentsEl && Array.isArray(docData.data.instruments)) {
         setInstrumentsEl.value = docData.data.instruments.join(', ');
       }

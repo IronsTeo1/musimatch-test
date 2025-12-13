@@ -39,8 +39,8 @@
 <body>
   <header class="page-header">
     <div class="logo-link">
-      <a href="home.html" class="logo-link">
-        <img src="assets/img/logo.png" alt="MusiMatch">
+      <a href="home.html" class="logo-img">
+        <img src="assets/img/logo.png?v=2" alt="MusiMatch">
       </a>
       <div>
         <p class="eyebrow" style="margin: 0;">MusiMatch</p>
@@ -57,9 +57,15 @@
           <div class="profile-avatar" id="profile-avatar">
             <div class="avatar-fallback">👤</div>
           </div>
+          <button type="button" class="ghost btn-full rates-btn" id="rates-open-modal">Tariffe</button>
         </div>
-        <div>
+        <div class="profile-name-block">
           <h2 id="profile-title" style="margin: 0; display: none;"></h2>
+          <div class="profile-meta small muted" id="profile-meta" aria-live="polite">
+            <span class="meta-item" id="profile-mainInstrument"></span>
+            <span class="meta-item" id="profile-level"></span>
+            <span class="meta-item" id="profile-location"></span>
+          </div>
         </div>
       </div>
 
@@ -69,75 +75,120 @@
           <img id="avatar-modal-img" alt="Foto profilo">
         </div>
       </div>
-      <div class="stack">
-        <div class="grid">
-          <div class="field">
-            <span class="field-label" id="profile-label-mainInstrument">Strumento / voce principale</span>
-            <p id="profile-mainInstrument" class="muted"></p>
-          </div>
-          <div class="field">
-            <span class="field-label" id="profile-label-instruments">Strumenti suonati</span>
-            <p id="profile-instruments" class="muted"></p>
-          </div>
-          <div class="field">
-            <span class="field-label">Livello</span>
-            <p id="profile-level" class="muted"></p>
-          </div>
-          <div class="field">
-            <span class="field-label">Città / paese</span>
-            <p id="profile-location" class="muted"></p>
-          </div>
-          <div class="field">
-            <span class="field-label">Distanza massima (km)</span>
-            <p id="profile-maxTravel" class="muted"></p>
-          </div>
-          <div class="field" id="profile-gender-field">
-            <span class="field-label">Genere</span>
-            <p id="profile-gender" class="muted"></p>
-          </div>
-          <div class="field" id="profile-nationality-field">
-            <span class="field-label">Nazionalità</span>
-            <p id="profile-nationality" class="muted"></p>
-          </div>
-        </div>
-
+      <div class="grid profile-details-grid">
         <div class="field">
+          <span class="field-label">Distanza massima (km)</span>
+          <p id="profile-maxTravel" class="muted"></p>
+        </div>
+        <div class="field" id="profile-gender-field">
+          <span class="field-label">Genere</span>
+          <p id="profile-gender" class="muted"></p>
+        </div>
+        <div class="field" id="profile-nationality-field">
+          <span class="field-label">Nazionalità</span>
+          <p id="profile-nationality" class="muted"></p>
+        </div>
+        <div class="field" style="display: flex; align-items: center; gap: 0.35rem;">
+          <span class="field-label" style="white-space: nowrap;">Disponibile a unirsi a un gruppo</span>
+          <p id="profile-willing" class="muted" style="margin: 0;"></p>
+        </div>
+        <div class="field field-wide">
           <span class="field-label">Bio</span>
           <p id="profile-bio" class="muted"></p>
         </div>
-
-        <div class="field">
+        <div class="field field-wide">
           <span class="field-label">Curriculum</span>
           <p id="profile-cv" class="muted"></p>
         </div>
-
-        <div class="field">
-          <span class="field-label">Disponibile a unirsi a un gruppo</span>
-          <p id="profile-willing" class="muted"></p>
-        </div>
-
-        <p id="profile-message" class="helper-text"></p>
       </div>
+      <p id="profile-message" class="helper-text"></p>
     </section>
+
+    <button type="button" class="primary btn-full" id="post-open-modal" aria-haspopup="dialog" style="align-self: flex-start; display: none;">Crea annuncio</button>
 
     <section class="card" id="profile-posts-card">
-      <div class="inline-header" style="justify-content: space-between; align-items: baseline;">
-        <div>
-          <p class="eyebrow" style="margin: 0;">Annunci pubblicati</p>
-          <h3 style="margin: 0;">Annunci</h3>
-        </div>
-      </div>
       <div id="profile-posts-list" class="stack">
-        <p class="muted" id="profile-posts-empty" style="margin: 0;">Pubblica un annuncio dalla home per vederlo qui.</p>
+        <p class="muted" id="profile-posts-empty" style="margin: 0;">Pubblica un annuncio per vederlo in questa sezione</p>
       </div>
     </section>
 
-    <section class="card">
-      <h2>Tariffe</h2>
-      <ul id="rates-list" class="muted"></ul>
-    </section>
+    <div id="post-modal" class="modal" role="dialog" aria-modal="true" aria-labelledby="post-modal-title" aria-hidden="true">
+      <div class="modal-backdrop"></div>
+      <div class="modal-dialog">
+        <section class="card" style="position: relative;">
+          <button type="button" class="ghost ghost-primary btn-compact modal-close" id="post-close-modal" aria-label="Chiudi">✕</button>
+          <div class="inline-header" style="align-items: flex-end; gap: 0.5rem; flex-wrap: wrap;">
+            <h3 style="margin: 0;" id="post-modal-title">Crea un annuncio</h3>
+            <p class="muted helper-text" style="margin: 0;">Se non scegli altro, l’annuncio sarà visibile solo a chi è vicino a te.</p>
+          </div>
+          <div class="stack" style="margin-top: 0.75rem;">
+            <label class="field">
+              <span class="field-label">Testo annuncio</span>
+              <textarea id="post-text" rows="3" maxlength="800" placeholder="Es. Cerco pianista per trio, prove serali zona centro."></textarea>
+            </label>
+            <label class="field">
+              <span class="field-label">Mostra l’annuncio anche in un’altra città (opzionale)</span>
+              <p class="helper-text" style="margin: 0.15rem 0 0.25rem;">Seleziona una città diversa per far comparire il post anche a chi abita lì.</p>
+              <div class="autocomplete with-clear">
+                <input type="text" id="post-target-city" autocomplete="off" placeholder="Es. Milano, Bologna, Firenze" />
+                <div id="post-target-city-suggestions" class="autocomplete-list" hidden></div>
+              </div>
+            </label>
+            <div class="grid">
+            <div class="grid">
+              <label class="field">
+                <span class="field-label">Strumenti richiesti (opzionale)</span>
+                <div class="autocomplete with-clear">
+                  <input type="text" id="post-instruments" autocomplete="off" placeholder="Digita e premi virgola per aggiungere" />
+                  <div id="post-instruments-suggestions" class="autocomplete-list" hidden></div>
+                </div>
+              </label>
+              <label class="field">
+                <span class="field-label">Voci richieste (opzionale)</span>
+                <div class="autocomplete with-clear">
+                  <input type="text" id="post-voices" readonly placeholder="Seleziona voci">
+                  <button type="button" class="clear-input" id="post-voices-clear" aria-label="Pulisci voci" hidden>✕</button>
+                  <div id="post-voices-suggestions" class="autocomplete-list" hidden></div>
+                </div>
+              </label>
+            </div>
+            </div>
+            <button type="button" class="ghost ghost-primary" id="post-submit">Pubblica annuncio</button>
+            <p id="post-message" class="helper-text"></p>
+          </div>
+        </section>
+      </div>
+    </div>
 
   </main>
+
+  <div id="rates-modal" class="modal" role="dialog" aria-modal="true" aria-labelledby="rates-modal-title" aria-hidden="true">
+    <div class="modal-backdrop"></div>
+    <div class="modal-dialog modal-compact">
+      <section class="card" style="position: relative;">
+        <button type="button" class="ghost ghost-primary btn-compact modal-close" id="rates-close-modal" aria-label="Chiudi tariffe">✕</button>
+        <div class="inline-header" style="align-items: flex-end; gap: 0.5rem; flex-wrap: wrap;">
+          <h3 style="margin: 0;" id="rates-modal-title">Tariffe</h3>
+          <p class="muted helper-text" style="margin: 0;">Consulta le tariffe impostate per questo profilo.</p>
+        </div>
+        <div class="table-wrapper" style="margin-top: 0.75rem;">
+          <table class="rates-table">
+            <thead>
+              <tr>
+                <th>Voce</th>
+                <th>Importo</th>
+              </tr>
+            </thead>
+            <tbody id="rates-table-body">
+              <tr>
+                <td colspan="2" class="muted">Tariffe non impostate.</td>
+              </tr>
+            </tbody>
+          </table>
+        </div>
+      </section>
+    </div>
+  </div>
 
   <script type="module" src="js/theme.js"></script>
   <script type="module" src="js/nav.js"></script>

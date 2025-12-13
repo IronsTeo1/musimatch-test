@@ -75,11 +75,27 @@ let cityList = [];
 let cityListLoaded = false;
 let postModalOpen = false;
 let ratesModalOpen = false;
+let editingPostId = null;
+let editingPostData = null;
 
 const avatarContainer = document.getElementById('profile-avatar');
 const avatarModal = document.getElementById('avatar-modal');
 const avatarModalImg = document.getElementById('avatar-modal-img');
 const avatarModalClose = document.getElementById('avatar-modal-close');
+const postModalElement = document.getElementById('post-modal');
+const ratesModalElement = document.getElementById('rates-modal');
+
+// Assicura che il modal annuncio del profilo sia chiuso al load
+if (postModalElement && postModalElement.getAttribute('aria-hidden') !== 'false') {
+  postModalElement.style.display = 'none';
+  postModalElement.style.visibility = 'hidden';
+  postModalElement.style.pointerEvents = 'none';
+}
+if (ratesModalElement && ratesModalElement.getAttribute('aria-hidden') !== 'false') {
+  ratesModalElement.style.display = 'grid';
+  ratesModalElement.style.visibility = 'hidden';
+  ratesModalElement.style.pointerEvents = 'none';
+}
 
 if (titleEl) {
   titleEl.style.display = 'none';
@@ -94,19 +110,8 @@ function clearLastProfileName() {
   }
 }
 
-// Bust cache degli avatar locali automaticamente (una volta al giorno)
-const AVATAR_VERSION = (() => {
-  const key = 'musimatch-avatar-version';
-  const today = new Date().toISOString().slice(0, 10);
-  try {
-    const stored = sessionStorage.getItem(key);
-    if (stored) return stored;
-    sessionStorage.setItem(key, today);
-    return today;
-  } catch (e) {
-    return today;
-  }
-})();
+// Bust cache avatar: forza refresh ad ogni load
+const AVATAR_VERSION = Date.now().toString();
 
 function setMessage(text, isError = false) {
   if (!msgEl) return;
@@ -176,35 +181,119 @@ const VOICE_OPTIONS = [
 ];
 
 function buildPostProfileUrl(post) {
-  const profileId = post?.authorUserId || post?.authorUid || targetProfileId || '';
+  const cachedId = post?.authorUid ? authUidToUserId.get(post.authorUid) : null;
+  const profileId = post?.authorUserId || cachedId || post?.authorUid || targetProfileId || '';
   return profileId ? `profile.html?id=${profileId}` : 'profile.html';
 }
 
-function createPostAvatar(name, url, profileUrl) {
-  const avatarLink = document.createElement('a');
-  avatarLink.href = profileUrl;
-  avatarLink.className = 'post-avatar';
-  avatarLink.title = name || 'Profilo';
-  const fallbackChar = ((name || 'M').trim()[0] || 'M').toUpperCase();
+const authorPhotoCache = new Map();
+const authorProfileCache = new Map();
+const authUidToUserId = new Map();
 
-  const addFallback = () => {
-    avatarLink.innerHTML = '';
-    const fallback = document.createElement('span');
-    fallback.className = 'avatar-fallback';
-    fallback.textContent = fallbackChar;
-    avatarLink.appendChild(fallback);
-  };
+async function fetchUserDocByAuthUid(authUid) {
+  const usersCol = collection(db, 'users');
+  const q = query(usersCol, where('authUid', '==', authUid));
+  const snap = await getDocs(q);
+  if (snap.empty) return null;
+  const docSnap = snap.docs[0];
+  authUidToUserId.set(authUid, docSnap.id);
+  return { id: docSnap.id, data: docSnap.data() };
+}
+
+async function resolveAuthorProfile(post) {
+  const cacheKey = post?.id || `${post?.authorUserId || ''}-${post?.authorUid || ''}`;
+  if (authorProfileCache.has(cacheKey)) return authorProfileCache.get(cacheKey);
+  let userDoc = null;
+  const directId = post?.authorUserId || targetProfileId;
+  const authUid = post?.authorUid;
+  try {
+    if (directId) {
+      const snap = await getDoc(doc(db, 'users', directId));
+      if (snap.exists()) userDoc = { id: snap.id, data: snap.data() };
+    }
+    if (!userDoc && authUid) {
+      const cached = authUidToUserId.get(authUid);
+      if (cached) {
+        const snap = await getDoc(doc(db, 'users', cached));
+        if (snap.exists()) userDoc = { id: snap.id, data: snap.data() };
+      }
+    }
+    if (!userDoc && authUid) {
+      userDoc = await fetchUserDocByAuthUid(authUid);
+    }
+  } catch (err) {
+    console.error('[MusiMatch] Errore recupero profilo autore (profilo):', err);
+  }
+  authorProfileCache.set(cacheKey, userDoc);
+  return userDoc;
+}
+
+async function ensureAuthorPhoto(post) {
+  const key = post?.authorUserId || post?.authorUid || post?.id || targetProfileId;
+  if (!key) return null;
+  if (authorPhotoCache.has(key)) return authorPhotoCache.get(key);
+  const userDoc = await resolveAuthorProfile(post);
+  let url = null;
+  if (userDoc?.data) {
+    const fallback = pickPreferredAvatarUrl(userDoc.data);
+    url = userDoc.data.photoUrl || userDoc.data.photoURL || userDoc.data.avatarUrl || fallback || null;
+  }
+  authorPhotoCache.set(key, url);
+  return url;
+}
+
+async function hydrateAuthor(post, avatarEl, profileLinks = []) {
+  const authorName = post?.authorName || 'Profilo';
+  const userDoc = await resolveAuthorProfile(post);
+  const resolvedId = userDoc?.id || post?.authorUserId || authUidToUserId.get(post?.authorUid) || post?.authorUid || targetProfileId || '';
+  if (resolvedId) {
+    const newProfileUrl = buildPostProfileUrl({ ...post, authorUserId: resolvedId });
+    profileLinks.forEach((link) => {
+      if (link) link.href = newProfileUrl;
+    });
+  }
+  const photoCandidates = userDoc?.data ? resolveAvatarUrls(userDoc.data) : [];
+  if (photoCandidates.length && avatarEl) setInlineAvatarImage(avatarEl, photoCandidates, authorName);
+}
+
+function createPostAvatar(name, url) {
+  const avatar = document.createElement('div');
+  avatar.className = 'post-avatar';
+  avatar.title = name || 'Profilo';
+  const fallbackChar = ((name || 'M').trim()[0] || 'M').toUpperCase();
 
   if (url) {
     const img = document.createElement('img');
     img.src = url;
     img.alt = name || 'Avatar';
-    img.onerror = addFallback;
-    avatarLink.appendChild(img);
+    avatar.appendChild(img);
   } else {
-    addFallback();
+    const fallback = document.createElement('span');
+    fallback.className = 'avatar-fallback';
+    fallback.textContent = fallbackChar;
+    avatar.appendChild(fallback);
   }
-  return avatarLink;
+  return avatar;
+}
+
+function setInlineAvatarImage(linkEl, urls, name) {
+  if (!linkEl) return;
+  const queue = Array.isArray(urls) ? urls.filter(Boolean) : [urls].filter(Boolean);
+  if (queue.length === 0) return;
+  const tryNext = () => {
+    const nextUrl = queue.shift();
+    if (!nextUrl) return;
+    const img = new Image();
+    img.alt = name || 'Avatar';
+    img.onload = () => {
+      linkEl.innerHTML = '';
+      img.className = '';
+      linkEl.appendChild(img);
+    };
+    img.onerror = tryNext;
+    img.src = nextUrl;
+  };
+  tryNext();
 }
 
 function renderInstrumentChips() {
@@ -349,7 +438,7 @@ function hasTrumpetSelected({ mainInstrument, instruments = [] }) {
   return mainInstrument === target || instruments.includes(target);
 }
 
-const AVATAR_ROOT = 'assets/img/avatars';
+const AVATAR_ROOT = '/assets/img/avatars';
 
 function buildAvatarPath({ folder = '', nameParts = [] }) {
   const segments = [AVATAR_ROOT];
@@ -360,7 +449,10 @@ function buildAvatarPath({ folder = '', nameParts = [] }) {
 
 function resolveAvatarUrls(data) {
   const genderSlug = normalizeGenderSlug(data?.gender);
-  const instrumentSlug = data?.mainInstrumentSlug || slugifyInstrument(data?.mainInstrument || '');
+  const instrumentSlug =
+    data?.mainInstrumentSlug ||
+    slugifyInstrument(data?.mainInstrument || '') ||
+    (Array.isArray(data?.instruments) && data.instruments.length ? slugifyInstrument(data.instruments[0]) : '');
   const slugAliases = {
     flauto: 'flute',
     corno: 'corno-francese',
@@ -372,10 +464,12 @@ function resolveAvatarUrls(data) {
     'clarinetto-basso': 'clarinetto',
     chitarra: 'chitarra-classica',
     cornetta: 'tromba',
-    flicorno: 'tromba'
+    flicorno: 'tromba',
+    voce: 'cantante',
+    vocalist: 'cantante'
   };
   const instrumentVariants = [];
-  if (data?.role === 'singer') {
+  if (data?.role === 'singer' || data?.voiceType) {
     instrumentVariants.push('cantante');
   } else {
     if (instrumentSlug) instrumentVariants.push(instrumentSlug);
@@ -385,6 +479,8 @@ function resolveAvatarUrls(data) {
   }
   const urls = [];
   if (data?.photoUrl) urls.push(data.photoUrl);
+  if (data?.photoURL) urls.push(data.photoURL);
+  if (data?.avatarUrl) urls.push(data.avatarUrl);
 
   if (data?.userType === 'ensemble') {
     const ensembleSlug = (data.ensembleType || '').toString().toLowerCase();
@@ -399,6 +495,11 @@ function resolveAvatarUrls(data) {
   urls.push(buildAvatarPath({ folder: 'avatar-default', nameParts: ['default', genderSlug] }));
   urls.push(buildAvatarPath({ folder: 'avatar-default', nameParts: ['default'] }));
   return urls.filter(Boolean);
+}
+
+function pickPreferredAvatarUrl(data) {
+  const urls = resolveAvatarUrls(data || {});
+  return urls.length ? urls[0] : null;
 }
 
 function updatePageHeading(data, isOwnProfile) {
@@ -498,9 +599,7 @@ function buildProfilePostMenu(post) {
     menu.appendChild(item);
   };
 
-  addItem('Modifica', () => {
-    window.location.href = `home.html?edit=${post.id}`;
-  });
+  addItem('Modifica', () => startEditProfilePost(post));
   const resolvedLabel = post.resolved ? 'Togli il badge "Risolto"' : 'Segna come risolto';
   addItem(resolvedLabel, () => toggleProfilePostResolved(post));
   addItem('Elimina', () => deleteProfilePost(post));
@@ -564,6 +663,20 @@ async function deleteProfilePost(post) {
   }
 }
 
+function startEditProfilePost(post) {
+  if (!post || !viewingOwnProfile) return;
+  editingPostId = post.id;
+  editingPostData = post;
+  if (postTextEl) postTextEl.value = post.body || '';
+  selectedInstruments = (post.instrumentsWanted || []).filter(Boolean);
+  selectedVoices = (post.voicesWanted || []).filter(Boolean);
+  renderInstrumentChips();
+  renderVoiceChips();
+  if (postTargetCityEl) postTargetCityEl.value = post.location?.city || '';
+  if (postSubmitBtn) postSubmitBtn.textContent = 'Salva modifiche';
+  openPostModal();
+}
+
 function renderProfilePosts(posts) {
   if (!profilePostsListEl) return;
   profilePostsListEl.innerHTML = '';
@@ -580,13 +693,11 @@ function renderProfilePosts(posts) {
     card.className = 'result-card';
     if (post.resolved) card.classList.add('post-resolved');
 
-    const topRow = document.createElement('div');
-    topRow.className = 'card-top-row';
     if (post.resolved) {
       const resolved = document.createElement('span');
-      resolved.className = 'badge badge-success';
-      resolved.textContent = 'Risolto';
-      topRow.appendChild(resolved);
+      resolved.className = 'badge badge-success badge-floating';
+      resolved.textContent = '✓';
+      card.appendChild(resolved);
     }
 
     const heading = document.createElement('div');
@@ -594,37 +705,45 @@ function renderProfilePosts(posts) {
     const loc = post.location || {};
     const createdDate = post.createdAt?.toDate ? post.createdAt.toDate() : (post.createdAt instanceof Date ? post.createdAt : null);
     const profileUrl = buildPostProfileUrl(post);
-    const author = document.createElement('div');
-    author.className = 'post-author';
-    const avatar = createPostAvatar(post.authorName, post.authorPhotoUrl || dataCache?.photoUrl, profileUrl);
-    const authorLink = document.createElement('a');
-    authorLink.className = 'post-author-text post-author-link';
-    authorLink.href = profileUrl;
-    authorLink.title = post.authorName || 'Profilo';
+    const displayName = post.authorName || 'Profilo';
+    const authorWrapper = document.createElement('div');
+    authorWrapper.className = 'post-author';
+
+    const avatarLink = document.createElement('a');
+    avatarLink.className = 'post-avatar-link';
+    avatarLink.href = profileUrl;
+    avatarLink.title = displayName;
+    avatarLink.setAttribute('aria-label', `Apri il profilo di ${displayName}`);
+    const initialAvatarUrl = post.authorPhotoUrl || dataCache?.photoUrl || pickPreferredAvatarUrl(dataCache);
+    const avatar = createPostAvatar(displayName, initialAvatarUrl);
+    avatarLink.appendChild(avatar);
+
+    const authorText = document.createElement('div');
+    authorText.className = 'post-author-text';
     const eyebrow = document.createElement('p');
     eyebrow.className = 'eyebrow';
     eyebrow.style.margin = '0';
     eyebrow.textContent = post.authorType === 'ensemble' ? 'Ensemble' : 'Musicista';
-    const nameEl = document.createElement('span');
-    nameEl.className = 'post-author-name';
-    nameEl.textContent = post.authorName || 'Profilo';
+    const nameLink = document.createElement('a');
+    nameLink.className = 'post-author-name post-author-name-link';
+    nameLink.href = profileUrl;
+    nameLink.title = displayName;
+    nameLink.setAttribute('aria-label', `Apri il profilo di ${displayName}`);
+    nameLink.textContent = displayName;
     const cityLine = document.createElement('p');
     cityLine.className = 'post-author-city muted xsmall';
     cityLine.style.margin = '0';
     cityLine.textContent = `${loc.city || '—'}${loc.province ? ' (' + loc.province + ')' : ''}`;
-    authorLink.appendChild(eyebrow);
-    authorLink.appendChild(nameEl);
-    authorLink.appendChild(cityLine);
-    author.appendChild(avatar);
-    author.appendChild(authorLink);
+    authorText.appendChild(eyebrow);
+    authorText.appendChild(nameLink);
+    authorText.appendChild(cityLine);
 
-    const meta = document.createElement('div');
-    meta.className = 'muted small';
-    meta.style.marginLeft = 'auto';
-    meta.textContent = createdDate ? formatDateTime(createdDate) : '';
+    authorWrapper.appendChild(avatarLink);
+    authorWrapper.appendChild(authorText);
 
-    heading.appendChild(author);
-    heading.appendChild(meta);
+    hydrateAuthor(post, avatar, [nameLink, avatarLink]);
+
+    heading.appendChild(authorWrapper);
     const menu = buildProfilePostMenu(post);
     if (menu) heading.appendChild(menu);
 
@@ -653,7 +772,6 @@ function renderProfilePosts(posts) {
     footer.appendChild(tags);
     footer.appendChild(timeEl);
 
-    if (post.resolved) card.appendChild(topRow);
     card.appendChild(heading);
     card.appendChild(body);
     card.appendChild(footer);
@@ -809,12 +927,22 @@ function resetPostForm({ keepMessage = false } = {}) {
   selectedVoices = [];
   renderInstrumentChips();
   renderVoiceChips();
+  editingPostId = null;
+  editingPostData = null;
+  if (postSubmitBtn) postSubmitBtn.textContent = 'Pubblica annuncio';
   if (!keepMessage) setPostMessage('');
 }
 
 function openPostModal() {
   if (!postModal || !canPublishFromProfile()) return;
-  postModal.setAttribute('aria-hidden', 'false');
+  postModal.style.display = 'grid';
+  postModal.style.visibility = 'visible';
+  postModal.style.pointerEvents = 'auto';
+  // reset stato chiuso e poi trigghiamo l'animazione nel frame successivo
+  postModal.setAttribute('aria-hidden', 'true');
+  requestAnimationFrame(() => {
+    postModal.setAttribute('aria-hidden', 'false');
+  });
   postModalOpen = true;
   if (postTextEl) {
     setTimeout(() => postTextEl.focus({ preventScroll: true }), 50);
@@ -823,14 +951,37 @@ function openPostModal() {
 
 function closePostModal() {
   if (!postModal) return;
+  const active = document.activeElement;
+  if (active && postModal.contains(active) && typeof active.blur === 'function') {
+    active.blur();
+  }
+  if (postTargetCitySuggestionsEl) postTargetCitySuggestionsEl.hidden = true;
+  if (postVoicesSuggestionsEl) postVoicesSuggestionsEl.hidden = true;
+  if (postInstrumentsSuggestionsEl) postInstrumentsSuggestionsEl.hidden = true;
   postModal.setAttribute('aria-hidden', 'true');
   postModalOpen = false;
+  postModal.style.visibility = 'hidden';
+  postModal.style.pointerEvents = 'none';
+  setTimeout(() => {
+    if (postModal.getAttribute('aria-hidden') === 'true') {
+      postModal.style.display = 'none';
+    }
+  }, 260);
+  if (postOpenModalBtn && typeof postOpenModalBtn.focus === 'function') {
+    postOpenModalBtn.focus({ preventScroll: true });
+  }
 }
 
 function openRatesModal() {
   if (!ratesModal) return;
-  ratesModal.setAttribute('aria-hidden', 'false');
-  ratesModal.classList.add('open');
+  ratesModal.style.display = 'grid';
+  ratesModal.style.visibility = 'visible';
+  ratesModal.style.pointerEvents = 'auto';
+  ratesModal.setAttribute('aria-hidden', 'true');
+  requestAnimationFrame(() => {
+    ratesModal.setAttribute('aria-hidden', 'false');
+    ratesModal.classList.add('open');
+  });
   ratesModalOpen = true;
 }
 
@@ -839,6 +990,13 @@ function closeRatesModal() {
   ratesModal.setAttribute('aria-hidden', 'true');
   ratesModal.classList.remove('open');
   ratesModalOpen = false;
+  ratesModal.style.visibility = 'hidden';
+  ratesModal.style.pointerEvents = 'none';
+  setTimeout(() => {
+    if (ratesModal.getAttribute('aria-hidden') === 'true') {
+      ratesModal.style.display = 'none';
+    }
+  }, 260);
 }
 
 async function publishProfilePost() {
@@ -896,13 +1054,34 @@ async function publishProfilePost() {
     lat: loc.lat,
     lng: loc.lng
   };
+  const profileData = dataCache || {};
+  const authorAvatarUrl =
+    profileData.photoUrl ||
+    profileData.photoURL ||
+    profileData.avatarUrl ||
+    pickPreferredAvatarUrl(profileData) ||
+    '';
 
   const payload = {
     authorUid: auth.currentUser.uid,
     authorUserId: targetProfileId,
     authorName: dataCache?.displayName || '',
     authorType: dataCache?.userType || 'musician',
-    authorPhotoUrl: dataCache?.photoUrl || '',
+    authorPhotoUrl: authorAvatarUrl,
+    authorAvatarUrl,
+    authorProfileData: {
+      userType: profileData.userType || 'musician',
+      role: profileData.role || '',
+      gender: profileData.gender || '',
+      mainInstrument: profileData.mainInstrument || '',
+      mainInstrumentSlug: profileData.mainInstrumentSlug || '',
+      instruments: Array.isArray(profileData.instruments) ? profileData.instruments : [],
+      voiceType: profileData.voiceType || '',
+      ensembleType: profileData.ensembleType || '',
+      photoUrl: profileData.photoUrl || '',
+      photoURL: profileData.photoURL || '',
+      avatarUrl: profileData.avatarUrl || ''
+    },
     body,
     instrumentsWanted: instruments.length ? instruments : null,
     voicesWanted: voices.length ? voices : null,
@@ -913,11 +1092,20 @@ async function publishProfilePost() {
   };
 
   try {
-    await addDoc(collection(db, 'posts'), {
-      ...payload,
-      createdAt: serverTimestamp()
-    });
-    setPostMessage('Annuncio pubblicato.');
+    if (editingPostId) {
+      const { createdAt: _omit, ...updateData } = payload;
+      await updateDoc(doc(db, 'posts', editingPostId), {
+        ...updateData,
+        updatedAt: serverTimestamp()
+      });
+      setPostMessage('Annuncio aggiornato.');
+    } else {
+      await addDoc(collection(db, 'posts'), {
+        ...payload,
+        createdAt: serverTimestamp()
+      });
+      setPostMessage('Annuncio pubblicato.');
+    }
     resetPostForm({ keepMessage: true });
     closePostModal();
     loadProfilePosts(targetProfileId);
@@ -927,7 +1115,7 @@ async function publishProfilePost() {
   }
 }
 
-function setAvatarImage(urls = []) {
+function setProfileAvatarImage(urls = []) {
   if (!avatarContainer) return;
   let img = avatarContainer.querySelector('img');
   const fallback = avatarContainer.querySelector('.avatar-fallback');
@@ -996,7 +1184,7 @@ function guard(user) {
       }
       populateForm(targetDoc.data);
       const avatarUrls = resolveAvatarUrls(targetDoc.data);
-      setAvatarImage(avatarUrls);
+      setProfileAvatarImage(avatarUrls);
       loadProfilePosts(targetDoc.id);
     } catch (err) {
       console.error('[MusiMatch] Errore caricamento profilo:', err);

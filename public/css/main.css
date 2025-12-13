@@ -275,39 +275,47 @@ h2 {
 .modal {
   position: fixed;
   inset: 0;
-  display: grid;
+  display: none;
   place-items: center;
   padding: 1rem;
   background: rgba(0, 0, 0, 0.45);
   backdrop-filter: blur(4px);
   opacity: 0;
   pointer-events: none;
-  transition: opacity 0.18s ease;
+  visibility: hidden;
+  transition: opacity 0.22s ease, visibility 0.22s ease;
   z-index: 20;
 }
 
 .modal[aria-hidden="true"] {
-  display: none;
   opacity: 0;
+  visibility: hidden;
   pointer-events: none;
+}
+
+.modal[aria-hidden="true"] .modal-dialog {
+  transform: translateY(14px) scale(0.92);
+  opacity: 0;
 }
 
 .modal[aria-hidden="false"] {
   display: grid;
   opacity: 1;
+  visibility: visible;
   pointer-events: auto;
 }
 
 .modal.open {
   display: grid;
   opacity: 1;
+  visibility: visible;
   pointer-events: auto;
 }
 
 .modal-dialog {
   width: min(680px, 100%);
-  transform: translateY(12px) scale(0.99);
-  transition: transform 0.22s ease, opacity 0.22s ease;
+  transform: translateY(14px) scale(0.92);
+  transition: transform 0.26s ease, opacity 0.26s ease;
   opacity: 0;
 }
 
@@ -315,14 +323,15 @@ h2 {
   width: min(480px, 100%);
 }
 
-.modal[aria-hidden="false"] .modal-dialog {
-  transform: translateY(0) scale(1);
+.modal[aria-hidden="false"] .modal-dialog,
+.modal.open .modal-dialog {
+  transform: translateY(0) scale(1.04);
   opacity: 1;
 }
 
-.modal.open .modal-dialog {
-  transform: translateY(0) scale(1);
-  opacity: 1;
+.modal[aria-hidden="true"] .modal-dialog {
+  transform: translateY(14px) scale(0.92);
+  opacity: 0;
 }
 
 .modal-backdrop {
@@ -334,6 +343,13 @@ h2 {
   background: transparent;
   z-index: 0;
   pointer-events: none;
+  opacity: 0;
+  transition: opacity 0.24s ease;
+}
+
+.modal[aria-hidden="false"] > .modal-backdrop,
+.modal.open > .modal-backdrop {
+  opacity: 1;
 }
 
 .modal > .modal-dialog {
@@ -607,6 +623,10 @@ small {
   transform: translateY(-1px);
   border-color: var(--primary);
   box-shadow: 0 8px 20px rgba(0, 0, 0, 0.08);
+}
+
+.btn-create-post {
+  margin-bottom: 1rem;
 }
 
 /* ──────────────────────────────────────── */

@@ -18,6 +18,10 @@
   color: var(--text);
 }
 
+.logo-link .logo-img {
+  display: inline-flex;
+}
+
 .logo-link img {
   width: 40px;
   height: 40px;
@@ -675,9 +679,17 @@
 }
 
 .badge-success {
-  background: color-mix(in srgb, #16a34a 18%, var(--surface));
-  border-color: color-mix(in srgb, #16a34a 40%, var(--surface-border));
-  color: #0f5132;
+  background: #16a34a;
+  border-color: #16a34a;
+  color: #fff;
+}
+
+.badge-floating {
+  position: absolute;
+  top: -0.55rem;
+  left: -0.55rem;
+  box-shadow: 0 8px 18px rgba(0, 0, 0, 0.12);
+  pointer-events: none;
 }
 
 .card-top-row {
@@ -685,6 +697,7 @@
   align-items: center;
   justify-content: space-between;
   min-height: 1.4rem;
+  position: relative;
 }
 
 .kebab-btn {
@@ -705,6 +718,8 @@
 .kebab-btn:hover,
 .kebab-btn:focus-visible {
   color: var(--text);
+  background: transparent !important;
+  box-shadow: none !important;
   outline: none;
 }
 
@@ -796,14 +811,20 @@
   position: fixed;
   inset: 0;
   background: rgba(0, 0, 0, 0.6);
-  display: none;
+  backdrop-filter: blur(6px);
+  -webkit-backdrop-filter: blur(6px);
+  display: flex;
   align-items: center;
   justify-content: center;
   z-index: 1000;
+  opacity: 0;
+  pointer-events: none;
+  transition: opacity 0.24s ease;
 }
 
 .modal-backdrop.active {
-  display: flex;
+  opacity: 1;
+  pointer-events: auto;
 }
 
 .modal .modal-backdrop {
@@ -822,6 +843,9 @@
   padding: 0.5rem;
   max-width: 90vw;
   max-height: 90vh;
+  transform: scale(0.92);
+  opacity: 0;
+  transition: transform 0.26s ease, opacity 0.26s ease;
 }
 
 .modal-content img {
@@ -835,10 +859,10 @@
   position: absolute;
   top: 10px;
   right: 10px;
-  background: rgba(0,0,0,0.6);
+  background: transparent;
   border: none;
-  color: #fff;
-  border-radius: 50%;
+  color: var(--text);
+  border-radius: 8px;
   width: 34px;
   height: 34px;
   display: flex;
@@ -846,6 +870,17 @@
   justify-content: center;
   cursor: pointer;
   padding: 0;
+}
+
+.modal-backdrop.active .modal-content {
+  transform: scale(1.04);
+  opacity: 1;
+}
+
+.modal[aria-hidden="false"] .modal-content,
+.modal.open .modal-content {
+  transform: scale(1.04);
+  opacity: 1;
 }
 
 @media (max-width: 640px) {

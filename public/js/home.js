@@ -45,6 +45,16 @@ const postsFeedEl = document.getElementById('posts-feed');
 const postsEmptyEl = document.getElementById('posts-empty');
 let postsEmptyDefaultText = postsEmptyEl?.textContent || 'Non ci sono annunci in questo momento. Torna a trovarci più tardi.';
 
+// Assicura che il modal sia nascosto al load se aria-hidden è true
+if (postModal && postModal.getAttribute('aria-hidden') !== 'false') {
+  postModal.style.display = 'none';
+  postModal.style.visibility = 'hidden';
+  postModal.style.pointerEvents = 'none';
+}
+// Evita flash guest: svuota header finché non arriva lo stato auth
+if (homeTitleEl) homeTitleEl.textContent = '';
+if (homeSubtitleEl) homeSubtitleEl.textContent = '';
+
 let currentUserProfile = null;
 let selectedInstruments = [];
 let selectedVoices = [];
@@ -53,6 +63,118 @@ let cityListLoaded = false;
 let postModalOpen = false;
 let currentEditingPostId = null;
 let currentEditingPostData = null;
+
+// Cache-busting versione avatar (forza refresh ad ogni load)
+const AVATAR_VERSION = Date.now().toString();
+const AVATAR_ROOT = '/assets/img/avatars';
+
+function slugifyInstrument(raw) {
+  if (!raw) return null;
+  const clean = raw
+    .normalize('NFD')
+    .replace(/[\u0300-\u036f]/g, '')
+    .toLowerCase()
+    .replace(/[\s_]+/g, '-')
+    .replace(/[^a-z0-9-]/g, '')
+    .replace(/-+/g, '-')
+    .replace(/^-|-$/g, '');
+  return clean || null;
+}
+
+function normalizeGenderSlug(raw) {
+  const g = (raw || '').toString().toLowerCase();
+  if (g === 'male' || g === 'female' || g === 'non_binary') return g;
+  return 'unknown';
+}
+
+function buildAvatarPath({ folder = '', nameParts = [] }) {
+  const segments = [AVATAR_ROOT];
+  if (folder) segments.push(folder);
+  const name = ['avatar', ...nameParts.filter(Boolean)].join('-');
+  return `${segments.join('/')}/${name}.png?v=${AVATAR_VERSION}`;
+}
+
+function resolveAvatarUrls(data) {
+  if (!data) return [];
+  const genderSlug = normalizeGenderSlug(data.gender);
+  const instrumentSlug =
+    data.mainInstrumentSlug ||
+    slugifyInstrument(data.mainInstrument || '') ||
+    (Array.isArray(data.instruments) && data.instruments.length
+      ? slugifyInstrument(data.instruments[0])
+      : '');
+  const slugAliases = {
+    flauto: 'flute',
+    corno: 'corno-francese',
+    'corno-francese': 'corno-francese',
+    'sax-contralto': 'sax-contralto',
+    eufonio: 'euphonium',
+    eufonium: 'euphonium',
+    tastiere: 'tastiera',
+    'clarinetto-basso': 'clarinetto',
+    chitarra: 'chitarra-classica',
+    cornetta: 'tromba',
+    flicorno: 'tromba',
+    voce: 'cantante',
+    vocalist: 'cantante'
+  };
+  const instrumentVariants = [];
+  if (data.role === 'singer' || data.voiceType) {
+    instrumentVariants.push('cantante');
+  } else {
+    if (instrumentSlug) instrumentVariants.push(instrumentSlug);
+    if (instrumentSlug && slugAliases[instrumentSlug] && slugAliases[instrumentSlug] !== instrumentSlug) {
+      instrumentVariants.push(slugAliases[instrumentSlug]);
+    }
+  }
+  const urls = [];
+  if (data.photoUrl) urls.push(data.photoUrl);
+  if (data.photoURL) urls.push(data.photoURL);
+  if (data.avatarUrl) urls.push(data.avatarUrl);
+
+  if (data.userType === 'ensemble') {
+    const ensembleSlug = (data.ensembleType || '').toString().toLowerCase();
+    if (ensembleSlug) urls.push(buildAvatarPath({ folder: 'avatar-ensemble', nameParts: [ensembleSlug] }));
+    urls.push(buildAvatarPath({ folder: 'avatar-ensemble', nameParts: ['ensemble'] }));
+  } else {
+    instrumentVariants.forEach((variant) => {
+      urls.push(buildAvatarPath({ nameParts: [variant, genderSlug] }));
+    });
+  }
+
+  urls.push(buildAvatarPath({ folder: 'avatar-default', nameParts: ['default', genderSlug] }));
+  urls.push(buildAvatarPath({ folder: 'avatar-default', nameParts: ['default'] }));
+  return urls.filter(Boolean);
+}
+
+function pickPreferredAvatarUrl(data) {
+  const urls = resolveAvatarUrls(data);
+  return urls.length ? urls[0] : null;
+}
+
+function expandAvatarCandidates(list) {
+  const out = [];
+  const seen = new Set();
+  (list || []).forEach((item) => {
+    if (!item) return;
+    const variants = [];
+    variants.push(item);
+    const clean = item.replace(/^\//, '');
+    if (!item.startsWith('/')) variants.push('/' + clean);
+    variants.push(window.location.origin + '/' + clean);
+    const noQuery = item.split('?')[0];
+    if (noQuery && noQuery !== item) variants.push(noQuery);
+    if (!noQuery.startsWith('/')) variants.push('/' + noQuery);
+    variants.push(window.location.origin + '/' + noQuery.replace(/^\//, ''));
+    variants.forEach((v) => {
+      if (v && !seen.has(v)) {
+        seen.add(v);
+        out.push(v);
+      }
+    });
+  });
+  return out;
+}
 
 function ensureEmptyElAttached() {
   if (!postsFeedEl || !postsEmptyEl) return;
@@ -109,7 +231,7 @@ function showUser(name) {
   if (guestBlock) guestBlock.style.display = 'none';
   if (userBlock) userBlock.style.display = '';
   if (homeTitleEl) homeTitleEl.textContent = 'Home';
-  if (homeSubtitleEl) homeSubtitleEl.textContent = safeName ? `Ciao, ${safeName}` : 'Ciao!';
+  if (homeSubtitleEl) homeSubtitleEl.textContent = safeName ? `Ciao, ${safeName}. Consulta gli annunci vicino a te.` : 'Ciao!';
 }
 
 function setPostMessage(text, isError = false) {
@@ -342,8 +464,15 @@ function startEditPost(post) {
 
 function openPostModal() {
   if (!postModal) return;
+  postModal.style.display = 'grid';
+  postModal.style.visibility = 'visible';
+  postModal.style.pointerEvents = 'auto';
+  // reset stato chiuso e poi trigghiamo l'animazione nel frame successivo
+  postModal.setAttribute('aria-hidden', 'true');
+  requestAnimationFrame(() => {
+    postModal.setAttribute('aria-hidden', 'false');
+  });
   if (!currentEditingPostId && postSubmitBtn) postSubmitBtn.textContent = 'Pubblica annuncio';
-  postModal.setAttribute('aria-hidden', 'false');
   postModalOpen = true;
   if (postTextEl) {
     setTimeout(() => postTextEl.focus({ preventScroll: true }), 50);
@@ -352,8 +481,25 @@ function openPostModal() {
 
 function closePostModal() {
   if (!postModal) return;
+  const active = document.activeElement;
+  if (active && postModal.contains(active) && typeof active.blur === 'function') {
+    active.blur();
+  }
+  if (postTargetCitySuggestionsEl) postTargetCitySuggestionsEl.hidden = true;
+  if (postVoicesSuggestionsEl) postVoicesSuggestionsEl.hidden = true;
+  if (postInstrumentsSuggestionsEl) postInstrumentsSuggestionsEl.hidden = true;
   postModal.setAttribute('aria-hidden', 'true');
   postModalOpen = false;
+  postModal.style.visibility = 'hidden';
+  postModal.style.pointerEvents = 'none';
+  setTimeout(() => {
+    if (postModal.getAttribute('aria-hidden') === 'true') {
+      postModal.style.display = 'none';
+    }
+  }, 260);
+  if (postOpenModalBtn && typeof postOpenModalBtn.focus === 'function') {
+    postOpenModalBtn.focus({ preventScroll: true });
+  }
 }
 
 async function loadUserProfile(uid) {
@@ -395,13 +541,100 @@ function formatDateTime(date) {
 }
 
 function buildProfileUrl(post) {
-  const profileId = post?.authorUserId || post?.authorUid || '';
+  const cachedId = post?.authorUid ? authUidToUserId.get(post.authorUid) : null;
+  const profileId = post?.authorUserId || cachedId || post?.authorUid || '';
   return profileId ? `profile.html?id=${profileId}` : 'profile.html';
 }
 
-function createPostAvatar(name, url, profileUrl) {
-  const avatarLink = document.createElement('a');
-  avatarLink.href = profileUrl;
+const authorPhotoCache = new Map();
+const authorProfileCache = new Map(); // key: post identifier -> { id, data }
+const authUidToUserId = new Map();
+
+async function fetchUserDocByAuthUid(authUid) {
+  const usersCol = collection(db, 'users');
+  const q = query(usersCol, where('authUid', '==', authUid));
+  const snap = await getDocs(q);
+  if (snap.empty) return null;
+  const docSnap = snap.docs[0];
+  authUidToUserId.set(authUid, docSnap.id);
+  return { id: docSnap.id, data: docSnap.data() };
+}
+
+async function resolveAuthorProfile(post) {
+  const cacheKey = post?.id || `${post?.authorUserId || ''}-${post?.authorUid || ''}`;
+  if (authorProfileCache.has(cacheKey)) return authorProfileCache.get(cacheKey);
+  let userDoc = null;
+  const directId = post?.authorUserId;
+  const authUid = post?.authorUid;
+  try {
+    if (directId) {
+      const snap = await getDoc(doc(db, 'users', directId));
+      if (snap.exists()) {
+        userDoc = { id: snap.id, data: snap.data() };
+      }
+    }
+    if (!userDoc && authUid) {
+      const cached = authUidToUserId.get(authUid);
+      if (cached) {
+        const snap = await getDoc(doc(db, 'users', cached));
+        if (snap.exists()) userDoc = { id: snap.id, data: snap.data() };
+      }
+    }
+    if (!userDoc && authUid) {
+      userDoc = await fetchUserDocByAuthUid(authUid);
+    }
+  } catch (err) {
+    console.error('[MusiMatch] Errore recupero profilo autore:', err);
+  }
+  authorProfileCache.set(cacheKey, userDoc);
+  return userDoc;
+}
+
+async function ensureAuthorPhoto(post) {
+  const key = post?.authorUserId || post?.authorUid || post?.id;
+  if (!key) return null;
+  if (authorPhotoCache.has(key)) {
+    const cached = authorPhotoCache.get(key);
+    if (cached) return cached;
+  }
+  const userDoc = await resolveAuthorProfile(post);
+  let url = null;
+  const fallbackProfile = isPostOwner(post) ? currentUserProfile?.data : post?.authorProfileData || null;
+  const profileData = userDoc?.data || fallbackProfile;
+  if (profileData) {
+    post.authorProfileData = profileData;
+    const fallback = pickPreferredAvatarUrl(profileData);
+    url = profileData.photoUrl || profileData.photoURL || profileData.avatarUrl || fallback || null;
+  }
+  if (url) authorPhotoCache.set(key, url);
+  console.debug('[avatar][ensureAuthorPhoto]', post.id, {
+    profileData,
+    chosen: url,
+    fallbackProfile: !!fallbackProfile,
+    candidates: profileData ? resolveAvatarUrls(profileData) : []
+  });
+  return url;
+}
+
+async function hydrateAuthor(post, avatarEl, profileLinks = []) {
+  const authorName = post?.authorName || 'Profilo';
+  const userDoc = await resolveAuthorProfile(post);
+  if (userDoc?.data) {
+    post.authorProfileData = userDoc.data;
+  }
+  const resolvedId = userDoc?.id || post?.authorUserId || authUidToUserId.get(post?.authorUid) || post?.authorUid || '';
+  if (resolvedId) {
+    const newProfileUrl = buildProfileUrl({ ...post, authorUserId: resolvedId });
+    profileLinks.forEach((link) => {
+      if (link) link.href = newProfileUrl;
+    });
+  }
+  const photoCandidates = userDoc?.data ? resolveAvatarUrls(userDoc.data) : [];
+  if (photoCandidates.length && avatarEl) setAvatarImage(avatarEl, photoCandidates, authorName);
+}
+
+function createPostAvatar(name, url) {
+  const avatarLink = document.createElement('div');
   avatarLink.className = 'post-avatar';
   avatarLink.title = name || 'Profilo';
   const fallbackChar = ((name || 'M').trim()[0] || 'M').toUpperCase();
@@ -424,6 +657,29 @@ function createPostAvatar(name, url, profileUrl) {
     addFallback();
   }
   return avatarLink;
+}
+
+function setAvatarImage(container, urls, name) {
+  if (!container) return;
+  const queue = Array.isArray(urls) ? urls.filter(Boolean) : [urls].filter(Boolean);
+  if (queue.length === 0) return;
+  const tryNext = () => {
+    const nextUrl = queue.shift();
+    if (!nextUrl) return;
+    const img = new Image();
+    img.alt = name || 'Avatar';
+    img.onload = () => {
+      container.innerHTML = '';
+      container.appendChild(img);
+      console.debug('[avatar][load-ok]', nextUrl);
+    };
+    img.onerror = (e) => {
+      console.debug('[avatar][load-fail]', nextUrl, e?.error || '');
+      tryNext();
+    };
+    img.src = nextUrl;
+  };
+  tryNext();
 }
 
 function isPostOwner(post) {
@@ -512,13 +768,11 @@ function renderPostCard(post, distanceKm) {
   card.className = 'result-card';
   if (post.resolved) card.classList.add('post-resolved');
 
-  const topRow = document.createElement('div');
-  topRow.className = 'card-top-row';
   if (post.resolved) {
     const resolved = document.createElement('span');
-    resolved.className = 'badge badge-success';
-    resolved.textContent = 'Risolto';
-    topRow.appendChild(resolved);
+    resolved.className = 'badge badge-success badge-floating';
+    resolved.textContent = '✓';
+    card.appendChild(resolved);
   }
 
   const heading = document.createElement('div');
@@ -526,40 +780,85 @@ function renderPostCard(post, distanceKm) {
   const loc = post.location || {};
   const createdDate = post.createdAt?.toDate ? post.createdAt.toDate() : (post.createdAt instanceof Date ? post.createdAt : null);
   const profileUrl = buildProfileUrl(post);
-  const author = document.createElement('div');
-  author.className = 'post-author';
-  const avatar = createPostAvatar(post.authorName, post.authorPhotoUrl, profileUrl);
-  const authorLink = document.createElement('a');
-  authorLink.className = 'post-author-text post-author-link';
-  authorLink.href = profileUrl;
-  authorLink.title = post.authorName || 'Profilo';
+  const displayName = post.authorName || 'Profilo';
+  const baseProfileData = post.authorProfileData || (isPostOwner(post) ? currentUserProfile?.data : null) || {};
+  console.debug('[avatar][render]', post.id, {
+    authorName: displayName,
+    authorProfileData: baseProfileData,
+    authorPhotoUrl: post.authorPhotoUrl,
+    authorAvatarUrl: post.authorAvatarUrl,
+    initialCandidates: expandAvatarCandidates([
+      ...(resolveAvatarUrls(baseProfileData || {}) || []),
+      post.authorPhotoUrl,
+      post.authorPhotoURL,
+      post.authorAvatarUrl
+    ].filter(Boolean))
+  });
+  const authorWrapper = document.createElement('div');
+  authorWrapper.className = 'post-author';
+
+  const avatarLink = document.createElement('a');
+  avatarLink.className = 'post-avatar-link';
+  avatarLink.href = profileUrl;
+  avatarLink.title = displayName;
+  avatarLink.setAttribute('aria-label', `Apri il profilo di ${displayName}`);
+  const avatar = createPostAvatar(displayName, null);
+  avatarLink.appendChild(avatar);
+  const initialAvatarCandidates = expandAvatarCandidates([
+    ...(resolveAvatarUrls(baseProfileData || {}) || []),
+    post.authorPhotoUrl,
+    post.authorPhotoURL,
+    post.authorAvatarUrl
+  ].filter(Boolean));
+  if (initialAvatarCandidates.length) {
+    setAvatarImage(avatar, initialAvatarCandidates, displayName);
+  }
+  // Hydration con dati aggiornati da Firestore (preferisce gli avatar specifici)
+  ensureAuthorPhoto(post)
+    .then((url) => {
+      const hydratedCandidates = expandAvatarCandidates([
+        ...(resolveAvatarUrls(post.authorProfileData || baseProfileData || {}) || []),
+        url,
+        ...initialAvatarCandidates
+      ].filter(Boolean));
+      if (hydratedCandidates.length) {
+        setAvatarImage(avatar, hydratedCandidates, displayName);
+      }
+    })
+    .catch((err) => {
+      console.error('[MusiMatch] Errore caricamento avatar autore:', err);
+    });
+
+  const authorText = document.createElement('div');
+  authorText.className = 'post-author-text';
   const eyebrow = document.createElement('p');
   eyebrow.className = 'eyebrow';
   eyebrow.style.margin = '0';
   eyebrow.textContent = post.authorType === 'ensemble' ? 'Ensemble' : 'Musicista';
-  const nameEl = document.createElement('span');
-  nameEl.className = 'post-author-name';
-  nameEl.textContent = post.authorName || 'Profilo';
+  const nameLink = document.createElement('a');
+  nameLink.className = 'post-author-name post-author-name-link';
+  nameLink.href = profileUrl;
+  nameLink.title = displayName;
+  nameLink.setAttribute('aria-label', `Apri il profilo di ${displayName}`);
+  nameLink.textContent = displayName;
   const cityLine = document.createElement('p');
   cityLine.className = 'post-author-city muted xsmall';
   cityLine.style.margin = '0';
-  cityLine.textContent = `${loc.city || '—'}${loc.province ? ' (' + loc.province + ')' : ''}`;
-  authorLink.appendChild(eyebrow);
-  authorLink.appendChild(nameEl);
-  authorLink.appendChild(cityLine);
-  author.appendChild(avatar);
-  author.appendChild(authorLink);
+  const partsTop = [`${loc.city || '—'}${loc.province ? ' (' + loc.province + ')' : ''}`];
+  if (distanceKm != null) partsTop.push(`Distanza da te: ${formatDistance(distanceKm)}`);
+  cityLine.textContent = partsTop.join(' · ');
+  authorText.appendChild(eyebrow);
+  authorText.appendChild(nameLink);
+  authorText.appendChild(cityLine);
 
-  const meta = document.createElement('div');
-  meta.className = 'muted small';
-  meta.style.marginLeft = 'auto';
-  const parts = [];
-  if (distanceKm != null) parts.push(formatDistance(distanceKm));
-  if (createdDate instanceof Date) parts.push(formatDateTime(createdDate));
-  meta.textContent = parts.join(' · ');
+  authorWrapper.appendChild(avatarLink);
+  authorWrapper.appendChild(authorText);
 
-  heading.appendChild(author);
-  heading.appendChild(meta);
+  hydrateAuthor(post, avatar, [nameLink, avatarLink]).catch((err) => {
+    console.error('[MusiMatch] Errore nel completare i dati autore:', err);
+  });
+
+  heading.appendChild(authorWrapper);
   const menu = buildPostMenu(post);
   if (menu) heading.appendChild(menu);
 
@@ -581,9 +880,16 @@ function renderPostCard(post, distanceKm) {
   if (voices.length) labels.push(`Voci: ${voices.join(', ')}`);
   tags.textContent = labels.length ? labels.join(' · ') : 'Annuncio generico';
 
-  footer.appendChild(tags);
+  const meta = document.createElement('div');
+  meta.className = 'muted xsmall';
+  meta.style.marginLeft = 'auto';
+  const parts = [];
+  if (createdDate instanceof Date) parts.push(formatDateTime(createdDate));
+  meta.textContent = parts.join(' · ');
 
-  if (post.resolved) card.appendChild(topRow);
+  footer.appendChild(tags);
+  footer.appendChild(meta);
+
   card.appendChild(heading);
   card.appendChild(body);
   card.appendChild(footer);
@@ -615,6 +921,17 @@ function filterAndRenderPosts(posts) {
 
   posts.forEach((post) => {
     const isOwner = isPostOwner(post);
+    if (isOwner && currentUserProfile?.data) {
+      post.authorProfileData = currentUserProfile.data;
+      if (!post.authorPhotoUrl) {
+        post.authorPhotoUrl =
+          currentUserProfile.data.photoUrl ||
+          currentUserProfile.data.photoURL ||
+          currentUserProfile.data.avatarUrl ||
+          pickPreferredAvatarUrl(currentUserProfile.data) ||
+          null;
+      }
+    }
     const posterRadius = Number.isFinite(post.radiusKm) ? post.radiusKm : 50;
     let displayDistance = null;
     let matchesDistance = true;
@@ -711,6 +1028,12 @@ async function publishPost() {
     setPostMessage('Completa la tua città/sede prima di pubblicare.', true);
     return;
   }
+  const authorPhoto =
+    currentUserProfile.data?.photoUrl ||
+    currentUserProfile.data?.photoURL ||
+    currentUserProfile.data?.avatarUrl ||
+    pickPreferredAvatarUrl(currentUserProfile.data) ||
+    '';
 
   let postLocation = {
     city: loc.city || '',
@@ -747,12 +1070,34 @@ async function publishPost() {
     lng: loc.lng
   };
 
+  const profileData = currentUserProfile.data || {};
+  const authorAvatarUrl =
+    profileData.photoUrl ||
+    profileData.photoURL ||
+    profileData.avatarUrl ||
+    pickPreferredAvatarUrl(profileData) ||
+    '';
+
   const payload = {
     authorUid: auth.currentUser.uid,
     authorUserId: currentUserProfile.id,
     authorName: currentUserProfile.data?.displayName || '',
     authorType: currentUserProfile.data?.userType || 'musician',
-    authorPhotoUrl: currentUserProfile.data?.photoUrl || '',
+    authorPhotoUrl: authorAvatarUrl,
+    authorAvatarUrl,
+    authorProfileData: {
+      userType: profileData.userType || 'musician',
+      role: profileData.role || '',
+      gender: profileData.gender || '',
+      mainInstrument: profileData.mainInstrument || '',
+      mainInstrumentSlug: profileData.mainInstrumentSlug || '',
+      instruments: Array.isArray(profileData.instruments) ? profileData.instruments : [],
+      voiceType: profileData.voiceType || '',
+      ensembleType: profileData.ensembleType || '',
+      photoUrl: profileData.photoUrl || '',
+      photoURL: profileData.photoURL || '',
+      avatarUrl: profileData.avatarUrl || ''
+    },
     body,
     instrumentsWanted: instruments.length ? instruments : null,
     voicesWanted: voices.length ? voices : null,
