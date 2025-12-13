@@ -160,6 +160,193 @@ h2 {
   letter-spacing: -0.01em;
 }
 
+.profile-compact .grid {
+  gap: 0.45rem 0.75rem;
+  grid-template-columns: repeat(auto-fit, minmax(180px, 1fr));
+}
+
+.profile-compact .field {
+  margin-bottom: 0.25rem;
+}
+
+.profile-compact .field p {
+  margin: 0.08rem 0 0.2rem;
+}
+
+.profile-header {
+  gap: 0.9rem;
+}
+
+.profile-meta {
+  display: flex;
+  align-items: center;
+  flex-wrap: wrap;
+  gap: 0.1rem;
+  margin-top: 0.2rem;
+}
+
+.profile-meta .meta-item {
+  display: none;
+  align-items: center;
+}
+
+.profile-meta .meta-item.with-sep::before {
+  content: '•';
+  margin: 0 0.35rem;
+  color: var(--muted);
+}
+
+.profile-meta .meta-item.visible {
+  display: inline-flex;
+}
+
+.profile-name-block {
+  display: flex;
+  flex-direction: column;
+  justify-content: center;
+  min-height: 80px;
+  gap: 0.1rem;
+}
+
+.rates-btn {
+  margin-top: 0.55rem;
+  padding: 0.24rem 0.6rem;
+  min-height: 28px;
+  font-size: 0.86rem;
+  box-shadow: none;
+  border-color: var(--surface-border);
+  color: var(--text);
+}
+
+.profile-compact .field-wide {
+  grid-column: 1 / -1;
+}
+
+.table-wrapper {
+  width: 100%;
+  overflow-x: auto;
+}
+
+.rates-table {
+  width: 100%;
+  border-collapse: collapse;
+  margin-top: 0.1rem;
+}
+
+.rates-table th,
+.rates-table td {
+  padding: 0.35rem 0.4rem;
+}
+
+.rates-table th {
+  text-align: left;
+  color: var(--muted);
+  font-size: 0.9rem;
+  font-weight: 700;
+  border-bottom: 1px solid var(--surface-border);
+}
+
+.rates-table tr + tr td {
+  border-top: 1px solid var(--surface-border);
+}
+
+.rates-table td:last-child {
+  text-align: right;
+  font-weight: 700;
+}
+
+.text-right {
+  text-align: right;
+}
+
+.collapsible {
+  overflow: hidden;
+  max-height: 0;
+  opacity: 0;
+  transform: translateY(-8px);
+  transition: max-height 0.28s ease, opacity 0.24s ease, transform 0.26s ease;
+}
+
+.collapsible.open {
+  opacity: 1;
+  transform: translateY(0);
+}
+
+.modal {
+  position: fixed;
+  inset: 0;
+  display: grid;
+  place-items: center;
+  padding: 1rem;
+  background: rgba(0, 0, 0, 0.45);
+  backdrop-filter: blur(4px);
+  opacity: 0;
+  pointer-events: none;
+  transition: opacity 0.18s ease;
+  z-index: 20;
+}
+
+.modal[aria-hidden="true"] {
+  display: none;
+  opacity: 0;
+  pointer-events: none;
+}
+
+.modal[aria-hidden="false"] {
+  display: grid;
+  opacity: 1;
+  pointer-events: auto;
+}
+
+.modal.open {
+  display: grid;
+  opacity: 1;
+  pointer-events: auto;
+}
+
+.modal-dialog {
+  width: min(680px, 100%);
+  transform: translateY(12px) scale(0.99);
+  transition: transform 0.22s ease, opacity 0.22s ease;
+  opacity: 0;
+}
+
+.modal-dialog.modal-compact {
+  width: min(480px, 100%);
+}
+
+.modal[aria-hidden="false"] .modal-dialog {
+  transform: translateY(0) scale(1);
+  opacity: 1;
+}
+
+.modal.open .modal-dialog {
+  transform: translateY(0) scale(1);
+  opacity: 1;
+}
+
+.modal-backdrop {
+  position: absolute;
+  inset: 0;
+}
+
+.modal > .modal-backdrop {
+  background: transparent;
+  z-index: 0;
+  pointer-events: none;
+}
+
+.modal > .modal-dialog {
+  position: relative;
+  z-index: 1;
+}
+
+.modal-close {
+  position: absolute;
+  top: 0.6rem;
+  right: 0.6rem;
+}
+
 /* campi di input di base */
 
 input,
@@ -401,16 +588,25 @@ small {
 .theme-toggle {
   display: inline-flex;
   align-items: center;
-  background: transparent;
+  justify-content: center;
+  width: 40px;
+  height: 40px;
+  min-width: 40px;
+  min-height: 40px;
+  background: var(--surface);
   color: var(--text);
   border: 1px solid var(--surface-border);
-  padding: 0.28rem 0.5rem;
   border-radius: 999px;
   font-weight: 600;
+  padding: 0;
+  box-shadow: var(--shadow);
+  transition: transform 0.16s ease, border-color 0.16s ease, box-shadow 0.16s ease;
 }
 
 .theme-toggle:hover {
-  background: var(--surface-border);
+  transform: translateY(-1px);
+  border-color: var(--primary);
+  box-shadow: 0 8px 20px rgba(0, 0, 0, 0.08);
 }
 
 /* ──────────────────────────────────────── */

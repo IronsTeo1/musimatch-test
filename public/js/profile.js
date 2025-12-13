@@ -4,15 +4,24 @@ import {
   onAuthStateChanged,
 } from 'https://www.gstatic.com/firebasejs/12.6.0/firebase-auth.js';
 import {
+  addDoc,
   collection,
+  deleteDoc,
   doc,
   getDocs,
   getDoc,
+  orderBy,
   query,
   where,
   updateDoc,
   serverTimestamp
 } from 'https://www.gstatic.com/firebasejs/12.6.0/firebase-firestore.js';
+import {
+  loadCityList,
+  filterCities,
+  findCityByName,
+  geocodeCityName
+} from './search.js';
 const emailEl = document.getElementById('user-email');
 const idEl = document.getElementById('user-id');
 const msgEl = document.getElementById('profile-message');
@@ -35,9 +44,37 @@ const nationalityField = document.getElementById('profile-nationality-field');
 const bioText = document.getElementById('profile-bio');
 const cvText = document.getElementById('profile-cv');
 const willingText = document.getElementById('profile-willing');
-const ratesListEl = document.getElementById('rates-list');
+const ratesTableBodyEl = document.getElementById('rates-table-body');
+const profileMetaEl = document.getElementById('profile-meta');
+const ratesOpenModalBtn = document.getElementById('rates-open-modal');
+const ratesCloseModalBtn = document.getElementById('rates-close-modal');
+const ratesModal = document.getElementById('rates-modal');
+const profilePostsListEl = document.getElementById('profile-posts-list');
+const profilePostsEmptyEl = document.getElementById('profile-posts-empty');
+const profilePostsEmptyDefaultText = (profilePostsEmptyEl?.textContent || '').trim() || 'Pubblica un annuncio per vederlo in questa sezione';
+const postOpenModalBtn = document.getElementById('post-open-modal');
+const postCloseModalBtn = document.getElementById('post-close-modal');
+const postModal = document.getElementById('post-modal');
+const postSubmitBtn = document.getElementById('post-submit');
+const postMsgEl = document.getElementById('post-message');
+const postTextEl = document.getElementById('post-text');
+const postInstrumentsEl = document.getElementById('post-instruments');
+const postInstrumentsSuggestionsEl = document.getElementById('post-instruments-suggestions');
+const postVoicesEl = document.getElementById('post-voices');
+const postVoicesSuggestionsEl = document.getElementById('post-voices-suggestions');
+const postVoicesClearBtn = document.getElementById('post-voices-clear');
+const postTargetCityEl = document.getElementById('post-target-city');
+const postTargetCitySuggestionsEl = document.getElementById('post-target-city-suggestions');
 const urlUserId = new URLSearchParams(window.location.search).get('id');
 let dataCache = {};
+let viewingOwnProfile = false;
+let targetProfileId = null;
+let selectedInstruments = [];
+let selectedVoices = [];
+let cityList = [];
+let cityListLoaded = false;
+let postModalOpen = false;
+let ratesModalOpen = false;
 
 const avatarContainer = document.getElementById('profile-avatar');
 const avatarModal = document.getElementById('avatar-modal');
@@ -77,6 +114,28 @@ function setMessage(text, isError = false) {
   msgEl.style.color = isError ? '#f87171' : 'var(--muted)';
 }
 
+function setPostMessage(text, isError = false) {
+  if (!postMsgEl) return;
+  postMsgEl.textContent = text || '';
+  postMsgEl.style.color = isError ? '#f87171' : 'var(--muted)';
+}
+
+function toggleMetaItem(el, value) {
+  if (!el) return false;
+  const hasValue = !!value;
+  el.textContent = hasValue ? value : '';
+  el.classList.toggle('visible', hasValue);
+  return hasValue;
+}
+
+function refreshMetaSeparators(container) {
+  if (!container) return;
+  const items = Array.from(container.querySelectorAll('.meta-item')).filter((i) => i.classList.contains('visible'));
+  items.forEach((item, idx) => {
+    item.classList.toggle('with-sep', idx > 0);
+  });
+}
+
 function slugifyInstrument(raw) {
   if (!raw) return null;
   const clean = raw
@@ -99,10 +158,190 @@ function normalizeInstrumentName(raw) {
     .join(' ');
 }
 
+function parseInstruments(str) {
+  if (!str) return [];
+  return str
+    .split(',')
+    .map((t) => normalizeInstrumentName(t))
+    .filter(Boolean);
+}
+
+const VOICE_OPTIONS = [
+  'Soprano',
+  'Mezzosoprano',
+  'Contralto',
+  'Tenore',
+  'Baritono',
+  'Basso'
+];
+
+function buildPostProfileUrl(post) {
+  const profileId = post?.authorUserId || post?.authorUid || targetProfileId || '';
+  return profileId ? `profile.html?id=${profileId}` : 'profile.html';
+}
+
+function createPostAvatar(name, url, profileUrl) {
+  const avatarLink = document.createElement('a');
+  avatarLink.href = profileUrl;
+  avatarLink.className = 'post-avatar';
+  avatarLink.title = name || 'Profilo';
+  const fallbackChar = ((name || 'M').trim()[0] || 'M').toUpperCase();
+
+  const addFallback = () => {
+    avatarLink.innerHTML = '';
+    const fallback = document.createElement('span');
+    fallback.className = 'avatar-fallback';
+    fallback.textContent = fallbackChar;
+    avatarLink.appendChild(fallback);
+  };
+
+  if (url) {
+    const img = document.createElement('img');
+    img.src = url;
+    img.alt = name || 'Avatar';
+    img.onerror = addFallback;
+    avatarLink.appendChild(img);
+  } else {
+    addFallback();
+  }
+  return avatarLink;
+}
+
+function renderInstrumentChips() {
+  if (!postInstrumentsEl) return;
+  const unique = Array.from(new Set(selectedInstruments.map((i) => normalizeInstrumentName(i)).filter(Boolean)));
+  selectedInstruments = unique;
+  postInstrumentsEl.value = unique.join(', ');
+}
+
+function updateVoiceClearVisibility() {
+  if (!postVoicesClearBtn) return;
+  const hasVoices = selectedVoices.length > 0;
+  postVoicesClearBtn.hidden = !hasVoices;
+}
+
+function renderVoiceChips() {
+  if (!postVoicesEl) return;
+  const unique = Array.from(new Set(selectedVoices.map((i) => normalizeInstrumentName(i)).filter(Boolean)));
+  selectedVoices = unique;
+  postVoicesEl.value = unique.join(', ');
+  updateVoiceClearVisibility();
+}
+
+function renderInstrumentSuggestions(term) {
+  if (!postInstrumentsSuggestionsEl) return;
+  postInstrumentsSuggestionsEl.innerHTML = '';
+  const fragment = (term || '').split(',').pop().trim();
+  if (!fragment) {
+    postInstrumentsSuggestionsEl.hidden = true;
+    return;
+  }
+  const pool = [
+    'Arpa', 'Batteria', 'Basso elettrico', 'Chitarra', 'Chitarra acustica', 'Chitarra classica', 'Chitarra elettrica',
+    'Clarinetto', 'Contrabbasso', 'Corno francese', 'Euphonium', 'Fagotto', 'Fisarmonica', 'Flauto', 'Glockenspiel',
+    'Mandolino', 'Marimba', 'Oboe', 'Organo', 'Percussioni', 'Pianoforte', 'Sax contralto', 'Sax tenore', 'Sax baritono',
+    'Sax soprano', 'Tastiera', 'Timpani', 'Tromba', 'Trombone', 'Tuba', 'Viola', 'Violino', 'Violoncello', 'Xilofono',
+    'Voce', 'Cantante'
+  ];
+  const normTerm = fragment.toLowerCase();
+  const filtered = pool.filter((i) => i.toLowerCase().includes(normTerm)).slice(0, 8);
+  if (filtered.length === 0) {
+    postInstrumentsSuggestionsEl.hidden = true;
+    return;
+  }
+  filtered.forEach((item) => {
+    const el = document.createElement('div');
+    el.className = 'autocomplete-item';
+    el.textContent = item;
+    el.addEventListener('mousedown', (e) => {
+      e.preventDefault();
+      selectedInstruments.push(item);
+      renderInstrumentChips();
+      postInstrumentsSuggestionsEl.hidden = true;
+      if (postInstrumentsEl) postInstrumentsEl.focus();
+    });
+    postInstrumentsSuggestionsEl.appendChild(el);
+  });
+  postInstrumentsSuggestionsEl.hidden = false;
+}
+
+function renderVoiceSuggestions() {
+  if (!postVoicesSuggestionsEl) return;
+  postVoicesSuggestionsEl.innerHTML = '';
+  VOICE_OPTIONS.forEach((voice) => {
+    const el = document.createElement('div');
+    el.className = 'autocomplete-item';
+    el.textContent = voice;
+    el.addEventListener('mousedown', (e) => {
+      e.preventDefault();
+      selectedVoices.push(voice);
+      renderVoiceChips();
+    });
+    postVoicesSuggestionsEl.appendChild(el);
+  });
+  postVoicesSuggestionsEl.hidden = false;
+}
+
+async function ensureCityListLoaded() {
+  if (cityListLoaded && cityList.length > 0) return cityList;
+  try {
+    cityList = await loadCityList();
+    cityListLoaded = true;
+  } catch (err) {
+    console.error('[MusiMatch] Errore caricamento lista città (profilo):', err);
+    cityList = [];
+    cityListLoaded = false;
+  }
+  return cityList;
+}
+
+async function renderTargetCitySuggestions(term) {
+  if (!postTargetCitySuggestionsEl) return;
+  postTargetCitySuggestionsEl.innerHTML = '';
+  const query = (term || '').trim();
+  if (!query) {
+    postTargetCitySuggestionsEl.hidden = true;
+    return;
+  }
+  const list = await ensureCityListLoaded();
+  if (!list || list.length === 0) {
+    postTargetCitySuggestionsEl.hidden = true;
+    return;
+  }
+  const results = filterCities(list, query, 6);
+  if (!results.length) {
+    postTargetCitySuggestionsEl.hidden = true;
+    return;
+  }
+  results.forEach((city) => {
+    const el = document.createElement('div');
+    el.className = 'autocomplete-item';
+    el.textContent = `${city.name}${city.province ? ' (' + city.province + ')' : ''}`;
+    el.addEventListener('mousedown', (e) => {
+      e.preventDefault();
+      if (postTargetCityEl) postTargetCityEl.value = city.name;
+      postTargetCitySuggestionsEl.hidden = true;
+    });
+    postTargetCitySuggestionsEl.appendChild(el);
+  });
+  postTargetCitySuggestionsEl.hidden = false;
+}
+
 function normalizeGenderSlug(raw) {
   const g = (raw || '').toString().toLowerCase();
   if (g === 'male' || g === 'female' || g === 'non_binary') return g;
   return 'unknown';
+}
+
+function formatDateTime(date) {
+  if (!date) return '';
+  return date.toLocaleString('it-IT', {
+    day: '2-digit',
+    month: '2-digit',
+    year: 'numeric',
+    hour: '2-digit',
+    minute: '2-digit'
+  });
 }
 
 function hasTrumpetSelected({ mainInstrument, instruments = [] }) {
@@ -207,35 +446,279 @@ async function loadUserDocById(userId) {
   return { id: snap.id, data: snap.data() };
 }
 
+const profilePostMenus = new Set();
+
+function closeAllProfilePostMenus() {
+  profilePostMenus.forEach((menu) => {
+    menu.hidden = true;
+    menu.style.visibility = '';
+    menu.style.position = '';
+    menu.style.left = '';
+    menu.style.top = '';
+    menu.style.right = '';
+  });
+}
+
+function positionProfilePostMenu(menu) {
+  if (!menu) return;
+  menu.hidden = false;
+  menu.style.visibility = 'visible';
+  menu.style.position = '';
+  menu.style.left = '';
+  menu.style.top = '';
+  menu.style.right = '';
+  menu.style.zIndex = '20010';
+}
+
+function buildProfilePostMenu(post) {
+  if (!viewingOwnProfile) return null;
+  const wrapper = document.createElement('div');
+  wrapper.className = 'card-menu-wrapper';
+  const btn = document.createElement('button');
+  btn.type = 'button';
+  btn.className = 'kebab-btn';
+  btn.setAttribute('aria-label', 'Azioni annuncio');
+  btn.textContent = '⋮';
+
+  const menu = document.createElement('div');
+  menu.className = 'card-menu';
+  menu.hidden = true;
+  profilePostMenus.add(menu);
+
+  const addItem = (label, handler, disabled = false) => {
+    const item = document.createElement('button');
+    item.type = 'button';
+    item.textContent = label;
+    item.disabled = disabled;
+    item.addEventListener('click', (e) => {
+      e.stopPropagation();
+      handler();
+      closeAllProfilePostMenus();
+    });
+    menu.appendChild(item);
+  };
+
+  addItem('Modifica', () => {
+    window.location.href = `home.html?edit=${post.id}`;
+  });
+  const resolvedLabel = post.resolved ? 'Togli il badge "Risolto"' : 'Segna come risolto';
+  addItem(resolvedLabel, () => toggleProfilePostResolved(post));
+  addItem('Elimina', () => deleteProfilePost(post));
+
+  btn.addEventListener('click', (e) => {
+    e.stopPropagation();
+    const willOpen = menu.hidden;
+    closeAllProfilePostMenus();
+    if (willOpen) {
+      positionProfilePostMenu(menu);
+    } else {
+      menu.hidden = true;
+    }
+  });
+
+  wrapper.appendChild(btn);
+  wrapper.appendChild(menu);
+  return wrapper;
+}
+
+async function fetchUserPosts(userId) {
+  const postsCol = collection(db, 'posts');
+  const q = query(postsCol, where('authorUserId', '==', userId), orderBy('createdAt', 'desc'));
+  const snap = await getDocs(q);
+  return snap.docs.map((d) => ({ id: d.id, ...d.data() }));
+}
+
+async function markProfilePostResolved(post) {
+  if (!post?.id || !viewingOwnProfile) return;
+  try {
+    await updateDoc(doc(db, 'posts', post.id), { resolved: true, updatedAt: serverTimestamp() });
+    loadProfilePosts(targetProfileId);
+  } catch (err) {
+    console.error('[MusiMatch] Errore nel segnare come risolto (profilo):', err);
+    setMessage('Errore nel segnare come risolto.', true);
+  }
+}
+
+async function toggleProfilePostResolved(post) {
+  if (!post?.id || !viewingOwnProfile) return;
+  const newResolved = !post.resolved;
+  try {
+    await updateDoc(doc(db, 'posts', post.id), { resolved: newResolved, updatedAt: serverTimestamp() });
+    loadProfilePosts(targetProfileId);
+  } catch (err) {
+    console.error('[MusiMatch] Errore toggle risolto (profilo):', err);
+    setMessage('Errore nel cambiare stato risolto.', true);
+  }
+}
+
+async function deleteProfilePost(post) {
+  if (!post?.id || !viewingOwnProfile) return;
+  const ok = window.confirm('Eliminare definitivamente questo annuncio?');
+  if (!ok) return;
+  try {
+    await deleteDoc(doc(db, 'posts', post.id));
+    loadProfilePosts(targetProfileId);
+  } catch (err) {
+    console.error('[MusiMatch] Errore eliminazione annuncio (profilo):', err);
+    setMessage('Errore nell’eliminazione.', true);
+  }
+}
+
+function renderProfilePosts(posts) {
+  if (!profilePostsListEl) return;
+  profilePostsListEl.innerHTML = '';
+  profilePostMenus.clear();
+  if (profilePostsEmptyEl) {
+    profilePostsListEl.appendChild(profilePostsEmptyEl);
+    profilePostsEmptyEl.textContent = profilePostsEmptyDefaultText;
+    profilePostsEmptyEl.style.display = 'none';
+  }
+  let rendered = 0;
+
+  posts.forEach((post) => {
+    const card = document.createElement('article');
+    card.className = 'result-card';
+    if (post.resolved) card.classList.add('post-resolved');
+
+    const topRow = document.createElement('div');
+    topRow.className = 'card-top-row';
+    if (post.resolved) {
+      const resolved = document.createElement('span');
+      resolved.className = 'badge badge-success';
+      resolved.textContent = 'Risolto';
+      topRow.appendChild(resolved);
+    }
+
+    const heading = document.createElement('div');
+    heading.className = 'inline-header post-header-row';
+    const loc = post.location || {};
+    const createdDate = post.createdAt?.toDate ? post.createdAt.toDate() : (post.createdAt instanceof Date ? post.createdAt : null);
+    const profileUrl = buildPostProfileUrl(post);
+    const author = document.createElement('div');
+    author.className = 'post-author';
+    const avatar = createPostAvatar(post.authorName, post.authorPhotoUrl || dataCache?.photoUrl, profileUrl);
+    const authorLink = document.createElement('a');
+    authorLink.className = 'post-author-text post-author-link';
+    authorLink.href = profileUrl;
+    authorLink.title = post.authorName || 'Profilo';
+    const eyebrow = document.createElement('p');
+    eyebrow.className = 'eyebrow';
+    eyebrow.style.margin = '0';
+    eyebrow.textContent = post.authorType === 'ensemble' ? 'Ensemble' : 'Musicista';
+    const nameEl = document.createElement('span');
+    nameEl.className = 'post-author-name';
+    nameEl.textContent = post.authorName || 'Profilo';
+    const cityLine = document.createElement('p');
+    cityLine.className = 'post-author-city muted xsmall';
+    cityLine.style.margin = '0';
+    cityLine.textContent = `${loc.city || '—'}${loc.province ? ' (' + loc.province + ')' : ''}`;
+    authorLink.appendChild(eyebrow);
+    authorLink.appendChild(nameEl);
+    authorLink.appendChild(cityLine);
+    author.appendChild(avatar);
+    author.appendChild(authorLink);
+
+    const meta = document.createElement('div');
+    meta.className = 'muted small';
+    meta.style.marginLeft = 'auto';
+    meta.textContent = createdDate ? formatDateTime(createdDate) : '';
+
+    heading.appendChild(author);
+    heading.appendChild(meta);
+    const menu = buildProfilePostMenu(post);
+    if (menu) heading.appendChild(menu);
+
+    const body = document.createElement('p');
+    body.className = 'muted';
+    body.style.margin = '0.35rem 0';
+    body.textContent = post.body || '';
+
+    const footer = document.createElement('div');
+    footer.className = 'inline-header';
+    footer.style.justifyContent = 'space-between';
+
+    const tags = document.createElement('div');
+    tags.className = 'small muted';
+    const instruments = (post.instrumentsWanted || []).filter(Boolean);
+    const voices = (post.voicesWanted || []).filter(Boolean);
+    const labels = [];
+    if (instruments.length) labels.push(`Strumenti: ${instruments.join(', ')}`);
+    if (voices.length) labels.push(`Voci: ${voices.join(', ')}`);
+    tags.textContent = labels.length ? labels.join(' · ') : 'Annuncio generico';
+
+    const timeEl = document.createElement('span');
+    timeEl.className = 'muted xsmall';
+    timeEl.textContent = createdDate ? formatDateTime(createdDate) : '';
+
+    footer.appendChild(tags);
+    footer.appendChild(timeEl);
+
+    if (post.resolved) card.appendChild(topRow);
+    card.appendChild(heading);
+    card.appendChild(body);
+    card.appendChild(footer);
+
+    profilePostsListEl.appendChild(card);
+    rendered += 1;
+  });
+
+  if (profilePostsEmptyEl) profilePostsEmptyEl.style.display = rendered === 0 ? '' : 'none';
+}
+
+async function loadProfilePosts(userId) {
+  if (!profilePostsListEl || !userId) return;
+  if (profilePostsEmptyEl) {
+    profilePostsEmptyEl.textContent = 'Carico gli annunci...';
+    profilePostsEmptyEl.style.display = '';
+  }
+  try {
+    const posts = await fetchUserPosts(userId);
+    renderProfilePosts(posts);
+  } catch (err) {
+    console.error('[MusiMatch] Errore caricamento annunci profilo:', err);
+    if (profilePostsEmptyEl) {
+      profilePostsEmptyEl.textContent = 'Errore nel caricamento degli annunci.';
+      profilePostsEmptyEl.style.display = '';
+    }
+  }
+}
+
+
 function populateForm(data) {
   if (!data) return;
   dataCache = data;
   const isEnsemble = data.userType === 'ensemble';
   if (titleEl) titleEl.textContent = data.displayName || 'Profilo musicista';
-  if (mainInstrText) mainInstrText.textContent = data.mainInstrument || 'Non indicato';
+  const mainInstrValue = data.mainInstrument || '';
+  if (mainInstrText) mainInstrText.textContent = mainInstrValue;
   if (instrumentsText) {
-    if (Array.isArray(data.instruments) && data.instruments.length > 0) {
-      instrumentsText.textContent = data.instruments.join(', ');
-    } else {
-      instrumentsText.textContent = 'Non indicati';
-    }
+    instrumentsText.textContent = '';
   }
-  if (levelText) {
-    const map = {
-      professional: 'Professionista',
-      amateur: 'Amatore'
-    };
-    levelText.textContent = map[data.activityLevel] || '—';
-  }
-  if (locationText) {
-    const loc = data.location || {};
-    const city = loc.city || '—';
-    const province = loc.province ? ` (${loc.province})` : '';
-    const addressLine = [loc.street, loc.streetNumber].filter(Boolean).join(' ');
-    const locationString = isEnsemble && addressLine
+  const levelMap = {
+    professional: 'Professionista',
+    amateur: 'Amatore'
+  };
+  const levelValue = levelMap[data.activityLevel] || '';
+  if (levelText) levelText.textContent = levelValue;
+  let locationString = '';
+  const loc = data.location || {};
+  const city = loc.city || '';
+  const province = loc.province ? ` (${loc.province})` : '';
+  const addressLine = [loc.street, loc.streetNumber].filter(Boolean).join(' ');
+  if (city || province || addressLine) {
+    locationString = isEnsemble && addressLine
       ? `${addressLine}, ${city}${province}`
       : `${city}${province}`;
-    locationText.textContent = locationString;
+  }
+  if (locationText) locationText.textContent = locationString;
+  if (profileMetaEl) {
+    const vis = [
+      toggleMetaItem(mainInstrText, mainInstrValue),
+      toggleMetaItem(levelText, levelValue),
+      toggleMetaItem(locationText, locationString)
+    ];
+    refreshMetaSeparators(profileMetaEl);
+    profileMetaEl.style.display = vis.some(Boolean) ? 'flex' : 'none';
   }
   if (maxTravelText) {
     const val = Number.isFinite(data.maxTravelKm) ? `${data.maxTravelKm} km` : '—';
@@ -269,8 +752,8 @@ function populateForm(data) {
 }
 
 function renderRates(rates) {
-  if (!ratesListEl) return;
-  ratesListEl.innerHTML = '';
+  if (!ratesTableBodyEl) return;
+  ratesTableBodyEl.innerHTML = '';
   const hasTrumpet = hasTrumpetSelected({
     mainInstrument: normalizeInstrumentName(dataCache?.mainInstrument || ''),
     instruments: Array.isArray(dataCache?.instruments) ? dataCache.instruments : []
@@ -287,14 +770,161 @@ function renderRates(rates) {
     value: rates[key]
   }));
   if (entries.length === 0) {
-    ratesListEl.innerHTML = '<li class="muted">Tariffe non impostate.</li>';
+    ratesTableBodyEl.innerHTML = '<tr><td colspan="2" class="muted">Tariffe non impostate.</td></tr>';
     return;
   }
   entries.forEach((r) => {
-    const li = document.createElement('li');
-    li.textContent = `${r.label}: ${r.value}€`;
-    ratesListEl.appendChild(li);
+    if (!r.value && r.value !== 0) return;
+    const row = document.createElement('tr');
+    const labelCell = document.createElement('td');
+    labelCell.textContent = r.label;
+    const valueCell = document.createElement('td');
+    valueCell.className = 'text-right';
+    valueCell.textContent = `${r.value}€`;
+    row.appendChild(labelCell);
+    row.appendChild(valueCell);
+    ratesTableBodyEl.appendChild(row);
   });
+}
+
+function canPublishFromProfile() {
+  return viewingOwnProfile && !!auth.currentUser && !!targetProfileId;
+}
+
+function syncCreatePostButton() {
+  if (!postOpenModalBtn) return;
+  const visible = canPublishFromProfile();
+  postOpenModalBtn.style.display = visible ? '' : 'none';
+  postOpenModalBtn.disabled = !visible;
+}
+
+function resetPostForm({ keepMessage = false } = {}) {
+  if (postTextEl) postTextEl.value = '';
+  if (postInstrumentsEl) postInstrumentsEl.value = '';
+  if (postTargetCityEl) postTargetCityEl.value = '';
+  if (postTargetCitySuggestionsEl) postTargetCitySuggestionsEl.hidden = true;
+  if (postInstrumentsSuggestionsEl) postInstrumentsSuggestionsEl.hidden = true;
+  if (postVoicesSuggestionsEl) postVoicesSuggestionsEl.hidden = true;
+  selectedInstruments = [];
+  selectedVoices = [];
+  renderInstrumentChips();
+  renderVoiceChips();
+  if (!keepMessage) setPostMessage('');
+}
+
+function openPostModal() {
+  if (!postModal || !canPublishFromProfile()) return;
+  postModal.setAttribute('aria-hidden', 'false');
+  postModalOpen = true;
+  if (postTextEl) {
+    setTimeout(() => postTextEl.focus({ preventScroll: true }), 50);
+  }
+}
+
+function closePostModal() {
+  if (!postModal) return;
+  postModal.setAttribute('aria-hidden', 'true');
+  postModalOpen = false;
+}
+
+function openRatesModal() {
+  if (!ratesModal) return;
+  ratesModal.setAttribute('aria-hidden', 'false');
+  ratesModal.classList.add('open');
+  ratesModalOpen = true;
+}
+
+function closeRatesModal() {
+  if (!ratesModal) return;
+  ratesModal.setAttribute('aria-hidden', 'true');
+  ratesModal.classList.remove('open');
+  ratesModalOpen = false;
+}
+
+async function publishProfilePost() {
+  setPostMessage('');
+  if (!canPublishFromProfile()) {
+    setPostMessage('Devi essere loggato sul tuo profilo per pubblicare.', true);
+    return;
+  }
+  const body = postTextEl?.value.trim();
+  if (!body) {
+    setPostMessage('Scrivi qualcosa prima di pubblicare.', true);
+    return;
+  }
+  const instruments = selectedInstruments.length
+    ? selectedInstruments
+    : parseInstruments(postInstrumentsEl?.value || '');
+  const voices = selectedVoices.slice();
+  const radius = dataCache?.maxTravelKm;
+  const loc = dataCache?.location || {};
+  if (typeof loc.lat !== 'number' || typeof loc.lng !== 'number') {
+    setPostMessage('Completa la tua città/sede prima di pubblicare.', true);
+    return;
+  }
+  let postLocation = {
+    city: loc.city || '',
+    province: loc.province || '',
+    lat: loc.lat,
+    lng: loc.lng
+  };
+
+  const targetCity = postTargetCityEl?.value.trim();
+  if (targetCity) {
+    try {
+      const [coords, list] = await Promise.all([
+        geocodeCityName(targetCity),
+        ensureCityListLoaded()
+      ]);
+      const match = list && list.length ? findCityByName(list, targetCity) : null;
+      postLocation = {
+        city: match?.name || targetCity,
+        province: match?.province || '',
+        lat: coords.lat,
+        lng: coords.lng
+      };
+    } catch (err) {
+      console.error('[MusiMatch] Errore geocoding città annuncio (profilo):', err);
+      setPostMessage(err.message || 'Città non valida. Seleziona una città dalla lista.', true);
+      return;
+    }
+  }
+
+  const authorLocation = {
+    city: loc.city || '',
+    province: loc.province || '',
+    lat: loc.lat,
+    lng: loc.lng
+  };
+
+  const payload = {
+    authorUid: auth.currentUser.uid,
+    authorUserId: targetProfileId,
+    authorName: dataCache?.displayName || '',
+    authorType: dataCache?.userType || 'musician',
+    authorPhotoUrl: dataCache?.photoUrl || '',
+    body,
+    instrumentsWanted: instruments.length ? instruments : null,
+    voicesWanted: voices.length ? voices : null,
+    radiusKm: Number.isFinite(radius) ? radius : 50,
+    authorLocation,
+    location: postLocation,
+    resolved: false
+  };
+
+  try {
+    await addDoc(collection(db, 'posts'), {
+      ...payload,
+      createdAt: serverTimestamp()
+    });
+    setPostMessage('Annuncio pubblicato.');
+    resetPostForm({ keepMessage: true });
+    closePostModal();
+    loadProfilePosts(targetProfileId);
+  } catch (err) {
+    console.error('[MusiMatch] Errore pubblicazione annuncio (profilo):', err);
+    setPostMessage('Errore nel pubblicare l’annuncio.', true);
+  }
 }
 
 function setAvatarImage(urls = []) {
@@ -336,6 +966,10 @@ function closeAvatarModal() {
 }
 
 function guard(user) {
+  viewingOwnProfile = false;
+  targetProfileId = null;
+  dataCache = {};
+  syncCreatePostButton();
   const renderTargetProfile = async () => {
     try {
       const targetDoc = urlUserId
@@ -346,6 +980,9 @@ function guard(user) {
         return;
       }
       const isOwnProfile = !!(targetDoc.data?.authUid && targetDoc.data.authUid === user?.uid) || !urlUserId;
+      viewingOwnProfile = isOwnProfile;
+      targetProfileId = targetDoc.id;
+      syncCreatePostButton();
       updatePageHeading(targetDoc.data, isOwnProfile);
       if (titleEl) {
         if (isOwnProfile) {
@@ -360,6 +997,7 @@ function guard(user) {
       populateForm(targetDoc.data);
       const avatarUrls = resolveAvatarUrls(targetDoc.data);
       setAvatarImage(avatarUrls);
+      loadProfilePosts(targetDoc.id);
     } catch (err) {
       console.error('[MusiMatch] Errore caricamento profilo:', err);
       setMessage('Errore nel caricamento del profilo.', true);
@@ -382,6 +1020,113 @@ function guard(user) {
   renderTargetProfile();
 }
 
+if (postSubmitBtn) {
+  postSubmitBtn.addEventListener('click', publishProfilePost);
+}
+
+if (postInstrumentsEl) {
+  postInstrumentsEl.addEventListener('input', (e) => {
+    const val = e.target.value;
+    const lastChar = val.slice(-1);
+    if (lastChar === ',') {
+      const tokens = parseInstruments(val);
+      tokens.forEach((t) => selectedInstruments.push(t));
+      renderInstrumentChips();
+      if (postInstrumentsSuggestionsEl) postInstrumentsSuggestionsEl.hidden = true;
+      postInstrumentsEl.value = selectedInstruments.join(', ') + ', ';
+      postInstrumentsEl.setSelectionRange(postInstrumentsEl.value.length, postInstrumentsEl.value.length);
+      return;
+    }
+    renderInstrumentSuggestions(val);
+  });
+  postInstrumentsEl.addEventListener('focus', (e) => {
+    if (e.target.value) renderInstrumentSuggestions(e.target.value);
+  });
+  postInstrumentsEl.addEventListener('blur', () => {
+    setTimeout(() => {
+      if (postInstrumentsSuggestionsEl) postInstrumentsSuggestionsEl.hidden = true;
+    }, 120);
+  });
+}
+
+if (postVoicesEl) {
+  postVoicesEl.addEventListener('focus', () => {
+    renderVoiceSuggestions();
+  });
+  postVoicesEl.addEventListener('click', () => {
+    renderVoiceSuggestions();
+  });
+  postVoicesEl.addEventListener('blur', () => {
+    setTimeout(() => {
+      if (postVoicesSuggestionsEl) postVoicesSuggestionsEl.hidden = true;
+      updateVoiceClearVisibility();
+    }, 120);
+  });
+}
+
+if (postVoicesClearBtn) {
+  postVoicesClearBtn.addEventListener('click', () => {
+    selectedVoices = [];
+    renderVoiceChips();
+    if (postVoicesEl) postVoicesEl.focus();
+  });
+}
+
+if (postTargetCityEl) {
+  postTargetCityEl.addEventListener('input', (e) => {
+    renderTargetCitySuggestions(e.target.value);
+  });
+  postTargetCityEl.addEventListener('focus', (e) => {
+    renderTargetCitySuggestions(e.target.value);
+  });
+  postTargetCityEl.addEventListener('blur', () => {
+    setTimeout(() => {
+      if (postTargetCitySuggestionsEl) postTargetCitySuggestionsEl.hidden = true;
+    }, 120);
+  });
+}
+
+if (postOpenModalBtn) {
+  postOpenModalBtn.addEventListener('click', () => openPostModal());
+}
+
+if (postCloseModalBtn) {
+  postCloseModalBtn.addEventListener('click', () => closePostModal());
+}
+
+if (postModal) {
+  postModal.addEventListener('click', (e) => {
+    if (e.target === postModal || e.target.classList.contains('modal-backdrop')) {
+      closePostModal();
+    }
+  });
+}
+
+if (ratesOpenModalBtn) {
+  ratesOpenModalBtn.addEventListener('click', openRatesModal);
+}
+
+if (ratesCloseModalBtn) {
+  ratesCloseModalBtn.addEventListener('click', closeRatesModal);
+}
+
+if (ratesModal) {
+  ratesModal.addEventListener('click', (e) => {
+    if (e.target === ratesModal || e.target.classList.contains('modal-backdrop')) {
+      closeRatesModal();
+    }
+  });
+}
+
+document.addEventListener('keydown', (e) => {
+  if (e.key === 'Escape') {
+    if (postModalOpen) closePostModal();
+    if (ratesModalOpen) closeRatesModal();
+  }
+});
+
+renderVoiceChips();
+
 onAuthStateChanged(auth, guard);
 
 if (avatarContainer) {
@@ -399,3 +1144,5 @@ if (avatarModal) {
     if (e.target === avatarModal) closeAvatarModal();
   });
 }
+
+document.addEventListener('click', () => closeAllProfilePostMenus());
