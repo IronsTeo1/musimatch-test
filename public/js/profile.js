@@ -597,11 +597,13 @@ function buildProfilePostMenu(post) {
       closeAllProfilePostMenus();
     });
     menu.appendChild(item);
+    return item;
   };
 
   addItem('Modifica', () => startEditProfilePost(post));
   const resolvedLabel = post.resolved ? 'Togli il badge "Risolto"' : 'Segna come risolto';
-  addItem(resolvedLabel, () => toggleProfilePostResolved(post));
+  let resolvedBtn;
+  resolvedBtn = addItem(resolvedLabel, () => toggleProfilePostResolved(post, menu, resolvedBtn));
   addItem('Elimina', () => deleteProfilePost(post));
 
   btn.addEventListener('click', (e) => {
@@ -638,12 +640,33 @@ async function markProfilePostResolved(post) {
   }
 }
 
-async function toggleProfilePostResolved(post) {
+function applyProfilePostResolvedState(card, resolved) {
+  if (!card) return;
+  card.classList.toggle('post-resolved', resolved);
+  const existing = card.querySelector('.badge-floating');
+  if (resolved) {
+    if (!existing) {
+      const badge = document.createElement('span');
+      badge.className = 'badge badge-success badge-floating';
+      badge.textContent = '✓';
+      card.insertBefore(badge, card.firstChild || null);
+    }
+  } else if (existing) {
+    existing.remove();
+  }
+}
+
+async function toggleProfilePostResolved(post, menuEl, toggleBtn) {
   if (!post?.id || !viewingOwnProfile) return;
   const newResolved = !post.resolved;
+  const card = menuEl ? menuEl.closest('.result-card') : null;
   try {
     await updateDoc(doc(db, 'posts', post.id), { resolved: newResolved, updatedAt: serverTimestamp() });
-    loadProfilePosts(targetProfileId);
+    post.resolved = newResolved;
+    applyProfilePostResolvedState(card, newResolved);
+    if (toggleBtn) {
+      toggleBtn.textContent = newResolved ? 'Togli il badge "Risolto"' : 'Segna come risolto';
+    }
   } catch (err) {
     console.error('[MusiMatch] Errore toggle risolto (profilo):', err);
     setMessage('Errore nel cambiare stato risolto.', true);

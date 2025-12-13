@@ -418,12 +418,33 @@ async function markPostResolved(post) {
   }
 }
 
-async function togglePostResolved(post) {
+function applyPostResolvedState(card, resolved) {
+  if (!card) return;
+  card.classList.toggle('post-resolved', resolved);
+  const existing = card.querySelector('.badge-floating');
+  if (resolved) {
+    if (!existing) {
+      const badge = document.createElement('span');
+      badge.className = 'badge badge-success badge-floating';
+      badge.textContent = '✓';
+      card.insertBefore(badge, card.firstChild || null);
+    }
+  } else if (existing) {
+    existing.remove();
+  }
+}
+
+async function togglePostResolved(post, menuEl, toggleBtn) {
   if (!post?.id || !isPostOwner(post)) return;
   const newResolved = !post.resolved;
+  const card = menuEl ? menuEl.closest('.result-card') : null;
   try {
     await updateDoc(doc(db, 'posts', post.id), { resolved: newResolved, updatedAt: serverTimestamp() });
-    loadFeed();
+    post.resolved = newResolved;
+    applyPostResolvedState(card, newResolved);
+    if (toggleBtn) {
+      toggleBtn.textContent = newResolved ? 'Togli il badge "Risolto"' : 'Segna come risolto';
+    }
   } catch (err) {
     console.error('[MusiMatch] Errore nel cambiare stato risolto:', err);
     setPostMessage('Errore nel cambiare stato.', true);
@@ -738,11 +759,13 @@ function buildPostMenu(post) {
       closeAllPostMenus();
     });
     menu.appendChild(item);
+    return item;
   };
 
   addItem('Modifica', () => startEditPost(post));
   const resolvedLabel = post.resolved ? 'Togli il badge "Risolto"' : 'Segna come risolto';
-  addItem(resolvedLabel, () => togglePostResolved(post));
+  let resolvedBtn;
+  resolvedBtn = addItem(resolvedLabel, () => togglePostResolved(post, menu, resolvedBtn));
   addItem('Elimina', () => deletePost(post));
 
   btn.addEventListener('click', (e) => {
