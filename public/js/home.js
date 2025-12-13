@@ -418,6 +418,32 @@ async function markPostResolved(post) {
   }
 }
 
+function animateBadgeIn(badge) {
+  if (!badge) return;
+  badge.classList.remove('badge-anim-out');
+  badge.classList.add('badge-anim-in');
+  badge.addEventListener(
+    'animationend',
+    () => {
+      badge.classList.remove('badge-anim-in');
+    },
+    { once: true }
+  );
+}
+
+function animateBadgeOut(badge, onDone) {
+  if (!badge) return;
+  badge.classList.remove('badge-anim-in');
+  badge.classList.add('badge-anim-out');
+  badge.addEventListener(
+    'animationend',
+    () => {
+      if (onDone) onDone();
+    },
+    { once: true }
+  );
+}
+
 function applyPostResolvedState(card, resolved) {
   if (!card) return;
   card.classList.toggle('post-resolved', resolved);
@@ -428,9 +454,10 @@ function applyPostResolvedState(card, resolved) {
       badge.className = 'badge badge-success badge-floating';
       badge.textContent = '✓';
       card.insertBefore(badge, card.firstChild || null);
+      animateBadgeIn(badge);
     }
   } else if (existing) {
-    existing.remove();
+    animateBadgeOut(existing, () => existing.remove());
   }
 }
 

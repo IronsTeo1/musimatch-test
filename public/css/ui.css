@@ -690,6 +690,7 @@
   left: -0.55rem;
   box-shadow: 0 8px 18px rgba(0, 0, 0, 0.12);
   pointer-events: none;
+  transform-origin: center;
 }
 
 .card-top-row {
@@ -698,6 +699,45 @@
   justify-content: space-between;
   min-height: 1.4rem;
   position: relative;
+}
+
+.badge-anim-in {
+  animation: badge-bounce-in 440ms cubic-bezier(0.34, 1.56, 0.64, 1);
+}
+
+.badge-anim-out {
+  animation: badge-bounce-out 360ms cubic-bezier(0.22, 0.61, 0.36, 1);
+}
+
+@keyframes badge-bounce-in {
+  0% {
+    opacity: 0;
+    transform: scale(0.35);
+  }
+  55% {
+    opacity: 1;
+    transform: scale(1.18);
+  }
+  75% {
+    transform: scale(0.9);
+  }
+  100% {
+    transform: scale(1);
+  }
+}
+
+@keyframes badge-bounce-out {
+  0% {
+    opacity: 1;
+    transform: scale(1);
+  }
+  35% {
+    transform: scale(1.08);
+  }
+  100% {
+    opacity: 0;
+    transform: scale(0.35);
+  }
 }
 
 .kebab-btn {

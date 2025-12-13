@@ -640,6 +640,32 @@ async function markProfilePostResolved(post) {
   }
 }
 
+function animateProfileBadgeIn(badge) {
+  if (!badge) return;
+  badge.classList.remove('badge-anim-out');
+  badge.classList.add('badge-anim-in');
+  badge.addEventListener(
+    'animationend',
+    () => {
+      badge.classList.remove('badge-anim-in');
+    },
+    { once: true }
+  );
+}
+
+function animateProfileBadgeOut(badge, onDone) {
+  if (!badge) return;
+  badge.classList.remove('badge-anim-in');
+  badge.classList.add('badge-anim-out');
+  badge.addEventListener(
+    'animationend',
+    () => {
+      if (onDone) onDone();
+    },
+    { once: true }
+  );
+}
+
 function applyProfilePostResolvedState(card, resolved) {
   if (!card) return;
   card.classList.toggle('post-resolved', resolved);
@@ -650,9 +676,10 @@ function applyProfilePostResolvedState(card, resolved) {
       badge.className = 'badge badge-success badge-floating';
       badge.textContent = '✓';
       card.insertBefore(badge, card.firstChild || null);
+      animateProfileBadgeIn(badge);
     }
   } else if (existing) {
-    existing.remove();
+    animateProfileBadgeOut(existing, () => existing.remove());
   }
 }
 
