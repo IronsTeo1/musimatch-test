@@ -51,13 +51,43 @@ const homePagination = {
   done: false,
   loading: false
 };
-let postsLoadMoreBtn = null;
+let homeSentinel = null;
+let homeObserver = null;
+const HOME_FEED_CACHE_KEY = 'mm:lastHomeFeed';
+const filterOpenBtn = document.getElementById('filter-open-modal');
+const filterCloseBtn = document.getElementById('filter-close-modal');
+const filterModal = document.getElementById('filter-modal');
+const filterCityEl = document.getElementById('filter-city');
+const filterCitySuggestionsEl = document.getElementById('filter-city-suggestions');
+const filterRadiusEl = document.getElementById('filter-radius');
+const filterApplyBtn = document.getElementById('filter-apply');
+const filterResetBtn = document.getElementById('filter-reset');
+const filterMsgEl = document.getElementById('filter-message');
+const filterUseProfileBtn = document.getElementById('filter-use-profile');
+const filterUseGeoBtn = document.getElementById('filter-use-geo');
+const filterInstrumentEl = document.getElementById('filter-instrument');
+const filterInstrumentClearBtn = document.getElementById('filter-instrument-clear');
+const filterInstrumentSuggestionsEl = document.getElementById('filter-instrument-suggestions');
+const filterVoiceEl = document.getElementById('filter-voice');
+const filterVoiceClearBtn = document.getElementById('filter-voice-clear');
+const filterVoiceSuggestionsEl = document.getElementById('filter-voice-suggestions');
+const filterEnsembleEl = document.getElementById('filter-ensemble');
+const filterEnsembleClearBtn = document.getElementById('filter-ensemble-clear');
+const filterEnsembleSuggestionsEl = document.getElementById('filter-ensemble-suggestions');
+const ENSEMBLE_OPTIONS = ['Banda', 'Coro', 'Orchestra'];
+let activeFilter = { center: null, radius: null };
+let awaitingGeo = false;
 
 // Assicura che il modal sia nascosto al load se aria-hidden è true
 if (postModal && postModal.getAttribute('aria-hidden') !== 'false') {
   postModal.style.display = 'none';
   postModal.style.visibility = 'hidden';
   postModal.style.pointerEvents = 'none';
+}
+if (filterModal && filterModal.getAttribute('aria-hidden') !== 'false') {
+  filterModal.style.display = 'none';
+  filterModal.style.visibility = 'hidden';
+  filterModal.style.pointerEvents = 'none';
 }
 // Evita flash guest: svuota header finché non arriva lo stato auth
 if (homeTitleEl) homeTitleEl.textContent = '';
@@ -252,35 +282,189 @@ function setFeedEmptyState(visible) {
   if (postsEmptyEl) postsEmptyEl.style.display = visible ? '' : 'none';
 }
 
-function ensurePostsLoadMoreButton() {
-  if (postsLoadMoreBtn) return postsLoadMoreBtn;
-  postsLoadMoreBtn = document.createElement('button');
-  postsLoadMoreBtn.type = 'button';
-  postsLoadMoreBtn.className = 'ghost ghost-primary btn-load-more';
-  postsLoadMoreBtn.style.alignSelf = 'center';
-  postsLoadMoreBtn.style.margin = '0.35rem 0 0.25rem';
-  postsLoadMoreBtn.addEventListener('click', (e) => {
-    e.preventDefault();
-    e.stopPropagation();
-    void loadNextHomePage();
-  });
-  return postsLoadMoreBtn;
+function setFilterMessage(text, isError = false) {
+  if (!filterMsgEl) return;
+  filterMsgEl.textContent = text || '';
+  filterMsgEl.style.color = isError ? '#f87171' : 'var(--muted)';
 }
 
-function updateHomeLoadMoreButton() {
-  if (!postsLoadMoreBtn) return;
-  if (homePagination.done) {
-    postsLoadMoreBtn.style.display = 'none';
-    return;
+function setFilterClearVisibility() {
+  if (filterInstrumentClearBtn && filterInstrumentEl) {
+    filterInstrumentClearBtn.hidden = !(filterInstrumentEl.value && filterInstrumentEl.value.trim());
   }
-  postsLoadMoreBtn.style.display = '';
-  postsLoadMoreBtn.disabled = homePagination.loading;
-  postsLoadMoreBtn.textContent = homePagination.loading ? 'Carico...' : 'Carica altri';
+  if (filterVoiceClearBtn && filterVoiceEl) {
+    filterVoiceClearBtn.hidden = !(filterVoiceEl.value && filterVoiceEl.value.trim());
+  }
+  if (filterEnsembleClearBtn && filterEnsembleEl) {
+    filterEnsembleClearBtn.hidden = !(filterEnsembleEl.value && filterEnsembleEl.value.trim());
+  }
+}
+
+function cacheHomeFeed(posts = []) {
+  try {
+    localStorage.setItem(HOME_FEED_CACHE_KEY, JSON.stringify(posts));
+  } catch (e) {
+    // ignore
+  }
+}
+
+function loadCachedHomeFeed() {
+  try {
+    const raw = localStorage.getItem(HOME_FEED_CACHE_KEY);
+    if (!raw) return [];
+    return JSON.parse(raw);
+  } catch (e) {
+    return [];
+  }
+}
+
+function ensureHomeSentinel() {
+  if (!homeSentinel) {
+    homeSentinel = document.createElement('div');
+    homeSentinel.className = 'feed-sentinel';
+    homeSentinel.setAttribute('aria-hidden', 'true');
+  }
+  return homeSentinel;
 }
 
 function updateHomeEmptyState() {
   const hasCard = !!postsFeedEl?.querySelector('.result-card');
   setFeedEmptyState(!hasCard);
+}
+
+async function renderFilterCitySuggestions(term) {
+  if (!filterCitySuggestionsEl) return;
+  filterCitySuggestionsEl.innerHTML = '';
+  const query = (term || '').trim();
+  if (!query) {
+    filterCitySuggestionsEl.hidden = true;
+    return;
+  }
+  const list = await ensureCityListLoaded();
+  if (!list || !list.length) {
+    filterCitySuggestionsEl.hidden = true;
+    return;
+  }
+  const results = filterCities(list, query, 15);
+  if (!results.length) {
+    filterCitySuggestionsEl.hidden = true;
+    return;
+  }
+  results.forEach((city) => {
+    const el = document.createElement('div');
+    el.className = 'autocomplete-item';
+    el.textContent = `${city.name}${city.province ? ' (' + city.province + ')' : ''}`;
+    el.addEventListener('mousedown', (e) => {
+      e.preventDefault();
+      if (filterCityEl) filterCityEl.value = city.name;
+      filterCitySuggestionsEl.hidden = true;
+    });
+    filterCitySuggestionsEl.appendChild(el);
+  });
+  filterCitySuggestionsEl.hidden = false;
+}
+
+function renderFilterInstrumentSuggestions(term) {
+  if (!filterInstrumentSuggestionsEl) return;
+  filterInstrumentSuggestionsEl.innerHTML = '';
+  const fragment = (term || '').trim();
+  if (!fragment) {
+    filterInstrumentSuggestionsEl.hidden = true;
+    return;
+  }
+  const pool = [
+    'Arpa', 'Batteria', 'Basso elettrico', 'Chitarra', 'Chitarra acustica', 'Chitarra classica', 'Chitarra elettrica',
+    'Clarinetto', 'Contrabbasso', 'Corno francese', 'Euphonium', 'Fagotto', 'Fisarmonica', 'Flauto', 'Glockenspiel',
+    'Mandolino', 'Marimba', 'Oboe', 'Organo', 'Percussioni', 'Pianoforte', 'Sax contralto', 'Sax tenore', 'Sax baritono',
+    'Sax soprano', 'Tastiera', 'Timpani', 'Tromba', 'Trombone', 'Tuba', 'Viola', 'Violino', 'Violoncello', 'Xilofono',
+    'Voce', 'Cantante'
+  ];
+  const normTerm = fragment.toLowerCase();
+  const filtered = pool.filter((i) => i.toLowerCase().includes(normTerm)).slice(0, 8);
+  if (filtered.length === 0) {
+    filterInstrumentSuggestionsEl.hidden = true;
+    return;
+  }
+  filtered.forEach((item) => {
+    const el = document.createElement('div');
+    el.className = 'autocomplete-item';
+    el.textContent = item;
+    el.addEventListener('mousedown', (e) => {
+      e.preventDefault();
+      if (filterInstrumentEl) filterInstrumentEl.value = item;
+      setFilterClearVisibility();
+      filterInstrumentSuggestionsEl.hidden = true;
+    });
+    filterInstrumentSuggestionsEl.appendChild(el);
+  });
+  filterInstrumentSuggestionsEl.hidden = false;
+}
+
+function renderFilterVoiceSuggestions() {
+  if (!filterVoiceSuggestionsEl) return;
+  filterVoiceSuggestionsEl.innerHTML = '';
+  VOICE_OPTIONS.forEach((voice) => {
+    const el = document.createElement('div');
+    el.className = 'autocomplete-item';
+    el.textContent = voice;
+    el.addEventListener('mousedown', (e) => {
+      e.preventDefault();
+      if (filterVoiceEl) filterVoiceEl.value = voice;
+      setFilterClearVisibility();
+      filterVoiceSuggestionsEl.hidden = true;
+    });
+    filterVoiceSuggestionsEl.appendChild(el);
+  });
+  filterVoiceSuggestionsEl.hidden = false;
+}
+
+function renderFilterEnsembleSuggestions() {
+  if (!filterEnsembleSuggestionsEl) return;
+  filterEnsembleSuggestionsEl.innerHTML = '';
+  ENSEMBLE_OPTIONS.forEach((ens) => {
+    const el = document.createElement('div');
+    el.className = 'autocomplete-item';
+    el.textContent = ens;
+    el.addEventListener('mousedown', (e) => {
+      e.preventDefault();
+      if (filterEnsembleEl) filterEnsembleEl.value = ens;
+      setFilterClearVisibility();
+      filterEnsembleSuggestionsEl.hidden = true;
+    });
+    filterEnsembleSuggestionsEl.appendChild(el);
+  });
+  filterEnsembleSuggestionsEl.hidden = false;
+}
+
+function detachHomeObserver() {
+  if (homeObserver && homeSentinel) {
+    homeObserver.unobserve(homeSentinel);
+  }
+}
+
+function attachHomeObserver() {
+  if (homePagination.done) {
+    detachHomeObserver();
+    return;
+  }
+  if (!homeObserver) {
+    homeObserver = new IntersectionObserver(
+      (entries) => {
+        const entry = entries[0];
+        if (entry?.isIntersecting && !homePagination.loading && !homePagination.done) {
+          loadNextHomePage();
+        }
+      },
+      { rootMargin: '200px 0px' }
+    );
+  }
+  const sentinel = ensureHomeSentinel();
+  if (postsFeedEl && !sentinel.isConnected) {
+    postsFeedEl.appendChild(sentinel);
+  }
+  if (homeObserver && sentinel) {
+    homeObserver.observe(sentinel);
+  }
 }
 
 function degToRad(deg) {
@@ -587,6 +771,138 @@ function closePostModal() {
   if (postOpenModalBtn && typeof postOpenModalBtn.focus === 'function') {
     postOpenModalBtn.focus({ preventScroll: true });
   }
+}
+
+function openFilterModal() {
+  if (!filterModal) return;
+  filterModal.style.display = 'grid';
+  filterModal.style.visibility = 'visible';
+  filterModal.style.pointerEvents = 'auto';
+  filterModal.setAttribute('aria-hidden', 'true');
+  requestAnimationFrame(() => {
+    filterModal.setAttribute('aria-hidden', 'false');
+  });
+  setFilterMessage('');
+  if (filterCityEl && activeFilter.center?.city) {
+    filterCityEl.value = activeFilter.center.city;
+  }
+  if (filterRadiusEl) {
+    filterRadiusEl.value = Number.isFinite(activeFilter.radius) ? activeFilter.radius : '';
+  }
+  if (filterCityEl) {
+    setTimeout(() => filterCityEl.focus({ preventScroll: true }), 30);
+  }
+}
+
+function closeFilterModal() {
+  if (!filterModal) return;
+  const active = document.activeElement;
+  if (active && filterModal.contains(active) && typeof active.blur === 'function') {
+    active.blur();
+  }
+  if (filterCitySuggestionsEl) filterCitySuggestionsEl.hidden = true;
+  filterModal.setAttribute('aria-hidden', 'true');
+  filterModal.style.visibility = 'hidden';
+  filterModal.style.pointerEvents = 'none';
+  setTimeout(() => {
+    if (filterModal.getAttribute('aria-hidden') === 'true') {
+      filterModal.style.display = 'none';
+    }
+  }, 260);
+  if (filterOpenBtn && typeof filterOpenBtn.focus === 'function') {
+    filterOpenBtn.focus({ preventScroll: true });
+  }
+}
+
+async function applyFilterFromForm() {
+  setFilterMessage('');
+  let center = activeFilter.center || null;
+  const cityTerm = filterCityEl?.value.trim();
+  if (cityTerm) {
+    if (cityTerm.toLowerCase() === 'posizione attuale' && activeFilter.center) {
+      center = activeFilter.center;
+    } else {
+      const list = await ensureCityListLoaded();
+      const match = list && list.length ? findCityByName(list, cityTerm) : null;
+      if (!match) {
+        setFilterMessage('Seleziona una città valida dai suggerimenti.', true);
+        return;
+      }
+      center = { lat: match.lat, lng: match.lng, city: match.name, province: match.province || '' };
+    }
+  }
+  let radius = null;
+  if (filterRadiusEl && filterRadiusEl.value !== '') {
+    const val = parseFloat(filterRadiusEl.value);
+    if (Number.isNaN(val) || val < 0) {
+      setFilterMessage('Inserisci un raggio valido (km).', true);
+      return;
+    }
+    radius = val;
+    if (!center) {
+      setFilterMessage('Imposta una città di riferimento o usa i pulsanti rapidi.', true);
+      return;
+    }
+  }
+  activeFilter = {
+    center,
+    radius,
+    instrument: filterInstrumentEl?.value.trim() || '',
+    voice: filterVoiceEl?.value.trim() || '',
+    ensemble: filterEnsembleEl?.value.trim() || ''
+  };
+  closeFilterModal();
+  await loadFeed();
+}
+
+async function resetFilter() {
+  activeFilter = { center: null, radius: null, instrument: '', voice: '', ensemble: '' };
+  if (filterCityEl) filterCityEl.value = '';
+  if (filterRadiusEl) filterRadiusEl.value = '';
+  if (filterInstrumentEl) filterInstrumentEl.value = '';
+  if (filterVoiceEl) filterVoiceEl.value = '';
+  if (filterEnsembleEl) filterEnsembleEl.value = '';
+  setFilterClearVisibility();
+  setFilterMessage('');
+  closeFilterModal();
+  await loadFeed();
+}
+
+function useProfileCity() {
+  setFilterMessage('');
+  awaitingGeo = false;
+  const loc = currentUserProfile?.data?.location;
+  if (!loc || typeof loc.lat !== 'number' || typeof loc.lng !== 'number') {
+    setFilterMessage('Completa la tua città nel profilo prima di usarla qui.', true);
+    return;
+  }
+  activeFilter.center = { lat: loc.lat, lng: loc.lng, city: loc.city || '', province: loc.province || '' };
+  if (filterCityEl) filterCityEl.value = loc.city || '';
+  setFilterMessage('Città del profilo impostata. Applica per vedere gli annunci.', false);
+}
+
+function useGeoLocation() {
+  setFilterMessage('Rilevo la posizione...', false);
+  awaitingGeo = true;
+  if (!navigator.geolocation) {
+    setFilterMessage('Geolocalizzazione non supportata dal browser.', true);
+    awaitingGeo = false;
+    return;
+  }
+  navigator.geolocation.getCurrentPosition(
+    (pos) => {
+      const { latitude, longitude } = pos.coords;
+      activeFilter.center = { lat: latitude, lng: longitude, city: 'Posizione attuale', province: '' };
+      if (filterCityEl) filterCityEl.value = 'Posizione attuale';
+      setFilterMessage('Posizione impostata. Applica per aggiornare.', false);
+      awaitingGeo = false;
+    },
+    (err) => {
+      setFilterMessage(err.message || 'Impossibile ottenere la posizione.', true);
+      awaitingGeo = false;
+    },
+    { enableHighAccuracy: false, timeout: 8000, maximumAge: 30000 }
+  );
 }
 
 async function loadUserProfile(uid) {
@@ -1014,6 +1330,9 @@ function filterAndRenderPosts(posts, { append = false } = {}) {
   const viewerMain = currentUserProfile?.data?.mainInstrument || '';
   const viewerVoice = currentUserProfile?.data?.voiceType || currentUserProfile?.data?.mainInstrument || '';
   const viewerRadius = currentUserProfile?.data?.maxTravelKm || 50;
+  const filterInstrument = (activeFilter.instrument || '').toLowerCase();
+  const filterVoice = (activeFilter.voice || '').toLowerCase();
+  const filterEnsemble = (activeFilter.ensemble || '').toLowerCase();
 
   posts.forEach((post) => {
     const isOwner = isPostOwner(post);
@@ -1028,22 +1347,44 @@ function filterAndRenderPosts(posts, { append = false } = {}) {
           null;
       }
     }
-    const posterRadius = Number.isFinite(post.radiusKm) ? post.radiusKm : 50;
+    const posterRadius = Number.isFinite(post.radiusKm) ? post.radiusKm : Infinity;
     let displayDistance = null;
     let matchesDistance = true;
 
     if (canComputeDistance) {
-      const distances = [];
-      if (post.location && typeof post.location.lat === 'number' && typeof post.location.lng === 'number') {
-        distances.push(haversineDistanceKm(viewerLoc.lat, viewerLoc.lng, post.location.lat, post.location.lng));
+      const center = activeFilter.center || viewerLoc;
+      const effectiveRadius = Number.isFinite(activeFilter.radius) ? activeFilter.radius : viewerRadius;
+      const baseLat = center?.lat;
+      const baseLng = center?.lng;
+      if (typeof baseLat === 'number' && typeof baseLng === 'number') {
+        let distToPost = null;
+        let distToAuthor = null;
+        if (post.location && typeof post.location.lat === 'number' && typeof post.location.lng === 'number') {
+          distToPost = haversineDistanceKm(baseLat, baseLng, post.location.lat, post.location.lng);
+        }
+        if (post.authorLocation && typeof post.authorLocation.lat === 'number' && typeof post.authorLocation.lng === 'number') {
+          distToAuthor = haversineDistanceKm(baseLat, baseLng, post.authorLocation.lat, post.authorLocation.lng);
+        }
+        const chosenDist = distToPost != null ? distToPost : distToAuthor;
+        if (chosenDist != null) {
+          displayDistance = chosenDist;
+          const limit = Number.isFinite(activeFilter.radius)
+            ? activeFilter.radius
+            : Number.isFinite(effectiveRadius)
+              ? Math.min(effectiveRadius, posterRadius)
+              : posterRadius;
+          matchesDistance = chosenDist <= limit;
+        } else {
+          matchesDistance = true;
+          displayDistance = null;
+        }
+      } else {
+        matchesDistance = true;
+        displayDistance = null;
       }
-      if (post.authorLocation && typeof post.authorLocation.lat === 'number' && typeof post.authorLocation.lng === 'number') {
-        distances.push(haversineDistanceKm(viewerLoc.lat, viewerLoc.lng, post.authorLocation.lat, post.authorLocation.lng));
-      }
-      if (distances.length > 0) {
-        displayDistance = Math.min(...distances);
-        matchesDistance = distances.some((d) => d <= viewerRadius && d <= posterRadius);
-      }
+    } else {
+      matchesDistance = true;
+      displayDistance = null;
     }
     if (!matchesDistance && !isOwner) return;
 
@@ -1052,6 +1393,21 @@ function filterAndRenderPosts(posts, { append = false } = {}) {
     const wantedVoices = (post.voicesWanted || []).filter(Boolean);
     const hasInstrumentCriteria = wantedInstruments.length > 0;
     const hasVoiceCriteria = wantedVoices.length > 0;
+    // Filtri manuali utente
+    if (filterInstrument) {
+      const matchesInstr = wantedInstruments.some((i) => (i || '').toLowerCase().includes(filterInstrument));
+      if (!matchesInstr) return;
+    }
+    if (filterVoice) {
+      const matchesVoice = wantedVoices.some((v) => (v || '').toLowerCase() === filterVoice);
+      if (!matchesVoice) return;
+    }
+    if (filterEnsemble) {
+      const ensembleType = (post.authorProfileData?.ensembleType || '').toLowerCase();
+      const authorType = (post.authorType || '').toLowerCase();
+      if (authorType !== 'ensemble' && !ensembleType) return;
+      if (ensembleType && ensembleType !== filterEnsemble) return;
+    }
     let matchesSkill = true;
 
     if (!isOwner && hasInstrumentCriteria) {
@@ -1074,15 +1430,25 @@ function filterAndRenderPosts(posts, { append = false } = {}) {
   if (postsEmptyEl && shouldShowEmpty) {
     postsEmptyEl.textContent = postsEmptyDefaultText;
   }
+  if (!homePagination.done) {
+    const sentinel = ensureHomeSentinel();
+    if (postsFeedEl && !sentinel.isConnected) {
+      postsFeedEl.appendChild(sentinel);
+    } else if (postsFeedEl) {
+      postsFeedEl.appendChild(sentinel);
+    }
+  }
 }
 
 async function loadNextHomePage() {
   if (!currentUserProfile || !postsFeedEl) return;
   if (homePagination.loading || homePagination.done) return;
   homePagination.loading = true;
-  updateHomeLoadMoreButton();
   try {
     const { posts, lastDoc, size } = await fetchPostsPage(homePagination.cursor);
+    if (homePagination.cursor === null && posts.length) {
+      cacheHomeFeed(posts);
+    }
     if (size === 0 && !postsFeedEl.querySelector('.result-card')) {
       setFeedEmptyState(true);
     } else {
@@ -1096,28 +1462,31 @@ async function loadNextHomePage() {
     }
   } catch (err) {
     console.error('[MusiMatch] Errore caricamento annunci:', err);
+    if (homePagination.cursor === null) {
+      const cached = loadCachedHomeFeed();
+      if (cached && cached.length) {
+        filterAndRenderPosts(cached, { append: false });
+        setFeedEmptyState(false);
+      }
+    }
     if (postsFeedEl) {
       const error = document.createElement('p');
       error.className = 'helper-text';
       error.style.color = '#f87171';
       error.style.margin = '0.35rem 0';
-      error.textContent = 'Errore nel caricamento degli annunci.';
+      const msg =
+        err?.code === 'unavailable' || (err?.message || '').toLowerCase().includes('client is offline')
+          ? 'Impossibile connettersi a Firestore (emulatore/offline).'
+          : 'Errore nel caricamento degli annunci.';
+      error.textContent = msg;
       postsFeedEl.appendChild(error);
     }
   } finally {
     homePagination.loading = false;
-    updateHomeLoadMoreButton();
-    if (postsFeedEl && postsLoadMoreBtn) {
-      if (homePagination.done) {
-        postsLoadMoreBtn.style.display = 'none';
-      } else {
-        postsLoadMoreBtn.style.display = '';
-        if (!postsLoadMoreBtn.isConnected) {
-          postsFeedEl.appendChild(postsLoadMoreBtn);
-        } else {
-          postsFeedEl.appendChild(postsLoadMoreBtn); // ensure at bottom
-        }
-      }
+    if (homePagination.done) {
+      detachHomeObserver();
+    } else {
+      attachHomeObserver();
     }
   }
 }
@@ -1127,15 +1496,11 @@ async function loadFeed() {
   homePagination.cursor = null;
   homePagination.done = false;
   homePagination.loading = false;
+  detachHomeObserver();
   resetFeedContainer({ loadingText: 'Carico gli annunci...' });
   setFeedEmptyState(true);
-  if (postsLoadMoreBtn) postsLoadMoreBtn.remove();
   await loadNextHomePage();
-  const btn = ensurePostsLoadMoreButton();
-  updateHomeLoadMoreButton();
-  if (postsFeedEl && !homePagination.done) {
-    postsFeedEl.appendChild(btn);
-  }
+  attachHomeObserver();
 }
 
 async function handleEditFromQuery() {
@@ -1359,12 +1724,106 @@ if (postTargetCityEl) {
   });
 }
 
+if (filterCityEl) {
+  filterCityEl.addEventListener('input', (e) => {
+    renderFilterCitySuggestions(e.target.value);
+  });
+  filterCityEl.addEventListener('focus', (e) => {
+    renderFilterCitySuggestions(e.target.value);
+  });
+  filterCityEl.addEventListener('blur', () => {
+    setTimeout(() => {
+      if (filterCitySuggestionsEl) filterCitySuggestionsEl.hidden = true;
+    }, 120);
+  });
+}
+
+if (filterInstrumentEl) {
+  filterInstrumentEl.addEventListener('input', (e) => {
+    renderFilterInstrumentSuggestions(e.target.value);
+    setFilterClearVisibility();
+  });
+  filterInstrumentEl.addEventListener('focus', (e) => {
+    renderFilterInstrumentSuggestions(e.target.value);
+  });
+  filterInstrumentEl.addEventListener('blur', () => {
+    setTimeout(() => {
+      if (filterInstrumentSuggestionsEl) filterInstrumentSuggestionsEl.hidden = true;
+    }, 120);
+  });
+}
+
+if (filterVoiceEl) {
+  filterVoiceEl.addEventListener('focus', () => {
+    renderFilterVoiceSuggestions();
+  });
+  filterVoiceEl.addEventListener('click', () => {
+    renderFilterVoiceSuggestions();
+  });
+  filterVoiceEl.addEventListener('blur', () => {
+    setTimeout(() => {
+      if (filterVoiceSuggestionsEl) filterVoiceSuggestionsEl.hidden = true;
+    }, 120);
+  });
+}
+
+if (filterEnsembleEl) {
+  filterEnsembleEl.addEventListener('focus', () => {
+    renderFilterEnsembleSuggestions();
+  });
+  filterEnsembleEl.addEventListener('click', () => {
+    renderFilterEnsembleSuggestions();
+  });
+  filterEnsembleEl.addEventListener('blur', () => {
+    setTimeout(() => {
+      if (filterEnsembleSuggestionsEl) filterEnsembleSuggestionsEl.hidden = true;
+    }, 120);
+  });
+}
+
 if (postOpenModalBtn) {
   postOpenModalBtn.addEventListener('click', () => openPostModal());
 }
 
 if (postCloseModalBtn) {
   postCloseModalBtn.addEventListener('click', () => closePostModal());
+}
+
+if (filterOpenBtn) {
+  filterOpenBtn.addEventListener('click', () => openFilterModal());
+}
+if (filterCloseBtn) {
+  filterCloseBtn.addEventListener('click', () => closeFilterModal());
+}
+if (filterApplyBtn) {
+  filterApplyBtn.addEventListener('click', () => applyFilterFromForm());
+}
+if (filterResetBtn) {
+  filterResetBtn.addEventListener('click', () => resetFilter());
+}
+if (filterUseProfileBtn) {
+  filterUseProfileBtn.addEventListener('click', () => useProfileCity());
+}
+if (filterUseGeoBtn) {
+  filterUseGeoBtn.addEventListener('click', () => useGeoLocation());
+}
+if (filterInstrumentClearBtn) {
+  filterInstrumentClearBtn.addEventListener('click', () => {
+    if (filterInstrumentEl) filterInstrumentEl.value = '';
+    setFilterClearVisibility();
+  });
+}
+if (filterVoiceClearBtn) {
+  filterVoiceClearBtn.addEventListener('click', () => {
+    if (filterVoiceEl) filterVoiceEl.value = '';
+    setFilterClearVisibility();
+  });
+}
+if (filterEnsembleClearBtn) {
+  filterEnsembleClearBtn.addEventListener('click', () => {
+    if (filterEnsembleEl) filterEnsembleEl.value = '';
+    setFilterClearVisibility();
+  });
 }
 
 if (postModal) {
@@ -1375,9 +1834,18 @@ if (postModal) {
   });
 }
 
+if (filterModal) {
+  filterModal.addEventListener('click', (e) => {
+    if (e.target === filterModal || e.target.classList.contains('modal-backdrop')) {
+      closeFilterModal();
+    }
+  });
+}
+
 document.addEventListener('keydown', (e) => {
-  if (e.key === 'Escape' && postModalOpen) {
-    closePostModal();
+  if (e.key === 'Escape') {
+    if (postModalOpen) closePostModal();
+    if (filterModal && filterModal.getAttribute('aria-hidden') === 'false') closeFilterModal();
   }
 });
 

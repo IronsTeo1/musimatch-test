@@ -93,7 +93,10 @@
     </div>
 
     <div id="home-user" style="display: none;">
-      <button type="button" class="primary btn-full btn-create-post" id="post-open-modal" aria-haspopup="dialog" style="align-self: flex-start;">Crea annuncio</button>
+      <div class="inline-header" style="gap: 1rem; justify-content: flex-start; align-items: stretch; flex-wrap: nowrap; width: 100%; margin-bottom: 1rem;">
+        <button type="button" class="ghost ghost-secondary" id="filter-open-modal" aria-haspopup="dialog" style="min-width: 120px; padding-inline: 1rem; flex: 0 0 auto; height: 48px;">Filtra</button>
+        <button type="button" class="primary btn-create-post" id="post-open-modal" aria-haspopup="dialog" style="flex: 1 1 0; padding-inline: 1.5rem; margin: 0; height: 48px;">Crea annuncio</button>
+      </div>
 
       <div id="post-modal" class="modal" role="dialog" aria-modal="true" aria-labelledby="post-modal-title" aria-hidden="true">
         <div class="modal-backdrop"></div>
@@ -138,6 +141,65 @@
               </div>
               <button type="button" class="ghost ghost-primary" id="post-submit">Pubblica annuncio</button>
               <p id="post-message" class="helper-text"></p>
+            </div>
+          </section>
+        </div>
+      </div>
+
+      <div id="filter-modal" class="modal" role="dialog" aria-modal="true" aria-labelledby="filter-modal-title" aria-hidden="true">
+        <div class="modal-backdrop"></div>
+        <div class="modal-dialog">
+          <section class="card" style="position: relative;">
+            <button type="button" class="ghost ghost-primary btn-compact modal-close" id="filter-close-modal" aria-label="Chiudi">✕</button>
+            <div class="inline-header" style="align-items: flex-end; gap: 0.5rem; flex-wrap: wrap;">
+              <h3 style="margin: 0;" id="filter-modal-title">Filtra annunci</h3>
+              <p class="muted helper-text" style="margin: 0;">Scegli città e raggio per vedere annunci lontani.</p>
+            </div>
+            <div class="stack" style="margin-top: 0.75rem;">
+              <label class="field">
+                <span class="field-label">Città di riferimento</span>
+                <div class="autocomplete">
+                  <input type="text" id="filter-city" autocomplete="off" placeholder="es. Roma, Napoli, Milano">
+                  <div id="filter-city-suggestions" class="autocomplete-list" hidden></div>
+                </div>
+              </label>
+              <div class="inline-header" style="gap: 0.4rem; flex-wrap: wrap; justify-content: flex-start;">
+                <button type="button" class="ghost ghost-secondary btn-compact" id="filter-use-profile">Usa città profilo</button>
+                <button type="button" class="ghost ghost-secondary btn-compact" id="filter-use-geo">Città in cui ti trovi ora</button>
+              </div>
+              <label class="field">
+                <span class="field-label">Raggio (km)</span>
+                <input type="number" id="filter-radius" min="0" step="1" placeholder="es. 50">
+              </label>
+              <label class="field">
+                <span class="field-label">Strumento richiesto (opzionale)</span>
+                <div class="autocomplete with-clear">
+                  <input type="text" id="filter-instrument" autocomplete="off" placeholder="Digita per cercare" />
+                  <button type="button" class="clear-input" id="filter-instrument-clear" aria-label="Pulisci strumento" hidden>✕</button>
+                  <div id="filter-instrument-suggestions" class="autocomplete-list" hidden></div>
+                </div>
+              </label>
+              <label class="field">
+                <span class="field-label">Voce richiesta (opzionale)</span>
+                <div class="autocomplete with-clear">
+                  <input type="text" id="filter-voice" autocomplete="off" placeholder="Seleziona" readonly />
+                  <button type="button" class="clear-input" id="filter-voice-clear" aria-label="Pulisci voce" hidden>✕</button>
+                  <div id="filter-voice-suggestions" class="autocomplete-list" hidden></div>
+                </div>
+              </label>
+              <label class="field">
+                <span class="field-label">Ensemble (opzionale)</span>
+                <div class="autocomplete with-clear">
+                  <input type="text" id="filter-ensemble" autocomplete="off" placeholder="Seleziona" readonly />
+                  <button type="button" class="clear-input" id="filter-ensemble-clear" aria-label="Pulisci ensemble" hidden>✕</button>
+                  <div id="filter-ensemble-suggestions" class="autocomplete-list" hidden></div>
+                </div>
+              </label>
+              <div class="inline-header" style="gap: 0.5rem; justify-content: flex-end;">
+                <button type="button" class="ghost ghost-danger btn-compact" id="filter-reset">Azzera filtri</button>
+                <button type="button" class="primary btn-compact" id="filter-apply">Applica</button>
+              </div>
+              <p id="filter-message" class="helper-text"></p>
             </div>
           </section>
         </div>

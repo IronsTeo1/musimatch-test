@@ -80,13 +80,22 @@ export function loadCityList() {
   return cityListPromise;
 }
 
-export function filterCities(list, term, limit = 8) {
+export function filterCities(list, term, limit = 15) {
   const normalizedTerm = normalizeCity(term);
   if (!normalizedTerm) return [];
 
-  return list
-    .filter((c) => normalizeCity(c.name).includes(normalizedTerm))
-    .slice(0, limit);
+  const scored = list
+    .map((c) => {
+      const nameNorm = normalizeCity(c.name);
+      if (!nameNorm.includes(normalizedTerm)) return null;
+      const starts = nameNorm.startsWith(normalizedTerm) ? 0 : 1;
+      const exact = nameNorm === normalizedTerm ? -1 : starts;
+      return { city: c, score: exact };
+    })
+    .filter(Boolean)
+    .sort((a, b) => a.score - b.score || a.city.name.localeCompare(b.city.name, 'it'));
+
+  return scored.slice(0, limit).map((s) => s.city);
 }
 
 export function findCityByName(list, name) {

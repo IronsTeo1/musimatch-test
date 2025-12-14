@@ -706,6 +706,7 @@ async function submitForm(event) {
     setMessage('Registrazione salvata con successo.');
     form.reset();
     toggleSections('');
+    window.location.href = 'profile.html';
   } catch (err) {
     console.error('[MusiMatch] Errore registrazione:', err);
     setMessage(err.message || 'Errore durante la registrazione.', true);

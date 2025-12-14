@@ -32,6 +32,11 @@ const newEmailEl = document.getElementById('new-email');
 const currentPwdEmailEl = document.getElementById('current-pwd-email');
 const btnUpdateEmail = document.getElementById('btn-update-email');
 const emailMsgEl = document.getElementById('email-message');
+function clearInitialEmailFocus() {
+  if (newEmailEl && document.activeElement === newEmailEl) {
+    newEmailEl.blur();
+  }
+}
 
 const currentPwdPassEl = document.getElementById('current-pwd-pass');
 const newPassEl = document.getElementById('new-pass');
@@ -68,12 +73,29 @@ const btnUpdateLocation = document.getElementById('btn-update-location');
 const locationMsgEl = document.getElementById('location-message');
 const ensembleLocationCard = document.getElementById('ensemble-location-card');
 
+const setCityEl = document.getElementById('set-city');
+const setCitySuggestionsEl = document.getElementById('set-city-suggestions');
+const setTravelKmEl = document.getElementById('set-travel-km');
+const btnUpdateTravel = document.getElementById('btn-update-travel');
+const travelMsgEl = document.getElementById('travel-message');
+
 const btnLogout = document.getElementById('btn-logout');
 
 let currentUserType = null;
 let cityList = [];
 const AVATAR_ROOT = '/assets/img/avatars';
 const AVATAR_VERSION = Date.now().toString();
+
+window.addEventListener('load', () => {
+  clearInitialEmailFocus();
+  // doppio blur async per alcuni browser/password manager
+  setTimeout(clearInitialEmailFocus, 50);
+});
+
+function buildDefaultAvatarPath(gender = 'unknown') {
+  const g = ['male', 'female', 'non_binary'].includes(gender) ? gender : 'unknown';
+  return `${AVATAR_ROOT}/avatar-default/avatar-default-${g}.png?v=${AVATAR_VERSION}`;
+}
 
 function normalizeGenderSlug(raw) {
   const g = (raw || '').toString().toLowerCase();
@@ -92,15 +114,22 @@ function pickPreferredAvatarUrl(data = {}) {
     data.mainInstrumentSlug ||
     slugifyInstrument(data.mainInstrument || '') ||
     (Array.isArray(data.instruments) && data.instruments.length ? slugifyInstrument(data.instruments[0]) : '');
+  const role = data.role || data.userType || '';
   const urls = [];
   if (data.photoUrl) urls.push(data.photoUrl);
   if (data.photoURL) urls.push(data.photoURL);
   if (data.avatarUrl) urls.push(data.avatarUrl);
   const aliases = { voce: 'cantante', vocalist: 'cantante', flauto: 'flute', corno: 'corno-francese', 'corno-francese': 'corno-francese' };
-  const variant = aliases[instrumentSlug] || instrumentSlug;
+  let variant = aliases[instrumentSlug] || instrumentSlug;
+  if ((role === 'singer' || role === 'cantante') && data.voiceType) {
+    variant = 'cantante';
+  }
+  if (role === 'ensemble' && data.ensembleType) {
+    urls.push(`${AVATAR_ROOT}/avatar-ensemble/avatar-${slugifyInstrument(data.ensembleType) || 'ensemble'}.png?v=${AVATAR_VERSION}`);
+  }
   if (variant) urls.push(buildAvatarPath({ nameParts: [variant, gender] }));
-  urls.push(buildAvatarPath({ nameParts: ['default', gender] }));
-  urls.push(buildAvatarPath({ nameParts: ['default'] }));
+  urls.push(buildDefaultAvatarPath(gender));
+  urls.push(buildDefaultAvatarPath('unknown'));
   return urls.find(Boolean) || null;
 }
 
@@ -283,6 +312,32 @@ function renderLocationSuggestions(term) {
     setLocationSuggestionsEl.appendChild(item);
   });
   setLocationSuggestionsEl.hidden = false;
+}
+
+function renderUserCitySuggestions(term) {
+  if (!setCitySuggestionsEl) return;
+  setCitySuggestionsEl.innerHTML = '';
+  if (!term) {
+    setCitySuggestionsEl.hidden = true;
+    return;
+  }
+  const matches = filterCities(cityList, term, 6);
+  if (matches.length === 0) {
+    setCitySuggestionsEl.hidden = true;
+    return;
+  }
+  matches.forEach((c) => {
+    const item = document.createElement('div');
+    item.className = 'autocomplete-item';
+    item.textContent = `${c.name}${c.province ? ' (' + c.province + ')' : ''}`;
+    item.addEventListener('mousedown', (e) => {
+      e.preventDefault();
+      if (setCityEl) setCityEl.value = c.name;
+      setCitySuggestionsEl.hidden = true;
+    });
+    setCitySuggestionsEl.appendChild(item);
+  });
+  setCitySuggestionsEl.hidden = false;
 }
 
 loadCityList()
@@ -537,6 +592,8 @@ function setRatesFields(rates = {}) {
 
 onAuthStateChanged(auth, async (user) => {
   if (!user) return;
+  // evita focus automatico sul primo campo
+  clearInitialEmailFocus();
   try {
     const docData = await loadUserDoc(user.uid);
     if (docData?.data) {
@@ -570,8 +627,10 @@ onAuthStateChanged(auth, async (user) => {
       if (voiceSettingsFields) {
         voiceSettingsFields.style.display = docData.data.role === 'singer' ? 'flex' : 'none';
       }
+      const loc = docData.data.location || {};
+      if (setCityEl) setCityEl.value = loc.city || '';
+      if (setTravelKmEl) setTravelKmEl.value = docData.data.maxTravelKm ?? '';
       if (currentUserType === 'ensemble') {
-        const loc = docData.data.location || {};
         if (setLocationCityEl) setLocationCityEl.value = loc.city || '';
         if (setLocationStreetEl) setLocationStreetEl.value = loc.street || '';
         if (setLocationStreetNumberEl) setLocationStreetNumberEl.value = loc.streetNumber || '';
@@ -600,6 +659,12 @@ function setRatesMessage(text, isError = false) {
   ratesMsgEl.style.color = isError ? '#f87171' : 'var(--muted)';
 }
 
+function setTravelMessage(text, isError = false) {
+  if (!travelMsgEl) return;
+  travelMsgEl.textContent = text || '';
+  travelMsgEl.style.color = isError ? '#f87171' : 'var(--muted)';
+}
+
 function setAvatarPreview(url) {
   if (!avatarPreview) return;
   let img = avatarPreview.querySelector('img');
@@ -608,17 +673,27 @@ function setAvatarPreview(url) {
     img.onload = null;
     img.onerror = null;
   }
-  if (url) {
-    if (!img) {
-      img = document.createElement('img');
-      avatarPreview.prepend(img);
-    }
-    img.src = url;
-    if (fallback) fallback.style.display = 'none';
-  } else {
+  if (!url) {
     if (img) img.remove();
     if (fallback) fallback.style.display = 'flex';
+    return;
   }
+  if (!img) {
+    img = document.createElement('img');
+    avatarPreview.prepend(img);
+  }
+  img.onload = () => {
+    if (fallback) fallback.style.display = 'none';
+  };
+  img.onerror = () => {
+    const def = buildDefaultAvatarPath();
+    if (img.src === def) {
+      if (fallback) fallback.style.display = 'flex';
+      return;
+    }
+    img.src = def;
+  };
+  img.src = url;
 }
 
 async function uploadAvatar(file, uid) {
@@ -673,6 +748,20 @@ if (btnUpdateLocation) {
   });
 }
 
+if (setCityEl) {
+  setCityEl.addEventListener('input', (e) => {
+    renderUserCitySuggestions(e.target.value);
+  });
+  setCityEl.addEventListener('focus', (e) => {
+    renderUserCitySuggestions(e.target.value);
+  });
+  setCityEl.addEventListener('blur', () => {
+    setTimeout(() => {
+      if (setCitySuggestionsEl) setCitySuggestionsEl.hidden = true;
+    }, 120);
+  });
+}
+
 if (btnUpdateBio) {
   btnUpdateBio.addEventListener('click', async () => {
     if (!auth.currentUser) return;
@@ -710,6 +799,44 @@ if (btnUpdateBio) {
     } catch (err) {
       console.error('[MusiMatch] Errore update bio:', err);
       setBioMessage(err.message || 'Errore aggiornamento bio/curriculum.', true);
+    }
+  });
+}
+
+if (btnUpdateTravel) {
+  btnUpdateTravel.addEventListener('click', async () => {
+    if (!auth.currentUser) return;
+    setTravelMessage('');
+    try {
+      const docData = await loadUserDoc(auth.currentUser.uid);
+      if (!docData) throw new Error('Profilo non trovato.');
+      if (!setCityEl || !setCityEl.value.trim()) {
+        throw new Error('Inserisci la città/paese.');
+      }
+      const cityInfo = await geocodeCity(setCityEl.value.trim());
+      const kmValRaw = setTravelKmEl?.value || '';
+      const kmVal = kmValRaw === '' ? null : parseFloat(kmValRaw);
+      const travelKm = Number.isFinite(kmVal) ? kmVal : null;
+      const prevLoc = docData.data.location || {};
+      await updateDoc(doc(db, 'users', docData.id), {
+        location: {
+          ...prevLoc,
+          city: cityInfo.name,
+          province: cityInfo.province || '',
+          region: cityInfo.region || '',
+          countryCode: 'IT',
+          lat: cityInfo.lat,
+          lng: cityInfo.lng,
+          street: prevLoc.street || null,
+          streetNumber: prevLoc.streetNumber || null
+        },
+        maxTravelKm: travelKm,
+        updatedAt: serverTimestamp()
+      });
+      setTravelMessage('Città e distanza aggiornate.');
+    } catch (err) {
+      console.error('[MusiMatch] Errore update città/distanza:', err);
+      setTravelMessage(err.message || 'Errore aggiornamento città/distanza.', true);
     }
   });
 }

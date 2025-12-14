@@ -33,7 +33,7 @@ const isLocalhost =
 if (isLocalhost) {
   console.log('[MusiMatch] Connessione agli EMULATORI (Auth 9099, Firestore 8081, Storage 9199)...');
   connectAuthEmulator(auth, 'http://127.0.0.1:9099');
-  connectFirestoreEmulator(db, '127.0.0.1', 8081);
+  connectFirestoreEmulator(db, '127.0.0.1', 8082);
   connectStorageEmulator(storage, '127.0.0.1', 9199);
 } else {
   console.log('[MusiMatch] Connessione al progetto remoto:', firebaseConfig.projectId);

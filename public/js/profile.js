@@ -60,7 +60,9 @@ const profilePagination = {
   done: false,
   loading: false
 };
-let profileLoadMoreBtn = null;
+let profileSentinel = null;
+let profileObserver = null;
+const PROFILE_CACHE_KEY = 'mm:lastProfileDoc';
 const postOpenModalBtn = document.getElementById('post-open-modal');
 const postCloseModalBtn = document.getElementById('post-close-modal');
 const postModal = document.getElementById('post-modal');
@@ -134,32 +136,70 @@ function setPostMessage(text, isError = false) {
   postMsgEl.style.color = isError ? '#f87171' : 'var(--muted)';
 }
 
-function ensureProfileLoadMoreButton() {
-  if (profileLoadMoreBtn) return profileLoadMoreBtn;
-  profileLoadMoreBtn = document.createElement('button');
-  profileLoadMoreBtn.type = 'button';
-  profileLoadMoreBtn.className = 'ghost ghost-primary btn-load-more';
-  profileLoadMoreBtn.style.alignSelf = 'center';
-  profileLoadMoreBtn.style.margin = '0.35rem 0 0.25rem';
-  profileLoadMoreBtn.addEventListener('click', () => loadNextProfilePage());
-  return profileLoadMoreBtn;
+function ensureProfileSentinel() {
+  if (!profileSentinel) {
+    profileSentinel = document.createElement('div');
+    profileSentinel.className = 'feed-sentinel';
+    profileSentinel.setAttribute('aria-hidden', 'true');
+  }
+  return profileSentinel;
 }
 
-function updateProfileLoadMoreButton() {
-  if (!profileLoadMoreBtn) return;
-  if (profilePagination.done) {
-    profileLoadMoreBtn.style.display = 'none';
-    return;
+function cacheProfileDoc(doc) {
+  try {
+    localStorage.setItem(PROFILE_CACHE_KEY, JSON.stringify(doc));
+  } catch (e) {
+    // ignore cache write
   }
-  profileLoadMoreBtn.style.display = '';
-  profileLoadMoreBtn.disabled = profilePagination.loading;
-  profileLoadMoreBtn.textContent = profilePagination.loading ? 'Carico...' : 'Carica altri';
+}
+
+function loadCachedProfileDoc() {
+  try {
+    const raw = localStorage.getItem(PROFILE_CACHE_KEY);
+    if (!raw) return null;
+    return JSON.parse(raw);
+  } catch (e) {
+    return null;
+  }
 }
 
 function updateProfileEmptyState() {
   if (!profilePostsEmptyEl) return;
   const hasCard = !!profilePostsListEl?.querySelector('.result-card');
   profilePostsEmptyEl.style.display = hasCard ? 'none' : '';
+}
+
+function detachProfileObserver() {
+  if (profileObserver && profileSentinel) {
+    profileObserver.unobserve(profileSentinel);
+  }
+}
+
+function attachProfileObserver() {
+  if (profilePagination.done) {
+    detachProfileObserver();
+    return;
+  }
+  if (!profileObserver) {
+    profileObserver = new IntersectionObserver(
+      (entries) => {
+        const entry = entries[0];
+        if (entry?.isIntersecting && !profilePagination.loading && !profilePagination.done) {
+          loadNextProfilePage();
+        }
+      },
+      { rootMargin: '200px 0px' }
+    );
+  }
+  const sentinel = ensureProfileSentinel();
+  if (profilePostsListEl && !sentinel.isConnected) {
+    profilePostsListEl.appendChild(sentinel);
+  } else if (profilePostsListEl) {
+    profilePostsListEl.appendChild(sentinel);
+  }
+  if (profileObserver && sentinel) {
+    profileObserver.observe(sentinel);
+  }
 }
 
 function toggleMetaItem(el, value) {
@@ -570,18 +610,28 @@ if (pageTitleEl && pageSubtitleEl) {
 }
 
 async function loadUserDoc(uid) {
-  const usersCol = collection(db, 'users');
-  const q = query(usersCol, where('authUid', '==', uid));
-  const snapshot = await getDocs(q);
-  if (snapshot.empty) return null;
-  const docSnap = snapshot.docs[0];
-  return { id: docSnap.id, data: docSnap.data() };
+  try {
+    const usersCol = collection(db, 'users');
+    const qCol = query(usersCol, where('authUid', '==', uid));
+    const snapshot = await getDocs(qCol);
+    if (snapshot.empty) return null;
+    const docSnap = snapshot.docs[0];
+    return { id: docSnap.id, data: docSnap.data() };
+  } catch (err) {
+    err.__context = 'loadUserDoc';
+    throw err;
+  }
 }
 
 async function loadUserDocById(userId) {
-  const snap = await getDoc(doc(db, 'users', userId));
-  if (!snap.exists()) return null;
-  return { id: snap.id, data: snap.data() };
+  try {
+    const snap = await getDoc(doc(db, 'users', userId));
+    if (!snap.exists()) return null;
+    return { id: snap.id, data: snap.data() };
+  } catch (err) {
+    err.__context = 'loadUserDocById';
+    throw err;
+  }
 }
 
 const profilePostMenus = new Set();
@@ -595,6 +645,20 @@ function closeAllProfilePostMenus() {
     menu.style.top = '';
     menu.style.right = '';
   });
+}
+
+function isFirestoreOfflineError(err) {
+  if (!err) return false;
+  const code = err.code || err?.error?.code || '';
+  const msg = (err.message || '').toLowerCase();
+  return (
+    code === 'unavailable' ||
+    msg.includes('client is offline') ||
+    msg.includes('failed-precondition') ||
+    msg.includes('could not reach cloud firestore backend') ||
+    msg.includes('err_empty_response') ||
+    msg.includes('failed to get document because the client is offline')
+  );
 }
 
 function positionProfilePostMenu(menu) {
@@ -881,13 +945,20 @@ function renderProfilePosts(posts, { reset = false } = {}) {
   });
 
   updateProfileEmptyState();
+  if (!profilePagination.done) {
+    const sentinel = ensureProfileSentinel();
+    if (profilePostsListEl && !sentinel.isConnected) {
+      profilePostsListEl.appendChild(sentinel);
+    } else if (profilePostsListEl) {
+      profilePostsListEl.appendChild(sentinel);
+    }
+  }
 }
 
 async function loadNextProfilePage() {
   if (!profilePostsListEl || !targetProfileId) return;
   if (profilePagination.loading || profilePagination.done) return;
   profilePagination.loading = true;
-  updateProfileLoadMoreButton();
   try {
     const { posts, lastDoc, size } = await fetchUserPosts(targetProfileId, profilePagination.cursor);
     if (size === 0 && !profilePostsListEl.querySelector('.result-card')) {
@@ -903,19 +974,17 @@ async function loadNextProfilePage() {
   } catch (err) {
     console.error('[MusiMatch] Errore caricamento annunci profilo:', err);
     if (profilePostsEmptyEl) {
-      profilePostsEmptyEl.textContent = 'Errore nel caricamento degli annunci.';
+      profilePostsEmptyEl.textContent = isFirestoreOfflineError(err)
+        ? 'Impossibile connettersi a Firestore (emulatore/offline).'
+        : 'Errore nel caricamento degli annunci.';
       profilePostsEmptyEl.style.display = '';
     }
   } finally {
     profilePagination.loading = false;
-    updateProfileLoadMoreButton();
-    if (profilePostsListEl && profileLoadMoreBtn) {
-      if (profilePagination.done) {
-        profileLoadMoreBtn.style.display = 'none';
-      } else {
-        profileLoadMoreBtn.style.display = '';
-        profilePostsListEl.appendChild(profileLoadMoreBtn);
-      }
+    if (profilePagination.done) {
+      detachProfileObserver();
+    } else {
+      attachProfileObserver();
     }
   }
 }
@@ -925,18 +994,14 @@ async function loadProfilePosts(userId) {
   profilePagination.cursor = null;
   profilePagination.done = false;
   profilePagination.loading = false;
+  detachProfileObserver();
   renderProfilePosts([], { reset: true });
   if (profilePostsEmptyEl) {
     profilePostsEmptyEl.textContent = 'Carico gli annunci...';
     profilePostsEmptyEl.style.display = '';
   }
-  if (profileLoadMoreBtn) profileLoadMoreBtn.remove();
   await loadNextProfilePage();
-  const btn = ensureProfileLoadMoreButton();
-  updateProfileLoadMoreButton();
-  if (!profilePagination.done && profilePostsListEl) {
-    profilePostsListEl.appendChild(btn);
-  }
+  attachProfileObserver();
 }
 
 
@@ -1302,12 +1367,28 @@ function guard(user) {
         ? await loadUserDocById(urlUserId)
         : await loadUserDoc(user?.uid || '');
       if (!targetDoc) {
-        setMessage('Profilo non trovato.', true);
+        // Prova cache se offline/emulatore non raggiungibile
+        const cached = loadCachedProfileDoc();
+        if (cached && cached.data) {
+          viewingOwnProfile = !!(cached.data.authUid && cached.data.authUid === user?.uid) || !urlUserId;
+          targetProfileId = cached.id;
+          dataCache = cached.data;
+          syncCreatePostButton();
+          updatePageHeading(cached.data, viewingOwnProfile);
+          populateForm(cached.data);
+          const avatarUrlsCached = resolveAvatarUrls(cached.data);
+          setProfileAvatarImage(avatarUrlsCached);
+          setMessage('Profilo caricato dalla cache (connessione Firestore non disponibile).', true);
+          loadProfilePosts(cached.id);
+          return;
+        }
+        setMessage('Profilo non trovato o Firestore non raggiungibile.', true);
         return;
       }
       const isOwnProfile = !!(targetDoc.data?.authUid && targetDoc.data.authUid === user?.uid) || !urlUserId;
       viewingOwnProfile = isOwnProfile;
       targetProfileId = targetDoc.id;
+      cacheProfileDoc(targetDoc);
       syncCreatePostButton();
       updatePageHeading(targetDoc.data, isOwnProfile);
       if (titleEl) {
@@ -1326,7 +1407,25 @@ function guard(user) {
       loadProfilePosts(targetDoc.id);
     } catch (err) {
       console.error('[MusiMatch] Errore caricamento profilo:', err);
-      setMessage('Errore nel caricamento del profilo.', true);
+      if (isFirestoreOfflineError(err)) {
+        const cached = loadCachedProfileDoc();
+        if (cached && cached.data) {
+          viewingOwnProfile = !!(cached.data.authUid && cached.data.authUid === user?.uid) || !urlUserId;
+          targetProfileId = cached.id;
+          dataCache = cached.data;
+          syncCreatePostButton();
+          updatePageHeading(cached.data, viewingOwnProfile);
+          populateForm(cached.data);
+          const avatarUrlsCached = resolveAvatarUrls(cached.data);
+          setProfileAvatarImage(avatarUrlsCached);
+          setMessage('Offline/Emulatore non raggiungibile: profilo caricato dalla cache.', true);
+          loadProfilePosts(cached.id);
+        } else {
+          setMessage('Connessione a Firestore non disponibile. Avvia gli emulatori o controlla la rete.', true);
+        }
+      } else {
+        setMessage('Errore nel caricamento del profilo.', true);
+      }
     }
   };
 

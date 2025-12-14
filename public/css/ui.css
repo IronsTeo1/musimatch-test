@@ -23,13 +23,19 @@
 }
 
 .logo-link img {
-  width: 40px;
-  height: 40px;
+  width: 80px;
+  height: 80px;
   border-radius: 12px;
   object-fit: cover;
   border: 1px solid var(--surface-border);
   box-shadow: var(--shadow);
   background: var(--surface);
+}
+
+.inline-header {
+  display: flex;
+  align-items: center;
+  gap: 0.5rem;
 }
 
 .btn-block {
@@ -44,6 +50,7 @@
 
 .page-content {
   padding: 1.5rem;
+  padding-bottom: calc(1.5rem + 6.5rem);
   max-width: 1100px;
   margin: 0 auto;
   display: flex;
@@ -143,6 +150,18 @@
   box-shadow: none;
 }
 
+.ghost-secondary {
+  background: var(--surface-strong);
+  border-color: var(--surface-border);
+  color: var(--text);
+}
+.ghost-secondary:hover,
+.ghost-secondary:focus-visible {
+  background: var(--surface);
+  color: var(--text);
+  border-color: var(--surface-border-strong);
+}
+
 .link-btn {
   display: inline-flex;
   align-items: center;
@@ -184,6 +203,11 @@
   min-height: 2.4rem;
   padding: 0.5rem 1rem;
   margin-top: 0.25rem;
+}
+
+.feed-sentinel {
+  width: 100%;
+  height: 1px;
 }
 
 .header-actions {
@@ -597,25 +621,76 @@
   display: flex;
   align-items: center;
   gap: 1rem;
-  flex-wrap: wrap;
+  flex-wrap: nowrap;
+  width: 100%;
 }
 
 .profile-avatar.small {
   width: 64px;
   height: 64px;
   border-radius: 14px;
+  flex-shrink: 0;
 }
 
 .avatar-actions {
   display: flex;
   flex-direction: column;
   gap: 0.35rem;
+  justify-content: center;
+  flex: 1;
+  min-width: 0;
+}
+
+.avatar-helpers {
+  width: 100%;
+  margin-top: 0.35rem;
+}
+
+.avatar-helpers p {
+  margin: 0;
+}
+
+@media (max-width: 640px) {
+  .avatar-settings {
+    flex-direction: column;
+    align-items: center;
+    text-align: center;
+    flex-wrap: wrap;
+  }
+  .avatar-actions,
+  .avatar-buttons {
+    width: 100%;
+    align-items: center;
+  }
+  .avatar-buttons {
+    flex-direction: column;
+  }
+  .avatar-helpers {
+    text-align: center;
+  }
+}
+
+@media (min-width: 641px) {
+  .avatar-settings {
+    flex-direction: row;
+    align-items: center;
+    flex-wrap: nowrap;
+  }
+  .avatar-actions {
+    align-items: flex-start;
+    justify-content: center;
+  }
 }
 
 .avatar-buttons {
   display: flex;
   gap: 0.5rem;
   flex-direction: column;
+  width: 100%;
+}
+
+.avatar-buttons > * {
+  width: 100%;
 }
 
 .danger-text {
@@ -635,6 +710,11 @@
 }
 .autocomplete.with-clear input {
   padding-right: 2rem;
+}
+
+.autocomplete-list {
+  max-height: 240px;
+  overflow-y: auto;
 }
 
 .clear-input {
@@ -950,6 +1030,7 @@
   }
   .page-content {
     padding: 1.05rem;
+    padding-bottom: calc(1.05rem + 7rem);
   }
   .card {
     padding: 1rem 1.05rem;

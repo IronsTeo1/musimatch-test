@@ -65,9 +65,11 @@
                   </label>
                   <button type="button" class="ghost ghost-danger btn-block btn-compact" id="settings-avatar-remove">Rimuovi</button>
                 </div>
-                <p id="avatar-message" class="helper-text"></p>
-                <p class="muted small">Se rimuovi la foto, useremo automaticamente l’avatar predefinito in base allo strumento, voce tipo di ensemble selezionato.</p>
               </div>
+            </div>
+            <div class="avatar-helpers">
+              <p id="avatar-message" class="helper-text"></p>
+              <p class="muted small">Se rimuovi la foto, useremo automaticamente l’avatar predefinito in base allo strumento, voce tipo di ensemble selezionato.</p>
             </div>
     </section>
 
@@ -133,6 +135,28 @@
         </div>
         <button type="button" id="btn-update-pass" class="ghost ghost-primary">Aggiorna password</button>
         <p id="pass-message" class="helper-text"></p>
+      </div>
+    </section>
+
+    <section class="card">
+      <h2>Città e disponibilità</h2>
+      <div class="stack">
+        <div class="grid">
+          <label class="field">
+            <span class="field-label">Città / paese</span>
+            <div class="autocomplete">
+              <input type="text" id="set-city" autocomplete="off" placeholder="es. Milano, Torino, Brescia">
+              <div id="set-city-suggestions" class="autocomplete-list" hidden></div>
+            </div>
+          </label>
+          <label class="field">
+            <span class="field-label">Distanza massima (km)</span>
+            <input type="number" id="set-travel-km" min="0" step="1" placeholder="es. 25">
+            <span class="field-hint muted xsmall">Km entro cui sei disposto a spostarti.</span>
+          </label>
+        </div>
+        <button type="button" id="btn-update-travel" class="ghost ghost-primary">Aggiorna città e distanza</button>
+        <p id="travel-message" class="helper-text"></p>
       </div>
     </section>
 
