@@ -11,6 +11,7 @@ import {
   limit,
   orderBy,
   query,
+  startAfter,
   serverTimestamp,
   updateDoc,
   where
@@ -44,6 +45,13 @@ const postMsgEl = document.getElementById('post-message');
 const postsFeedEl = document.getElementById('posts-feed');
 const postsEmptyEl = document.getElementById('posts-empty');
 let postsEmptyDefaultText = postsEmptyEl?.textContent || 'Non ci sono annunci in questo momento. Torna a trovarci più tardi.';
+const PAGE_SIZE_HOME = 10;
+const homePagination = {
+  cursor: null,
+  done: false,
+  loading: false
+};
+let postsLoadMoreBtn = null;
 
 // Assicura che il modal sia nascosto al load se aria-hidden è true
 if (postModal && postModal.getAttribute('aria-hidden') !== 'false') {
@@ -242,6 +250,37 @@ function setPostMessage(text, isError = false) {
 
 function setFeedEmptyState(visible) {
   if (postsEmptyEl) postsEmptyEl.style.display = visible ? '' : 'none';
+}
+
+function ensurePostsLoadMoreButton() {
+  if (postsLoadMoreBtn) return postsLoadMoreBtn;
+  postsLoadMoreBtn = document.createElement('button');
+  postsLoadMoreBtn.type = 'button';
+  postsLoadMoreBtn.className = 'ghost ghost-primary btn-load-more';
+  postsLoadMoreBtn.style.alignSelf = 'center';
+  postsLoadMoreBtn.style.margin = '0.35rem 0 0.25rem';
+  postsLoadMoreBtn.addEventListener('click', (e) => {
+    e.preventDefault();
+    e.stopPropagation();
+    void loadNextHomePage();
+  });
+  return postsLoadMoreBtn;
+}
+
+function updateHomeLoadMoreButton() {
+  if (!postsLoadMoreBtn) return;
+  if (homePagination.done) {
+    postsLoadMoreBtn.style.display = 'none';
+    return;
+  }
+  postsLoadMoreBtn.style.display = '';
+  postsLoadMoreBtn.disabled = homePagination.loading;
+  postsLoadMoreBtn.textContent = homePagination.loading ? 'Carico...' : 'Carica altri';
+}
+
+function updateHomeEmptyState() {
+  const hasCard = !!postsFeedEl?.querySelector('.result-card');
+  setFeedEmptyState(!hasCard);
 }
 
 function degToRad(deg) {
@@ -947,19 +986,26 @@ function renderPostCard(post, distanceKm) {
   postsFeedEl.appendChild(card);
 }
 
-async function fetchPosts() {
+async function fetchPostsPage(cursor = null) {
   const postsCol = collection(db, 'posts');
-  const q = query(postsCol, orderBy('createdAt', 'desc'), limit(50));
-  const snap = await getDocs(q);
-  return snap.docs.map((d) => ({ id: d.id, ...d.data() }));
+  let qBase = query(postsCol, orderBy('createdAt', 'desc'), limit(PAGE_SIZE_HOME));
+  if (cursor) {
+    qBase = query(postsCol, orderBy('createdAt', 'desc'), startAfter(cursor), limit(PAGE_SIZE_HOME));
+  }
+  const snap = await getDocs(qBase);
+  const posts = snap.docs.map((d) => ({ id: d.id, ...d.data() }));
+  const lastDoc = snap.docs.length ? snap.docs[snap.docs.length - 1] : cursor;
+  return { posts, lastDoc, size: snap.docs.length };
 }
 
-function filterAndRenderPosts(posts) {
+function filterAndRenderPosts(posts, { append = false } = {}) {
   if (!postsFeedEl) return;
   openPostMenus.clear();
-  resetFeedContainer();
-  ensureEmptyElAttached();
-  postsEmptyDefaultText = postsEmptyEl?.textContent || postsEmptyDefaultText;
+  if (!append) {
+    resetFeedContainer();
+    ensureEmptyElAttached();
+    postsEmptyDefaultText = postsEmptyEl?.textContent || postsEmptyDefaultText;
+  }
   let rendered = 0;
 
   const viewerLoc = currentUserProfile?.data?.location;
@@ -1023,22 +1069,72 @@ function filterAndRenderPosts(posts) {
     rendered += 1;
   });
 
-  setFeedEmptyState(rendered === 0);
-  if (postsEmptyEl && rendered === 0) {
+  const shouldShowEmpty = !append && rendered === 0 && !postsFeedEl.querySelector('.result-card');
+  setFeedEmptyState(shouldShowEmpty);
+  if (postsEmptyEl && shouldShowEmpty) {
     postsEmptyEl.textContent = postsEmptyDefaultText;
+  }
+}
+
+async function loadNextHomePage() {
+  if (!currentUserProfile || !postsFeedEl) return;
+  if (homePagination.loading || homePagination.done) return;
+  homePagination.loading = true;
+  updateHomeLoadMoreButton();
+  try {
+    const { posts, lastDoc, size } = await fetchPostsPage(homePagination.cursor);
+    if (size === 0 && !postsFeedEl.querySelector('.result-card')) {
+      setFeedEmptyState(true);
+    } else {
+      setFeedEmptyState(false);
+      filterAndRenderPosts(posts, { append: homePagination.cursor !== null });
+    }
+    updateHomeEmptyState();
+    homePagination.cursor = lastDoc;
+    if (size < PAGE_SIZE_HOME) {
+      homePagination.done = true;
+    }
+  } catch (err) {
+    console.error('[MusiMatch] Errore caricamento annunci:', err);
+    if (postsFeedEl) {
+      const error = document.createElement('p');
+      error.className = 'helper-text';
+      error.style.color = '#f87171';
+      error.style.margin = '0.35rem 0';
+      error.textContent = 'Errore nel caricamento degli annunci.';
+      postsFeedEl.appendChild(error);
+    }
+  } finally {
+    homePagination.loading = false;
+    updateHomeLoadMoreButton();
+    if (postsFeedEl && postsLoadMoreBtn) {
+      if (homePagination.done) {
+        postsLoadMoreBtn.style.display = 'none';
+      } else {
+        postsLoadMoreBtn.style.display = '';
+        if (!postsLoadMoreBtn.isConnected) {
+          postsFeedEl.appendChild(postsLoadMoreBtn);
+        } else {
+          postsFeedEl.appendChild(postsLoadMoreBtn); // ensure at bottom
+        }
+      }
+    }
   }
 }
 
 async function loadFeed() {
   if (!currentUserProfile || !postsFeedEl) return;
+  homePagination.cursor = null;
+  homePagination.done = false;
+  homePagination.loading = false;
   resetFeedContainer({ loadingText: 'Carico gli annunci...' });
   setFeedEmptyState(true);
-  try {
-    const posts = await fetchPosts();
-    filterAndRenderPosts(posts);
-  } catch (err) {
-    console.error('[MusiMatch] Errore caricamento annunci:', err);
-    postsFeedEl.innerHTML = '<p class="helper-text" style="color:#f87171; margin:0;">Errore nel caricamento degli annunci.</p>';
+  if (postsLoadMoreBtn) postsLoadMoreBtn.remove();
+  await loadNextHomePage();
+  const btn = ensurePostsLoadMoreButton();
+  updateHomeLoadMoreButton();
+  if (postsFeedEl && !homePagination.done) {
+    postsFeedEl.appendChild(btn);
   }
 }
 

@@ -10,8 +10,10 @@ import {
   doc,
   getDocs,
   getDoc,
+  limit,
   orderBy,
   query,
+  startAfter,
   where,
   updateDoc,
   serverTimestamp
@@ -52,6 +54,13 @@ const ratesModal = document.getElementById('rates-modal');
 const profilePostsListEl = document.getElementById('profile-posts-list');
 const profilePostsEmptyEl = document.getElementById('profile-posts-empty');
 const profilePostsEmptyDefaultText = (profilePostsEmptyEl?.textContent || '').trim() || 'Pubblica un annuncio per vederlo in questa sezione';
+const PAGE_SIZE_PROFILE = 10;
+const profilePagination = {
+  cursor: null,
+  done: false,
+  loading: false
+};
+let profileLoadMoreBtn = null;
 const postOpenModalBtn = document.getElementById('post-open-modal');
 const postCloseModalBtn = document.getElementById('post-close-modal');
 const postModal = document.getElementById('post-modal');
@@ -123,6 +132,34 @@ function setPostMessage(text, isError = false) {
   if (!postMsgEl) return;
   postMsgEl.textContent = text || '';
   postMsgEl.style.color = isError ? '#f87171' : 'var(--muted)';
+}
+
+function ensureProfileLoadMoreButton() {
+  if (profileLoadMoreBtn) return profileLoadMoreBtn;
+  profileLoadMoreBtn = document.createElement('button');
+  profileLoadMoreBtn.type = 'button';
+  profileLoadMoreBtn.className = 'ghost ghost-primary btn-load-more';
+  profileLoadMoreBtn.style.alignSelf = 'center';
+  profileLoadMoreBtn.style.margin = '0.35rem 0 0.25rem';
+  profileLoadMoreBtn.addEventListener('click', () => loadNextProfilePage());
+  return profileLoadMoreBtn;
+}
+
+function updateProfileLoadMoreButton() {
+  if (!profileLoadMoreBtn) return;
+  if (profilePagination.done) {
+    profileLoadMoreBtn.style.display = 'none';
+    return;
+  }
+  profileLoadMoreBtn.style.display = '';
+  profileLoadMoreBtn.disabled = profilePagination.loading;
+  profileLoadMoreBtn.textContent = profilePagination.loading ? 'Carico...' : 'Carica altri';
+}
+
+function updateProfileEmptyState() {
+  if (!profilePostsEmptyEl) return;
+  const hasCard = !!profilePostsListEl?.querySelector('.result-card');
+  profilePostsEmptyEl.style.display = hasCard ? 'none' : '';
 }
 
 function toggleMetaItem(el, value) {
@@ -622,11 +659,22 @@ function buildProfilePostMenu(post) {
   return wrapper;
 }
 
-async function fetchUserPosts(userId) {
+async function fetchUserPosts(userId, cursor = null) {
   const postsCol = collection(db, 'posts');
-  const q = query(postsCol, where('authorUserId', '==', userId), orderBy('createdAt', 'desc'));
-  const snap = await getDocs(q);
-  return snap.docs.map((d) => ({ id: d.id, ...d.data() }));
+  let qBase = query(postsCol, where('authorUserId', '==', userId), orderBy('createdAt', 'desc'), limit(PAGE_SIZE_PROFILE));
+  if (cursor) {
+    qBase = query(
+      postsCol,
+      where('authorUserId', '==', userId),
+      orderBy('createdAt', 'desc'),
+      startAfter(cursor),
+      limit(PAGE_SIZE_PROFILE)
+    );
+  }
+  const snap = await getDocs(qBase);
+  const posts = snap.docs.map((d) => ({ id: d.id, ...d.data() }));
+  const lastDoc = snap.docs.length ? snap.docs[snap.docs.length - 1] : cursor;
+  return { posts, lastDoc, size: snap.docs.length };
 }
 
 async function markProfilePostResolved(post) {
@@ -727,14 +775,16 @@ function startEditProfilePost(post) {
   openPostModal();
 }
 
-function renderProfilePosts(posts) {
+function renderProfilePosts(posts, { reset = false } = {}) {
   if (!profilePostsListEl) return;
-  profilePostsListEl.innerHTML = '';
-  profilePostMenus.clear();
-  if (profilePostsEmptyEl) {
-    profilePostsListEl.appendChild(profilePostsEmptyEl);
-    profilePostsEmptyEl.textContent = profilePostsEmptyDefaultText;
-    profilePostsEmptyEl.style.display = 'none';
+  if (reset) {
+    profilePostsListEl.innerHTML = '';
+    profilePostMenus.clear();
+    if (profilePostsEmptyEl) {
+      profilePostsListEl.appendChild(profilePostsEmptyEl);
+      profilePostsEmptyEl.textContent = profilePostsEmptyDefaultText;
+      profilePostsEmptyEl.style.display = 'none';
+    }
   }
   let rendered = 0;
 
@@ -830,24 +880,62 @@ function renderProfilePosts(posts) {
     rendered += 1;
   });
 
-  if (profilePostsEmptyEl) profilePostsEmptyEl.style.display = rendered === 0 ? '' : 'none';
+  updateProfileEmptyState();
 }
 
-async function loadProfilePosts(userId) {
-  if (!profilePostsListEl || !userId) return;
-  if (profilePostsEmptyEl) {
-    profilePostsEmptyEl.textContent = 'Carico gli annunci...';
-    profilePostsEmptyEl.style.display = '';
-  }
+async function loadNextProfilePage() {
+  if (!profilePostsListEl || !targetProfileId) return;
+  if (profilePagination.loading || profilePagination.done) return;
+  profilePagination.loading = true;
+  updateProfileLoadMoreButton();
   try {
-    const posts = await fetchUserPosts(userId);
-    renderProfilePosts(posts);
+    const { posts, lastDoc, size } = await fetchUserPosts(targetProfileId, profilePagination.cursor);
+    if (size === 0 && !profilePostsListEl.querySelector('.result-card')) {
+      if (profilePostsEmptyEl) profilePostsEmptyEl.style.display = '';
+    } else {
+      renderProfilePosts(posts, { reset: false });
+    }
+    updateProfileEmptyState();
+    profilePagination.cursor = lastDoc;
+    if (size < PAGE_SIZE_PROFILE) {
+      profilePagination.done = true;
+    }
   } catch (err) {
     console.error('[MusiMatch] Errore caricamento annunci profilo:', err);
     if (profilePostsEmptyEl) {
       profilePostsEmptyEl.textContent = 'Errore nel caricamento degli annunci.';
       profilePostsEmptyEl.style.display = '';
     }
+  } finally {
+    profilePagination.loading = false;
+    updateProfileLoadMoreButton();
+    if (profilePostsListEl && profileLoadMoreBtn) {
+      if (profilePagination.done) {
+        profileLoadMoreBtn.style.display = 'none';
+      } else {
+        profileLoadMoreBtn.style.display = '';
+        profilePostsListEl.appendChild(profileLoadMoreBtn);
+      }
+    }
+  }
+}
+
+async function loadProfilePosts(userId) {
+  if (!profilePostsListEl || !userId) return;
+  profilePagination.cursor = null;
+  profilePagination.done = false;
+  profilePagination.loading = false;
+  renderProfilePosts([], { reset: true });
+  if (profilePostsEmptyEl) {
+    profilePostsEmptyEl.textContent = 'Carico gli annunci...';
+    profilePostsEmptyEl.style.display = '';
+  }
+  if (profileLoadMoreBtn) profileLoadMoreBtn.remove();
+  await loadNextProfilePage();
+  const btn = ensureProfileLoadMoreButton();
+  updateProfileLoadMoreButton();
+  if (!profilePagination.done && profilePostsListEl) {
+    profilePostsListEl.appendChild(btn);
   }
 }
 
