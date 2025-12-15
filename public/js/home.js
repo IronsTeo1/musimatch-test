@@ -71,6 +71,7 @@ const filterModal = document.getElementById('filter-modal');
 const filterCityEl = document.getElementById('filter-city');
 const filterCitySuggestionsEl = document.getElementById('filter-city-suggestions');
 const filterRadiusEl = document.getElementById('filter-radius');
+const filterRadiusRangeEl = document.getElementById('filter-radius-range');
 const filterApplyBtn = document.getElementById('filter-apply');
 const filterResetBtn = document.getElementById('filter-reset');
 const filterMsgEl = document.getElementById('filter-message');
@@ -82,11 +83,9 @@ const filterInstrumentSuggestionsEl = document.getElementById('filter-instrument
 const filterVoiceEl = document.getElementById('filter-voice');
 const filterVoiceClearBtn = document.getElementById('filter-voice-clear');
 const filterVoiceSuggestionsEl = document.getElementById('filter-voice-suggestions');
-const filterEnsembleEl = document.getElementById('filter-ensemble');
-const filterEnsembleClearBtn = document.getElementById('filter-ensemble-clear');
-const filterEnsembleSuggestionsEl = document.getElementById('filter-ensemble-suggestions');
-const ENSEMBLE_OPTIONS = ['Banda', 'Coro', 'Orchestra'];
-let activeFilter = { center: null, radius: null };
+const filterTypeButtons = Array.from(document.querySelectorAll('.filter-type-btn'));
+const filterTypeState = { current: null };
+let activeFilter = { center: null, radius: null, postType: null, instrumentTokens: [], instrument: '', voice: '' };
 let awaitingGeo = false;
 
 // Assicura che il modal sia nascosto al load se aria-hidden è true
@@ -113,6 +112,10 @@ let postModalOpen = false;
 let currentEditingPostId = null;
 let currentEditingPostData = null;
 let postMode = 'seeking';
+<<<<<<< HEAD
+=======
+const geocodedCityCache = new Map();
+>>>>>>> be0ca69 (affinato il filtro nella home e reso flottante il menù di navigazione.)
 
 // Cache-busting versione avatar (forza refresh ad ogni load)
 const AVATAR_VERSION = Date.now().toString();
@@ -123,7 +126,11 @@ function formatProfileKind(data = {}) {
   const userType = (data.userType || '').toLowerCase();
   const role = (data.role || '').toLowerCase();
   const ensembleType = (data.ensembleType || '').toLowerCase();
+<<<<<<< HEAD
   if (kind === 'band' || ensembleType === 'banda') return 'Banda';
+=======
+  if (kind === 'band' || ensembleType === 'banda' || ensembleType === 'band') return 'Banda';
+>>>>>>> be0ca69 (affinato il filtro nella home e reso flottante il menù di navigazione.)
   if (kind === 'choir' || ensembleType === 'coro') return 'Coro';
   if (kind === 'orchestra' || ensembleType === 'orchestra') return 'Orchestra';
   if (kind === 'singer' || role === 'singer' || role === 'cantante') return 'Cantante';
@@ -297,8 +304,8 @@ function showGuest() {
   if (guestBlock) guestBlock.style.display = '';
   if (userBlock) userBlock.style.display = 'none';
   setUsername('');
-  if (homeTitleEl) homeTitleEl.textContent = 'Benvenuto';
-  if (homeSubtitleEl) homeSubtitleEl.textContent = 'Accedi per gestire il tuo profilo o cercare musicisti.';
+  if (homeTitleEl) homeTitleEl.textContent = 'Benvenuto su MusiMatch';
+  if (homeSubtitleEl) homeSubtitleEl.textContent = 'Registrati o accedi per cercare profili, pubblicare annunci e gestire il tuo profilo.';
 }
 
 function showUser(name) {
@@ -354,9 +361,14 @@ function setFilterClearVisibility() {
   if (filterVoiceClearBtn && filterVoiceEl) {
     filterVoiceClearBtn.hidden = !(filterVoiceEl.value && filterVoiceEl.value.trim());
   }
-  if (filterEnsembleClearBtn && filterEnsembleEl) {
-    filterEnsembleClearBtn.hidden = !(filterEnsembleEl.value && filterEnsembleEl.value.trim());
-  }
+}
+
+function setFilterType(type) {
+  filterTypeButtons.forEach((btn) => {
+    const isActive = btn.dataset.type === type;
+    btn.classList.toggle('active', isActive);
+  });
+  filterTypeState.current = type || null;
 }
 
 function cacheHomeFeed(posts = []) {
@@ -426,17 +438,52 @@ async function renderFilterCitySuggestions(term) {
 function renderFilterInstrumentSuggestions(term) {
   if (!filterInstrumentSuggestionsEl) return;
   filterInstrumentSuggestionsEl.innerHTML = '';
-  const fragment = (term || '').trim();
+  const fragment = (term || '').split(',').pop().trim();
   if (!fragment) {
     filterInstrumentSuggestionsEl.hidden = true;
     return;
   }
   const pool = [
-    'Arpa', 'Batteria', 'Basso elettrico', 'Chitarra', 'Chitarra acustica', 'Chitarra classica', 'Chitarra elettrica',
-    'Clarinetto', 'Contrabbasso', 'Corno francese', 'Euphonium', 'Fagotto', 'Fisarmonica', 'Flauto', 'Glockenspiel',
-    'Mandolino', 'Marimba', 'Oboe', 'Organo', 'Percussioni', 'Pianoforte', 'Sax contralto', 'Sax tenore', 'Sax baritono',
-    'Sax soprano', 'Tastiera', 'Timpani', 'Tromba', 'Trombone', 'Tuba', 'Viola', 'Violino', 'Violoncello', 'Xilofono',
-    'Voce', 'Cantante'
+    'Arpa',
+    'Batteria',
+    'Basso elettrico',
+    'Cantante',
+    'Chitarra acustica',
+    'Chitarra classica',
+    'Chitarra elettrica',
+    'Clarinetto',
+    'Clarinetto basso',
+    'Contrabbasso',
+    'Cornetta',
+    'Corno francese',
+    'Corno inglese',
+    'Euphonium',
+    'Fagotto',
+    'Fisarmonica',
+    'Flauto',
+    'Flauto dritto',
+    'Flicorno',
+    'Glockenspiel',
+    'Mandolino',
+    'Marimba',
+    'Oboe',
+    'Organo',
+    'Ottavino',
+    'Percussioni',
+    'Pianoforte',
+    'Sax baritono',
+    'Sax contralto',
+    'Sax soprano',
+    'Sax tenore',
+    'Tastiera',
+    'Timpani',
+    'Tromba',
+    'Trombone',
+    'Tuba',
+    'Viola',
+    'Violino',
+    'Violoncello',
+    'Xilofono'
   ];
   const normTerm = fragment.toLowerCase();
   const filtered = pool.filter((i) => i.toLowerCase().includes(normTerm)).slice(0, 8);
@@ -450,7 +497,15 @@ function renderFilterInstrumentSuggestions(term) {
     el.textContent = item;
     el.addEventListener('mousedown', (e) => {
       e.preventDefault();
-      if (filterInstrumentEl) filterInstrumentEl.value = item;
+      if (filterInstrumentEl) {
+        const parts = (filterInstrumentEl.value || '').split(',');
+        const baseTokens = parts
+          .slice(0, -1)
+          .map((p) => normalizeInstrumentName(p))
+          .filter(Boolean);
+        const tokens = [...baseTokens, normalizeInstrumentName(item)].filter(Boolean);
+        filterInstrumentEl.value = tokens.length ? tokens.join(', ') + ', ' : '';
+      }
       setFilterClearVisibility();
       filterInstrumentSuggestionsEl.hidden = true;
     });
@@ -571,6 +626,24 @@ async function ensureCityListLoaded() {
     cityListLoaded = false;
   }
   return cityList;
+}
+
+function normalizeCityKey(name) {
+  return (name || '')
+    .toString()
+    .trim()
+    .toLowerCase()
+    .normalize('NFD')
+    .replace(/[\u0300-\u036f]/g, '');
+}
+
+async function geocodeCityCached(name) {
+  const key = normalizeCityKey(name);
+  if (!key) throw new Error('Inserisci una città valida.');
+  if (geocodedCityCache.has(key)) return geocodedCityCache.get(key);
+  const coords = await geocodeCityName(name);
+  geocodedCityCache.set(key, coords);
+  return coords;
 }
 
 const VOICE_OPTIONS = [
@@ -866,10 +939,13 @@ function openFilterModal() {
   }
   if (filterRadiusEl) {
     filterRadiusEl.value = Number.isFinite(activeFilter.radius) ? activeFilter.radius : '';
+    if (filterRadiusRangeEl) {
+      filterRadiusRangeEl.value = Number.isFinite(activeFilter.radius) ? activeFilter.radius : filterRadiusRangeEl.value;
+    }
   }
-  if (filterCityEl) {
-    setTimeout(() => filterCityEl.focus({ preventScroll: true }), 30);
-  }
+  filterTypeButtons.forEach((btn) => {
+    btn.classList.toggle('active', !!activeFilter.postType && btn.dataset.type === activeFilter.postType);
+  });
 }
 
 function closeFilterModal() {
@@ -902,11 +978,25 @@ async function applyFilterFromForm() {
     } else {
       const list = await ensureCityListLoaded();
       const match = list && list.length ? findCityByName(list, cityTerm) : null;
-      if (!match) {
-        setFilterMessage('Seleziona una città valida dai suggerimenti.', true);
-        return;
+      const normalizedInput = normalizeCityKey(cityTerm);
+      const centerMatchesInput =
+        center &&
+        typeof center.lat === 'number' &&
+        typeof center.lng === 'number' &&
+        normalizeCityKey(center.city) === normalizedInput;
+      if (!centerMatchesInput) {
+        if (!match) {
+          setFilterMessage('Seleziona una città valida dai suggerimenti.', true);
+          return;
+        }
+        try {
+          const coords = await geocodeCityCached(match?.name || cityTerm);
+          center = { lat: coords.lat, lng: coords.lng, city: match?.name || cityTerm, province: match?.province || '' };
+        } catch (err) {
+          setFilterMessage(err?.message || 'Città non valida. Seleziona una città dai suggerimenti.', true);
+          return;
+        }
       }
-      center = { lat: match.lat, lng: match.lng, city: match.name, province: match.province || '' };
     }
   }
   let radius = null;
@@ -922,24 +1012,33 @@ async function applyFilterFromForm() {
       return;
     }
   }
+  const selectedTypes = filterTypeButtons
+    .filter((btn) => btn.classList.contains('active'))
+    .map((btn) => btn.dataset.type);
+  let postType = null;
+  if (selectedTypes.length === 1) postType = selectedTypes[0];
+  if (selectedTypes.length === 0 && filterTypeState.current) postType = filterTypeState.current;
+  const instrumentTokens = parseInstruments(filterInstrumentEl?.value || '');
   activeFilter = {
     center,
     radius,
     instrument: filterInstrumentEl?.value.trim() || '',
+    instrumentTokens,
     voice: filterVoiceEl?.value.trim() || '',
-    ensemble: filterEnsembleEl?.value.trim() || ''
+    postType
   };
   closeFilterModal();
   await loadFeed();
 }
 
 async function resetFilter() {
-  activeFilter = { center: null, radius: null, instrument: '', voice: '', ensemble: '' };
+  activeFilter = { center: null, radius: null, instrument: '', instrumentTokens: [], voice: '', postType: null };
   if (filterCityEl) filterCityEl.value = '';
   if (filterRadiusEl) filterRadiusEl.value = '';
+  if (filterRadiusRangeEl) filterRadiusRangeEl.value = filterRadiusRangeEl.defaultValue || '0';
   if (filterInstrumentEl) filterInstrumentEl.value = '';
   if (filterVoiceEl) filterVoiceEl.value = '';
-  if (filterEnsembleEl) filterEnsembleEl.value = '';
+  filterTypeButtons.forEach((btn) => btn.classList.remove('active'));
   setFilterClearVisibility();
   setFilterMessage('');
   closeFilterModal();
@@ -1317,7 +1416,7 @@ function renderPostCard(post, distanceKm) {
   const eyebrow = document.createElement('p');
   eyebrow.className = 'eyebrow';
   eyebrow.style.margin = '0';
-  eyebrow.textContent = post.authorType === 'ensemble' ? 'Ensemble' : 'Musicista';
+  eyebrow.textContent = formatProfileKind(post.authorProfileData || baseProfileData || {});
   const nameLink = document.createElement('a');
   nameLink.className = 'post-author-name post-author-name-link';
   nameLink.href = profileUrl;
@@ -1434,14 +1533,17 @@ function filterAndRenderPosts(posts, { append = false } = {}) {
   let rendered = 0;
 
   const viewerLoc = currentUserProfile?.data?.location;
-  const canComputeDistance = viewerLoc && typeof viewerLoc.lat === 'number' && typeof viewerLoc.lng === 'number';
+  const searchCenter = activeFilter.center || viewerLoc;
+  const canComputeDistance = searchCenter && typeof searchCenter.lat === 'number' && typeof searchCenter.lng === 'number';
   const viewerInstruments = Array.isArray(currentUserProfile?.data?.instruments) ? currentUserProfile.data.instruments : [];
   const viewerMain = currentUserProfile?.data?.mainInstrument || '';
   const viewerVoice = currentUserProfile?.data?.voiceType || currentUserProfile?.data?.mainInstrument || '';
   const viewerRadius = currentUserProfile?.data?.maxTravelKm || 50;
-  const filterInstrument = (activeFilter.instrument || '').toLowerCase();
+  const filterInstrumentTokens = Array.isArray(activeFilter.instrumentTokens)
+    ? activeFilter.instrumentTokens.map((t) => t.toLowerCase()).filter(Boolean)
+    : [];
   const filterVoice = (activeFilter.voice || '').toLowerCase();
-  const filterEnsemble = (activeFilter.ensemble || '').toLowerCase();
+  const filterPostType = (activeFilter.postType || '').toLowerCase();
 
   posts.forEach((post) => {
     const isOwner = isPostOwner(post);
@@ -1461,7 +1563,7 @@ function filterAndRenderPosts(posts, { append = false } = {}) {
     let matchesDistance = true;
 
     if (canComputeDistance) {
-      const center = activeFilter.center || viewerLoc;
+      const center = searchCenter;
       const effectiveRadius = Number.isFinite(activeFilter.radius) ? activeFilter.radius : viewerRadius;
       const baseLat = center?.lat;
       const baseLng = center?.lng;
@@ -1495,7 +1597,7 @@ function filterAndRenderPosts(posts, { append = false } = {}) {
       matchesDistance = true;
       displayDistance = null;
     }
-    if (!matchesDistance && !isOwner) return;
+    if (!matchesDistance) return;
 
     // Match strumenti/voci se specificati
     const wantedInstruments = (post.instrumentsWanted || []).filter(Boolean);
@@ -1503,19 +1605,19 @@ function filterAndRenderPosts(posts, { append = false } = {}) {
     const hasInstrumentCriteria = wantedInstruments.length > 0;
     const hasVoiceCriteria = wantedVoices.length > 0;
     // Filtri manuali utente
-    if (filterInstrument) {
-      const matchesInstr = wantedInstruments.some((i) => (i || '').toLowerCase().includes(filterInstrument));
+    if (filterInstrumentTokens.length > 0) {
+      const wantedLower = wantedInstruments.map((i) => (i || '').toLowerCase());
+      const matchesInstr = filterInstrumentTokens.some((token) =>
+        wantedLower.some((i) => i.includes(token))
+      );
       if (!matchesInstr) return;
     }
     if (filterVoice) {
       const matchesVoice = wantedVoices.some((v) => (v || '').toLowerCase() === filterVoice);
       if (!matchesVoice) return;
     }
-    if (filterEnsemble) {
-      const ensembleType = (post.authorProfileData?.ensembleType || '').toLowerCase();
-      const authorType = (post.authorType || '').toLowerCase();
-      if (authorType !== 'ensemble' && !ensembleType) return;
-      if (ensembleType && ensembleType !== filterEnsemble) return;
+    if (filterPostType && (post.postType || 'seeking').toLowerCase() !== filterPostType) {
+      return;
     }
     let matchesSkill = true;
 
@@ -1894,7 +1996,16 @@ if (filterCityEl) {
 
 if (filterInstrumentEl) {
   filterInstrumentEl.addEventListener('input', (e) => {
-    renderFilterInstrumentSuggestions(e.target.value);
+    const val = e.target.value;
+    const lastChar = val.slice(-1);
+    if (lastChar === ',') {
+      const tokens = parseInstruments(val);
+      filterInstrumentEl.value = tokens.length ? tokens.join(', ') + ', ' : '';
+      renderFilterInstrumentSuggestions(filterInstrumentEl.value);
+      setFilterClearVisibility();
+      return;
+    }
+    renderFilterInstrumentSuggestions(val);
     setFilterClearVisibility();
   });
   filterInstrumentEl.addEventListener('focus', (e) => {
@@ -1917,20 +2028,6 @@ if (filterVoiceEl) {
   filterVoiceEl.addEventListener('blur', () => {
     setTimeout(() => {
       if (filterVoiceSuggestionsEl) filterVoiceSuggestionsEl.hidden = true;
-    }, 120);
-  });
-}
-
-if (filterEnsembleEl) {
-  filterEnsembleEl.addEventListener('focus', () => {
-    renderFilterEnsembleSuggestions();
-  });
-  filterEnsembleEl.addEventListener('click', () => {
-    renderFilterEnsembleSuggestions();
-  });
-  filterEnsembleEl.addEventListener('blur', () => {
-    setTimeout(() => {
-      if (filterEnsembleSuggestionsEl) filterEnsembleSuggestionsEl.hidden = true;
     }, 120);
   });
 }
@@ -1973,11 +2070,30 @@ if (filterVoiceClearBtn) {
     setFilterClearVisibility();
   });
 }
-if (filterEnsembleClearBtn) {
-  filterEnsembleClearBtn.addEventListener('click', () => {
-    if (filterEnsembleEl) filterEnsembleEl.value = '';
-    setFilterClearVisibility();
+filterTypeButtons.forEach((btn) => {
+  btn.addEventListener('click', () => {
+    const type = btn.dataset.type;
+    const alreadyActive = btn.classList.contains('active');
+    filterTypeButtons.forEach((b) => b.classList.remove('active'));
+    if (!alreadyActive) {
+      setFilterType(type);
+    } else {
+      setFilterType(null);
+    }
   });
+});
+if (filterRadiusRangeEl && filterRadiusEl) {
+  const syncRangeToNumber = () => {
+    filterRadiusEl.value = filterRadiusRangeEl.value;
+  };
+  const syncNumberToRange = () => {
+    const num = filterRadiusEl.value;
+    if (num === '') return;
+    const val = Math.max(0, Math.min(200, parseFloat(num)));
+    filterRadiusRangeEl.value = Number.isFinite(val) ? val : 0;
+  };
+  filterRadiusRangeEl.addEventListener('input', syncRangeToNumber);
+  filterRadiusEl.addEventListener('input', syncNumberToRange);
 }
 
 if (postModal) {

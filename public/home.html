@@ -44,51 +44,94 @@
       </a>
       <div>
         <p class="eyebrow" style="margin: 0;">MusiMatch</p>
-        <h1 style="margin: 0;" id="home-title">Benvenuto</h1>
-        <p style="margin: 0;" id="home-subtitle">Accedi per gestire il tuo profilo o cercare musicisti.</p>
+        <h1 style="margin: 0;" id="home-title">Benvenuto su MusiMatch</h1>
+        <p style="margin: 0;" id="home-subtitle">Registrati o accedi per cercare profili, pubblicare annunci e gestire il tuo profilo.</p>
       </div>
     </div>
   </header>
 
   <main class="page-content">
     <div id="home-guest" style="display: none;">
-      <section class="card">
-        <p class="eyebrow" style="margin: 0;">Per chi arriva ora</p>
-        <h2 style="margin: 0 0 0.35rem 0;">Trova musicisti vicino a te</h2>
-        <p class="muted" style="margin: 0 0 1rem 0;">Crea un profilo in pochi minuti, aggiungi strumenti e città, poi contatta o fatti contattare.</p>
-        <div class="actions">
-          <a class="primary" href="register.html">Registrati</a>
-          <a class="ghost" href="login.html">Accedi</a>
-          <a class="ghost ghost-primary" href="ricerca.html">Inizia la ricerca</a>
+      <section class="card home-hero">
+        <div class="home-hero-copy">
+          <p class="eyebrow">Non sei loggato</p>
+          <h2 class="home-hero-title">Scopri, contatta e pubblica su MusiMatch</h2>
+          <p class="muted">Trova musicisti e ensemble per città, strumento e voce. Crea il tuo profilo, pubblica un annuncio mirato o sfoglia quelli già disponibili.</p>
+          <div class="home-actions">
+            <a class="primary" href="register.html">Crea il tuo profilo</a>
+            <a class="ghost ghost-primary" href="ricerca.html">Apri la ricerca</a>
+            <a class="ghost" href="login.html">Ho già un account</a>
+          </div>
+          <div class="pill-row">
+            <span class="pill">Filtri città + raggio</span>
+            <span class="pill">Annunci "Cercasi" e "A disposizione"</span>
+            <span class="pill">Profilo con bio, generi e tariffe</span>
+          </div>
+        </div>
+        <div class="home-hero-panel">
+          <div class="home-panel-card">
+            <p class="eyebrow" style="margin: 0;">Cosa trovi dentro</p>
+            <ul class="home-checklist">
+              <li>Ricerca profili e annunci per città, raggio, strumento e voce.</li>
+              <li>Pubblica annunci geolocalizzati e duplica la visibilità in più città.</li>
+              <li>Gestisci un profilo pubblico con foto, bio, curriculum, generi e disponibilità.</li>
+              <li>Controlla tema e preferenze direttamente dal menu flottante.</li>
+            </ul>
+            <div class="home-panel-actions">
+              <a class="ghost ghost-primary" href="ricerca.html">Prova la ricerca</a>
+              <a class="ghost" href="register.html">Completa il profilo</a>
+            </div>
+          </div>
         </div>
       </section>
 
-      <section class="card">
-        <h3 style="margin-top: 0;">Come funziona</h3>
-        <div class="grid">
+      <section class="card home-feature-section">
+        <div class="section-heading">
           <div>
-            <p class="eyebrow" style="margin: 0;">1 · Profilo</p>
-            <p class="muted" style="margin: 0;">Email, strumenti/voce, città e bio. Puoi cambiare tutto in seguito.</p>
+            <p class="eyebrow" style="margin: 0;">Funzioni principali</p>
+            <h3 class="section-title">Tutto quello che puoi fare con MusiMatch</h3>
+            <p class="muted">Pensato per musicisti, cantanti e ensemble: ricerca precisa, annunci rapidi e profili curati.</p>
           </div>
-          <div>
-            <p class="eyebrow" style="margin: 0;">2 · Foto e tariffe</p>
-            <p class="muted" style="margin: 0;">Carica un avatar o usa quello predefinito. Opzionale: tariffe per prove, concerti, servizi.</p>
-          </div>
-          <div>
-            <p class="eyebrow" style="margin: 0;">3 · Trova o fatti trovare</p>
-            <p class="muted" style="margin: 0;">Filtra per città, strumento e raggio. Condividi il tuo profilo pubblico.</p>
-          </div>
+          <a class="ghost ghost-secondary" href="login.html">Accedi</a>
+        </div>
+        <div class="grid home-feature-grid">
+          <article class="home-feature">
+            <div class="home-feature-icon" aria-hidden="true">🎯</div>
+            <h4>Ricerca mirata</h4>
+            <p class="muted">Filtra per città, raggio, strumento e voce. Usa la città del profilo o la posizione attuale per vedere chi è vicino.</p>
+          </article>
+          <article class="home-feature">
+            <div class="home-feature-icon" aria-hidden="true">📢</div>
+            <h4>Annunci veloci</h4>
+            <p class="muted">Scegli "Cercasi" o "A disposizione", aggiungi strumenti/voci richiesti e rendi l'annuncio visibile anche in altre città.</p>
+          </article>
+          <article class="home-feature">
+            <div class="home-feature-icon" aria-hidden="true">🪪</div>
+            <h4>Profilo completo</h4>
+            <p class="muted">Foto, bio, curriculum, generi, disponibilità di spostamento e tariffe: aggiorna tutto in pochi click.</p>
+          </article>
+          <article class="home-feature">
+            <div class="home-feature-icon" aria-hidden="true">🎼</div>
+            <h4>Per solisti e ensemble</h4>
+            <p class="muted">Supporto per cori, bande e orchestre: descrivi l'organico, segnala le sezioni scoperte e condividi il profilo pubblico.</p>
+          </article>
         </div>
       </section>
 
-      <section class="card">
-        <h3 style="margin-top: 0;">Perché MusiMatch</h3>
-        <ul class="muted" style="margin: 0; padding-left: 1.1rem;">
-          <li>Profili ordinati per strumento/voce e città.</li>
-          <li>Controllo su cosa mostrare (bio, nazionalità, genere, tariffe).</li>
-          <li>Supporto a ensemble: cori, bande, orchestre.</li>
-          <li>Menu sempre a portata di mano per tema, ricerca, login.</li>
-        </ul>
+      <section class="card home-steps">
+        <div class="section-heading">
+          <div>
+            <p class="eyebrow" style="margin: 0;">Percorso rapido</p>
+            <h3 class="section-title">Come iniziare in meno di 2 minuti</h3>
+          </div>
+          <a class="ghost ghost-primary" href="register.html">Registrati</a>
+        </div>
+        <ol class="home-steps-list">
+          <li><strong>Crea l'account</strong> con email e password.</li>
+          <li><strong>Compila il profilo</strong> con città, strumenti/voce, bio, curriculum e disponibilità di spostamento.</li>
+          <li><strong>Pubblica o filtra annunci</strong> impostando raggio, strumenti, voci e città extra se ti servono.</li>
+          <li><strong>Condividi il profilo pubblico</strong> o torna alla ricerca per trovare nuovi contatti.</li>
+        </ol>
       </section>
     </div>
 
@@ -105,7 +148,11 @@
           <button type="button" class="ghost ghost-primary btn-compact modal-close" id="post-close-modal" aria-label="Chiudi">✕</button>
           <div class="inline-header" style="align-items: flex-end; gap: 0.5rem; flex-wrap: wrap;">
             <h3 style="margin: 0;" id="post-modal-title">Crea un annuncio</h3>
+<<<<<<< HEAD
             <p class="muted helper-text" style="margin: 0;">Se non scegli altro, l’annuncio sarà visibile solo a chi è vicino a te.</p>
+=======
+            <p class="muted helper-text" style="margin: 0;">Se non scegli altro, l'annuncio sarà visibile solo a chi è vicino a te.</p>
+>>>>>>> be0ca69 (affinato il filtro nella home e reso flottante il menù di navigazione.)
           </div>
           <div class="post-tabs" role="tablist" aria-label="Tipo annuncio">
             <button type="button" class="post-tab active" id="post-tab-seeking" data-mode="seeking">Cercasi</button>
@@ -118,7 +165,11 @@
             </label>
             <div id="post-seeking-fields">
               <label class="field">
+<<<<<<< HEAD
                 <span class="field-label">Mostra l’annuncio anche in un’altra città (opzionale)</span>
+=======
+                <span class="field-label">Mostra l'annuncio anche in un'altra città (opzionale)</span>
+>>>>>>> be0ca69 (affinato il filtro nella home e reso flottante il menù di navigazione.)
                 <p class="helper-text" style="margin: 0.15rem 0 0.25rem;">Seleziona una città diversa per far comparire il post anche a chi abita lì.</p>
                 <div class="autocomplete with-clear">
                   <input type="text" id="post-target-city" autocomplete="off" placeholder="Es. Milano, Bologna, Firenze" />
@@ -194,51 +245,67 @@
               <h3 style="margin: 0;" id="filter-modal-title">Filtra annunci</h3>
               <p class="muted helper-text" style="margin: 0;">Scegli città e raggio per vedere annunci lontani.</p>
             </div>
-            <div class="stack" style="margin-top: 0.75rem;">
-              <label class="field">
-                <span class="field-label">Città di riferimento</span>
-                <div class="autocomplete">
-                  <input type="text" id="filter-city" autocomplete="off" placeholder="es. Roma, Napoli, Milano">
-                  <div id="filter-city-suggestions" class="autocomplete-list" hidden></div>
+            <div class="stack filter-stack" style="margin-top: 0.75rem;">
+              <div class="filter-section">
+                <p class="section-label muted xsmall">Area di ricerca</p>
+                <div class="grid filter-grid">
+                  <label class="field">
+                    <span class="field-label">Città di riferimento</span>
+                    <div class="autocomplete">
+                      <input type="text" id="filter-city" autocomplete="off" placeholder="es. Roma, Napoli, Milano">
+                      <div id="filter-city-suggestions" class="autocomplete-list" hidden></div>
+                    </div>
+                  </label>
+                  <div class="stack" style="gap: 0.35rem;">
+                    <div class="inline-header" style="gap: 0.4rem; flex-wrap: wrap; justify-content: flex-start;">
+                      <button type="button" class="ghost ghost-secondary btn-compact" id="filter-use-profile">Usa città profilo</button>
+                      <button type="button" class="ghost ghost-secondary btn-compact" id="filter-use-geo">Posizione attuale</button>
+                    </div>
+                    <div class="field" style="margin: 0;">
+                      <span class="field-label">Raggio (km)</span>
+                      <div class="range-row">
+                        <input type="range" id="filter-radius-range" min="0" max="200" step="5">
+                        <input type="number" id="filter-radius" min="0" step="1" placeholder="es. 50" aria-label="Raggio in km">
+                      </div>
+                    </div>
+                  </div>
                 </div>
-              </label>
-              <div class="inline-header" style="gap: 0.4rem; flex-wrap: wrap; justify-content: flex-start;">
-                <button type="button" class="ghost ghost-secondary btn-compact" id="filter-use-profile">Usa città profilo</button>
-                <button type="button" class="ghost ghost-secondary btn-compact" id="filter-use-geo">Città in cui ti trovi ora</button>
               </div>
-              <label class="field">
-                <span class="field-label">Raggio (km)</span>
-                <input type="number" id="filter-radius" min="0" step="1" placeholder="es. 50">
-              </label>
-              <label class="field">
-                <span class="field-label">Strumento richiesto (opzionale)</span>
-                <div class="autocomplete with-clear">
-                  <input type="text" id="filter-instrument" autocomplete="off" placeholder="Digita per cercare" />
-                  <button type="button" class="clear-input" id="filter-instrument-clear" aria-label="Pulisci strumento" hidden>✕</button>
-                  <div id="filter-instrument-suggestions" class="autocomplete-list" hidden></div>
+
+              <div class="filter-section">
+                <p class="section-label muted xsmall">Profilo e richieste</p>
+                <div class="grid filter-grid">
+                  <label class="field">
+                    <span class="field-label">Strumento richiesto</span>
+                    <div class="autocomplete with-clear">
+                      <input type="text" id="filter-instrument" autocomplete="off" placeholder="Digita per cercare" />
+                      <button type="button" class="clear-input" id="filter-instrument-clear" aria-label="Pulisci strumento" hidden>✕</button>
+                      <div id="filter-instrument-suggestions" class="autocomplete-list" hidden></div>
+                    </div>
+                  </label>
+                  <label class="field">
+                    <span class="field-label">Voce richiesta</span>
+                    <div class="autocomplete with-clear">
+                      <input type="text" id="filter-voice" autocomplete="off" placeholder="Seleziona" readonly />
+                      <button type="button" class="clear-input" id="filter-voice-clear" aria-label="Pulisci voce" hidden>✕</button>
+                      <div id="filter-voice-suggestions" class="autocomplete-list" hidden></div>
+                    </div>
+                  </label>
                 </div>
-              </label>
-              <label class="field">
-                <span class="field-label">Voce richiesta (opzionale)</span>
-                <div class="autocomplete with-clear">
-                  <input type="text" id="filter-voice" autocomplete="off" placeholder="Seleziona" readonly />
-                  <button type="button" class="clear-input" id="filter-voice-clear" aria-label="Pulisci voce" hidden>✕</button>
-                  <div id="filter-voice-suggestions" class="autocomplete-list" hidden></div>
+                <div class="stack" style="gap: 0.4rem;">
+                  <span class="field-label">Tipologia annuncio</span>
+                  <div class="inline-header" style="gap: 0.5rem; flex-wrap: wrap;">
+                    <button type="button" class="ghost ghost-secondary btn-compact filter-type-btn" data-type="seeking">Cercasi</button>
+                    <button type="button" class="ghost ghost-secondary btn-compact filter-type-btn" data-type="offering">A disposizione</button>
+                  </div>
                 </div>
-              </label>
-              <label class="field">
-                <span class="field-label">Ensemble (opzionale)</span>
-                <div class="autocomplete with-clear">
-                  <input type="text" id="filter-ensemble" autocomplete="off" placeholder="Seleziona" readonly />
-                  <button type="button" class="clear-input" id="filter-ensemble-clear" aria-label="Pulisci ensemble" hidden>✕</button>
-                  <div id="filter-ensemble-suggestions" class="autocomplete-list" hidden></div>
-                </div>
-              </label>
+              </div>
+
               <div class="inline-header" style="gap: 0.5rem; justify-content: flex-end;">
                 <button type="button" class="ghost ghost-danger btn-compact" id="filter-reset">Azzera filtri</button>
                 <button type="button" class="primary btn-compact" id="filter-apply">Applica</button>
               </div>
-              <p id="filter-message" class="helper-text"></p>
+              <p id="filter-message" class="helper-text" aria-live="polite"></p>
             </div>
           </section>
         </div>

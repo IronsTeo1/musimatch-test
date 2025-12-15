@@ -173,6 +173,24 @@ function setPostMode(mode = 'seeking') {
   refreshOfferVisibility();
 }
 
+<<<<<<< HEAD
+=======
+function formatProfileKind(data = {}) {
+  const kind = (data.profileKind || '').toLowerCase();
+  const userType = (data.userType || '').toLowerCase();
+  const role = (data.role || '').toLowerCase();
+  const ensembleType = (data.ensembleType || '').toLowerCase();
+  if (kind === 'band' || ensembleType === 'banda' || ensembleType === 'band') return 'Banda';
+  if (kind === 'choir' || ensembleType === 'coro') return 'Coro';
+  if (kind === 'orchestra' || ensembleType === 'orchestra') return 'Orchestra';
+  if (kind === 'singer' || role === 'singer' || role === 'cantante') return 'Cantante';
+  if (userType === 'ensemble' && ensembleType) {
+    return ensembleType.charAt(0).toUpperCase() + ensembleType.slice(1);
+  }
+  return userType === 'ensemble' ? 'Ensemble' : 'Musicista';
+}
+
+>>>>>>> be0ca69 (affinato il filtro nella home e reso flottante il menù di navigazione.)
 function ensureProfileSentinel() {
   if (!profileSentinel) {
     profileSentinel = document.createElement('div');
@@ -947,7 +965,8 @@ function renderProfilePosts(posts, { reset = false } = {}) {
     const eyebrow = document.createElement('p');
     eyebrow.className = 'eyebrow';
     eyebrow.style.margin = '0';
-    eyebrow.textContent = post.authorType === 'ensemble' ? 'Ensemble' : 'Musicista';
+    const kindLabel = formatProfileKind(post.authorProfileData || dataCache || {});
+    eyebrow.textContent = kindLabel;
     const nameLink = document.createElement('a');
     nameLink.className = 'post-author-name post-author-name-link';
     nameLink.href = profileUrl;
