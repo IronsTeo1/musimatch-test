@@ -138,7 +138,7 @@
       </div>
     </section>
 
-    <section class="card">
+    <section class="card" id="travel-card">
       <h2>Città e disponibilità</h2>
       <div class="stack">
         <div class="grid">
@@ -164,7 +164,7 @@
       <h2>Bio e Curriculum</h2>
       <div class="stack">
         <div class="grid">
-          <label class="field">
+          <label class="field" id="settings-instruments-field">
             <span class="field-label" id="settings-label-instruments">Strumenti suonati</span>
             <span class="field-hint muted xsmall">Separa gli strumenti con una virgola</span>
             <div class="autocomplete with-clear">
@@ -182,6 +182,10 @@
             </div>
           </label>
         </div>
+        <label class="field" id="settings-ensemble-members-field" style="display: none;">
+          <span class="field-label">Componenti</span>
+          <input type="number" id="set-ensemble-members" min="1" step="1" placeholder="es. 12">
+        </label>
         <div class="grid" id="voice-settings-fields" style="display: none;">
           <label class="field">
             <span class="field-label">Estensione vocale principale</span>
@@ -237,7 +241,7 @@
     </section>
 
     <section class="card">
-      <h2>Tariffe</h2>
+      <h2 id="rates-title">Tariffe</h2>
       <div class="grid">
         <label class="field">
           <span class="field-label">Prova (€)</span>
@@ -260,7 +264,7 @@
           <input type="number" id="set-rate-solo" min="0" step="1">
         </label>
       </div>
-      <div class="inline-check">
+      <div class="inline-check" id="stable-group-field">
         <span class="field-label">In cerca di un gruppo stabile</span>
         <input type="checkbox" id="set-willing">
       </div>

@@ -76,7 +76,7 @@
         </div>
       </div>
       <div class="grid profile-details-grid">
-        <div class="field">
+        <div class="field" id="profile-maxTravel-field">
           <span class="field-label">Distanza massima (km)</span>
           <p id="profile-maxTravel" class="muted"></p>
         </div>
@@ -88,9 +88,13 @@
           <span class="field-label">Nazionalità</span>
           <p id="profile-nationality" class="muted"></p>
         </div>
-        <div class="field">
-          <span class="field-label" style="white-space: nowrap;">Disponibile a unirsi a un gruppo</span>
+        <div class="field" id="profile-willing-field">
+          <span class="field-label" id="profile-willing-label" style="white-space: nowrap;">Disponibile a unirsi a un gruppo</span>
           <p id="profile-willing" class="muted" style="margin: 0; text-align: left;"></p>
+        </div>
+        <div class="field" id="profile-members-field" style="display: none;">
+          <span class="field-label">Componenti</span>
+          <p id="profile-members" class="muted" style="margin: 0;"></p>
         </div>
         <div class="field field-wide">
           <span class="field-label">Bio</span>
@@ -121,37 +125,76 @@
             <h3 style="margin: 0;" id="post-modal-title">Crea un annuncio</h3>
             <p class="muted helper-text" style="margin: 0;">Se non scegli altro, l’annuncio sarà visibile solo a chi è vicino a te.</p>
           </div>
+          <div class="post-tabs" role="tablist" aria-label="Tipo annuncio">
+            <button type="button" class="post-tab active" id="post-tab-seeking" data-mode="seeking">Cercasi</button>
+            <button type="button" class="post-tab" id="post-tab-offering" data-mode="offering">A disposizione</button>
+          </div>
           <div class="stack" style="margin-top: 0.75rem;">
             <label class="field">
               <span class="field-label">Testo annuncio</span>
               <textarea id="post-text" rows="3" maxlength="800" placeholder="Es. Cerco pianista per trio, prove serali zona centro."></textarea>
             </label>
-            <label class="field">
-              <span class="field-label">Mostra l’annuncio anche in un’altra città (opzionale)</span>
-              <p class="helper-text" style="margin: 0.15rem 0 0.25rem;">Seleziona una città diversa per far comparire il post anche a chi abita lì.</p>
-              <div class="autocomplete with-clear">
-                <input type="text" id="post-target-city" autocomplete="off" placeholder="Es. Milano, Bologna, Firenze" />
-                <div id="post-target-city-suggestions" class="autocomplete-list" hidden></div>
+            <div id="post-seeking-fields">
+              <label class="field">
+                <span class="field-label">Mostra l’annuncio anche in un’altra città (opzionale)</span>
+                <p class="helper-text" style="margin: 0.15rem 0 0.25rem;">Seleziona una città diversa per far comparire il post anche a chi abita lì.</p>
+                <div class="autocomplete with-clear">
+                  <input type="text" id="post-target-city" autocomplete="off" placeholder="Es. Milano, Bologna, Firenze" />
+                  <div id="post-target-city-suggestions" class="autocomplete-list" hidden></div>
+                </div>
+              </label>
+              <div class="grid">
+                <label class="field">
+                  <span class="field-label">Strumenti richiesti (opzionale)</span>
+                  <div class="autocomplete with-clear">
+                    <input type="text" id="post-instruments" autocomplete="off" placeholder="Digita e premi virgola per aggiungere" />
+                    <div id="post-instruments-suggestions" class="autocomplete-list" hidden></div>
+                  </div>
+                </label>
+                <label class="field">
+                  <span class="field-label">Voci richieste (opzionale)</span>
+                  <div class="autocomplete with-clear">
+                    <input type="text" id="post-voices" readonly placeholder="Seleziona voci">
+                    <button type="button" class="clear-input" id="post-voices-clear" aria-label="Pulisci voci" hidden>✕</button>
+                    <div id="post-voices-suggestions" class="autocomplete-list" hidden></div>
+                  </div>
+                </label>
               </div>
-            </label>
-            <div class="grid">
-            <div class="grid">
-              <label class="field">
-                <span class="field-label">Strumenti richiesti (opzionale)</span>
-                <div class="autocomplete with-clear">
-                  <input type="text" id="post-instruments" autocomplete="off" placeholder="Digita e premi virgola per aggiungere" />
-                  <div id="post-instruments-suggestions" class="autocomplete-list" hidden></div>
-                </div>
-              </label>
-              <label class="field">
-                <span class="field-label">Voci richieste (opzionale)</span>
-                <div class="autocomplete with-clear">
-                  <input type="text" id="post-voices" readonly placeholder="Seleziona voci">
-                  <button type="button" class="clear-input" id="post-voices-clear" aria-label="Pulisci voci" hidden>✕</button>
-                  <div id="post-voices-suggestions" class="autocomplete-list" hidden></div>
-                </div>
-              </label>
             </div>
+
+            <div id="post-offering-fields" hidden>
+              <div class="stack post-offer-musician">
+                <label class="inline-check">
+                  <input type="checkbox" id="post-offer-teach-instruments">
+                  <span>Disponibile per lezioni di strumenti</span>
+                </label>
+                <label class="field">
+                  <span class="field-label">Strumenti insegnati (opzionale)</span>
+                  <span class="field-hint muted xsmall">Separali con una virgola</span>
+                  <div class="autocomplete with-clear">
+                    <input type="text" id="post-offer-instruments" placeholder="es. Chitarra, Pianoforte" autocomplete="off">
+                    <div id="post-offer-instruments-suggestions" class="autocomplete-list" hidden></div>
+                  </div>
+                </label>
+                <label class="inline-check">
+                  <input type="checkbox" id="post-offer-teach-singing">
+                  <span>Disponibile per lezioni di canto</span>
+                </label>
+                <label class="field">
+                  <span class="field-label">Tariffa oraria (opzionale)</span>
+                  <input type="number" id="post-offer-rate" min="0" step="1" placeholder="es. 30">
+                </label>
+              </div>
+              <div class="stack post-offer-ensemble">
+                <label class="inline-check">
+                  <input type="checkbox" id="post-offer-concerts">
+                  <span>Disponibile per concerti</span>
+                </label>
+                <label class="inline-check">
+                  <input type="checkbox" id="post-offer-services">
+                  <span>Disponibile per servizi civili/religiosi</span>
+                </label>
+              </div>
             </div>
             <button type="button" class="ghost ghost-primary" id="post-submit">Pubblica annuncio</button>
             <p id="post-message" class="helper-text"></p>

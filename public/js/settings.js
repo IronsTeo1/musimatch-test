@@ -137,6 +137,12 @@ function applyEnsembleVisibility() {
   const isEnsemble = currentUserType === 'ensemble';
   if (personalDataFields) personalDataFields.style.display = isEnsemble ? 'none' : '';
   if (ensembleLocationCard) ensembleLocationCard.style.display = isEnsemble ? '' : 'none';
+  if (travelCard) travelCard.style.display = isEnsemble ? 'none' : '';
+  if (settingsInstrumentsField) settingsInstrumentsField.style.display = isEnsemble ? 'none' : '';
+  if (settingsMainInstrumentField) settingsMainInstrumentField.style.display = isEnsemble ? 'none' : '';
+  if (stableGroupField) stableGroupField.style.display = isEnsemble ? 'none' : '';
+  if (ratesTitle) ratesTitle.textContent = isEnsemble ? 'Tariffe offerte' : 'Tariffe';
+  if (settingsEnsembleMembersField) settingsEnsembleMembersField.style.display = isEnsemble ? '' : 'none';
   if (isEnsemble) {
     if (genderEl) genderEl.value = '';
     if (genderVisibleEl) genderVisibleEl.checked = false;
@@ -146,14 +152,25 @@ function applyEnsembleVisibility() {
 }
 
 function applyRoleLabels(role) {
+  if (currentUserType === 'ensemble') {
+    if (settingsInstrumentsField) settingsInstrumentsField.style.display = 'none';
+    if (settingsMainInstrumentField) settingsMainInstrumentField.style.display = 'none';
+    if (settingsLabelInstruments) settingsLabelInstruments.textContent = '';
+    if (settingsLabelMainInstrument) settingsLabelMainInstrument.textContent = '';
+    if (settingsEnsembleMembersField) settingsEnsembleMembersField.style.display = '';
+    return;
+  }
+
   if (role === 'singer') {
     if (settingsLabelInstruments) settingsLabelInstruments.textContent = 'Capacità vocale';
     if (settingsLabelMainInstrument) settingsLabelMainInstrument.textContent = 'Voce principale';
     if (settingsMainInstrumentField) settingsMainInstrumentField.style.display = 'none';
+    if (settingsInstrumentsField) settingsInstrumentsField.style.display = '';
   } else {
     if (settingsLabelInstruments) settingsLabelInstruments.textContent = 'Altri strumenti suonati';
     if (settingsLabelMainInstrument) settingsLabelMainInstrument.textContent = 'Strumento principale';
     if (settingsMainInstrumentField) settingsMainInstrumentField.style.display = '';
+    if (settingsInstrumentsField) settingsInstrumentsField.style.display = '';
   }
 }
 
@@ -166,13 +183,19 @@ const setInstrumentsEl = document.getElementById('set-instruments');
 const setMainInstrumentEl = document.getElementById('set-mainInstrument');
 const instrumentsSuggestionsEl = document.getElementById('set-instruments-suggestions');
 const mainInstrumentSuggestionsEl = document.getElementById('set-mainInstrument-suggestions');
+const settingsInstrumentsField = document.getElementById('settings-instruments-field');
 const settingsMainInstrumentField = document.getElementById('settings-mainInstrument-field');
 const settingsLabelInstruments = document.getElementById('settings-label-instruments');
 const settingsLabelMainInstrument = document.getElementById('settings-label-mainInstrument');
+const settingsEnsembleMembersField = document.getElementById('settings-ensemble-members-field');
+const setEnsembleMembersEl = document.getElementById('set-ensemble-members');
 const clearInstrumentsBtn = document.getElementById('clear-instruments');
 const clearMainInstrumentBtn = document.getElementById('clear-mainInstrument');
 const voiceSettingsFields = document.getElementById('voice-settings-fields');
 const voiceTypeSelect = document.getElementById('set-voiceType');
+const travelCard = document.getElementById('travel-card');
+const stableGroupField = document.getElementById('stable-group-field');
+const ratesTitle = document.getElementById('rates-title');
 
 const countryList = [
   'Italia', 'Francia', 'Germania', 'Spagna', 'Portogallo', 'Regno Unito', 'Irlanda',
@@ -602,6 +625,7 @@ onAuthStateChanged(auth, async (user) => {
       applyRoleLabels(docData.data.role);
       if (bioEl) bioEl.value = docData.data.bio || '';
       if (cvEl) cvEl.value = docData.data.curriculum || '';
+      if (setEnsembleMembersEl) setEnsembleMembersEl.value = docData.data.ensembleMembers ?? '';
       setRatesFields(docData.data.rates || {});
       if (genderEl) genderEl.value = docData.data.gender || '';
       if (genderVisibleEl) genderVisibleEl.checked = !!docData.data.genderVisible;
@@ -776,6 +800,9 @@ if (btnUpdateBio) {
         .filter(Boolean);
       let mainInstrument = normalizeInstrumentName(setMainInstrumentEl?.value || '');
       const voiceType = normalizeInstrumentName(voiceTypeSelect?.value || '');
+      const membersRaw = setEnsembleMembersEl?.value ?? '';
+      const membersVal = membersRaw === '' ? null : parseInt(membersRaw, 10);
+      const ensembleMembers = Number.isFinite(membersVal) ? membersVal : null;
       if (voiceType) {
         mainInstrument = voiceType;
         if (!instruments.includes(voiceType)) instruments.unshift(voiceType);
@@ -789,6 +816,7 @@ if (btnUpdateBio) {
         genderVisible: isEnsemble ? false : !!genderVisibleEl?.checked,
         nationality: isEnsemble ? null : (nationalityEl?.value.trim() || null),
         nationalityVisible: isEnsemble ? false : !!nationalityVisibleEl?.checked,
+        ensembleMembers: isEnsemble ? ensembleMembers : null,
         instruments: instruments.length > 0 ? instruments : null,
         mainInstrument: mainInstrument || null,
         mainInstrumentSlug: mainInstrumentSlug || null,

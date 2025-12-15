@@ -37,6 +37,17 @@ const postVoicesSuggestionsEl = document.getElementById('post-voices-suggestions
 const postVoicesClearBtn = document.getElementById('post-voices-clear');
 const postTargetCityEl = document.getElementById('post-target-city');
 const postTargetCitySuggestionsEl = document.getElementById('post-target-city-suggestions');
+const postTabSeekingBtn = document.getElementById('post-tab-seeking');
+const postTabOfferingBtn = document.getElementById('post-tab-offering');
+const postSeekingFields = document.getElementById('post-seeking-fields');
+const postOfferingFields = document.getElementById('post-offering-fields');
+const postOfferTeachInstruments = document.getElementById('post-offer-teach-instruments');
+const postOfferInstrumentsEl = document.getElementById('post-offer-instruments');
+const postOfferInstrumentsSuggestionsEl = document.getElementById('post-offer-instruments-suggestions');
+const postOfferTeachSinging = document.getElementById('post-offer-teach-singing');
+const postOfferRateEl = document.getElementById('post-offer-rate');
+const postOfferConcertsEl = document.getElementById('post-offer-concerts');
+const postOfferServicesEl = document.getElementById('post-offer-services');
 const postOpenModalBtn = document.getElementById('post-open-modal');
 const postCloseModalBtn = document.getElementById('post-close-modal');
 const postModal = document.getElementById('post-modal');
@@ -101,11 +112,38 @@ let cityListLoaded = false;
 let postModalOpen = false;
 let currentEditingPostId = null;
 let currentEditingPostData = null;
+let postMode = 'seeking';
 
 // Cache-busting versione avatar (forza refresh ad ogni load)
 const AVATAR_VERSION = Date.now().toString();
 const AVATAR_ROOT = '/assets/img/avatars';
 
+function formatProfileKind(data = {}) {
+  const kind = (data.profileKind || '').toLowerCase();
+  const userType = (data.userType || '').toLowerCase();
+  const role = (data.role || '').toLowerCase();
+  const ensembleType = (data.ensembleType || '').toLowerCase();
+  if (kind === 'band' || ensembleType === 'banda') return 'Banda';
+  if (kind === 'choir' || ensembleType === 'coro') return 'Coro';
+  if (kind === 'orchestra' || ensembleType === 'orchestra') return 'Orchestra';
+  if (kind === 'singer' || role === 'singer' || role === 'cantante') return 'Cantante';
+  if (userType === 'ensemble' && ensembleType) {
+    return ensembleType.charAt(0).toUpperCase() + ensembleType.slice(1);
+  }
+  return userType === 'ensemble' ? 'Ensemble' : 'Musicista';
+}
+
+function profileKindSlug(data = {}) {
+  const kind = (data.profileKind || '').toLowerCase();
+  const userType = (data.userType || '').toLowerCase();
+  const role = (data.role || '').toLowerCase();
+  const ensembleType = (data.ensembleType || '').toLowerCase();
+  if (kind) return kind;
+  if (userType === 'ensemble' && ensembleType) return ensembleType;
+  if (role === 'singer' || role === 'cantante') return 'singer';
+  if (userType === 'ensemble') return 'ensemble';
+  return 'musician';
+}
 function slugifyInstrument(raw) {
   if (!raw) return null;
   const clean = raw
@@ -276,6 +314,27 @@ function setPostMessage(text, isError = false) {
   if (!postMsgEl) return;
   postMsgEl.textContent = text || '';
   postMsgEl.style.color = isError ? '#f87171' : 'var(--muted)';
+}
+
+function refreshOfferVisibility() {
+  const isEnsemble = currentUserProfile?.data?.userType === 'ensemble';
+  const musicianBlocks = document.querySelectorAll('.post-offer-musician');
+  const ensembleBlocks = document.querySelectorAll('.post-offer-ensemble');
+  musicianBlocks.forEach((el) => {
+    el.style.display = isEnsemble ? 'none' : '';
+  });
+  ensembleBlocks.forEach((el) => {
+    el.style.display = isEnsemble ? '' : 'none';
+  });
+}
+
+function setPostMode(mode = 'seeking') {
+  postMode = mode === 'offering' ? 'offering' : 'seeking';
+  if (postTabSeekingBtn) postTabSeekingBtn.classList.toggle('active', postMode === 'seeking');
+  if (postTabOfferingBtn) postTabOfferingBtn.classList.toggle('active', postMode === 'offering');
+  if (postSeekingFields) postSeekingFields.hidden = postMode !== 'seeking';
+  if (postOfferingFields) postOfferingFields.hidden = postMode !== 'offering';
+  refreshOfferVisibility();
 }
 
 function setFeedEmptyState(visible) {
@@ -723,9 +782,27 @@ function startEditPost(post) {
   if (!post || !isPostOwner(post)) return;
   currentEditingPostId = post.id;
   currentEditingPostData = post;
+  const mode = post.postType || 'seeking';
+  setPostMode(mode);
   if (postTextEl) postTextEl.value = post.body || '';
   selectedInstruments = (post.instrumentsWanted || []).filter(Boolean);
   selectedVoices = (post.voicesWanted || []).filter(Boolean);
+  if (mode === 'offering') {
+    const offer = post.offerDetails || {};
+    if (postOfferTeachInstruments) postOfferTeachInstruments.checked = !!offer.teachInstruments;
+    if (postOfferInstrumentsEl) postOfferInstrumentsEl.value = Array.isArray(offer.instruments) ? offer.instruments.join(', ') : '';
+    if (postOfferTeachSinging) postOfferTeachSinging.checked = !!offer.teachSinging;
+    if (postOfferRateEl) postOfferRateEl.value = offer.hourlyRate ?? '';
+    if (postOfferConcertsEl) postOfferConcertsEl.checked = !!offer.concerts;
+    if (postOfferServicesEl) postOfferServicesEl.checked = !!offer.services;
+  } else {
+    if (postOfferTeachInstruments) postOfferTeachInstruments.checked = false;
+    if (postOfferInstrumentsEl) postOfferInstrumentsEl.value = '';
+    if (postOfferTeachSinging) postOfferTeachSinging.checked = false;
+    if (postOfferRateEl) postOfferRateEl.value = '';
+    if (postOfferConcertsEl) postOfferConcertsEl.checked = false;
+    if (postOfferServicesEl) postOfferServicesEl.checked = false;
+  }
   renderInstrumentChips();
   renderVoiceChips();
   if (postTargetCityEl) postTargetCityEl.value = post.location?.city || '';
@@ -744,6 +821,7 @@ function openPostModal() {
     postModal.setAttribute('aria-hidden', 'false');
   });
   if (!currentEditingPostId && postSubmitBtn) postSubmitBtn.textContent = 'Pubblica annuncio';
+  if (!currentEditingPostId) setPostMode('seeking');
   postModalOpen = true;
   if (postTextEl) {
     setTimeout(() => postTextEl.focus({ preventScroll: true }), 50);
@@ -1278,12 +1356,43 @@ function renderPostCard(post, distanceKm) {
 
   const tags = document.createElement('div');
   tags.className = 'small muted';
-  const instruments = (post.instrumentsWanted || []).filter(Boolean);
-  const voices = (post.voicesWanted || []).filter(Boolean);
-  const labels = [];
-  if (instruments.length) labels.push(`Strumenti: ${instruments.join(', ')}`);
-  if (voices.length) labels.push(`Voci: ${voices.join(', ')}`);
-  tags.textContent = labels.length ? labels.join(' · ') : 'Annuncio generico';
+  if (post.postType === 'offering') {
+    const offer = post.offerDetails || {};
+    const parts = [];
+    if (offer.teachInstruments && Array.isArray(offer.instruments) && offer.instruments.length) {
+      parts.push(`Lezioni: ${offer.instruments.join(', ')}`);
+    } else if (offer.teachInstruments) {
+      parts.push('Lezioni di strumento');
+    }
+    if (offer.teachSinging) parts.push('Lezioni di canto');
+    if (offer.concerts) parts.push('Concerti');
+    if (offer.services) parts.push('Servizi civili/religiosi');
+    if (Number.isFinite(offer.hourlyRate)) parts.push(`Tariffa: ${offer.hourlyRate}€/h`);
+    tags.innerHTML = '';
+    const badge = document.createElement('span');
+    badge.className = 'badge badge-type badge-offering';
+    badge.textContent = 'A disposizione';
+    tags.appendChild(badge);
+    if (parts.length) {
+      const txt = document.createElement('span');
+      txt.textContent = ' ' + parts.join(' · ');
+      tags.appendChild(txt);
+    }
+  } else {
+    const instruments = (post.instrumentsWanted || []).filter(Boolean);
+    const voices = (post.voicesWanted || []).filter(Boolean);
+    const lookingFor = [...instruments, ...voices].filter(Boolean);
+    tags.innerHTML = '';
+    const badge = document.createElement('span');
+    badge.className = 'badge badge-type badge-seeking';
+    badge.textContent = 'Cercasi';
+    tags.appendChild(badge);
+    if (lookingFor.length) {
+      const txt = document.createElement('span');
+      txt.textContent = ' ' + lookingFor.join(', ');
+      tags.appendChild(txt);
+    }
+  }
 
   const meta = document.createElement('div');
   meta.className = 'muted xsmall';
@@ -1589,6 +1698,36 @@ async function publishPost() {
     pickPreferredAvatarUrl(profileData) ||
     '';
 
+  const isEnsemble = (currentUserProfile.data?.userType || currentUserProfile.data?.role) === 'ensemble';
+
+  let offerDetails = null;
+  if (postMode === 'offering') {
+    if (isEnsemble) {
+      offerDetails = {
+        concerts: !!postOfferConcertsEl?.checked,
+        services: !!postOfferServicesEl?.checked,
+        teachInstruments: false,
+        teachSinging: false,
+        instruments: null,
+        hourlyRate: null
+      };
+    } else {
+      const offerInstruments = postOfferTeachInstruments?.checked
+        ? parseInstruments(postOfferInstrumentsEl?.value || '')
+        : [];
+      const rateRaw = postOfferRateEl?.value || '';
+      const rateVal = rateRaw === '' ? null : parseFloat(rateRaw);
+      offerDetails = {
+        concerts: false,
+        services: false,
+        teachInstruments: !!postOfferTeachInstruments?.checked,
+        instruments: offerInstruments.length ? offerInstruments : null,
+        teachSinging: !!postOfferTeachSinging?.checked,
+        hourlyRate: Number.isFinite(rateVal) ? rateVal : null
+      };
+    }
+  }
+
   const payload = {
     authorUid: auth.currentUser.uid,
     authorUserId: currentUserProfile.id,
@@ -1610,8 +1749,10 @@ async function publishPost() {
       avatarUrl: profileData.avatarUrl || ''
     },
     body,
-    instrumentsWanted: instruments.length ? instruments : null,
-    voicesWanted: voices.length ? voices : null,
+    postType: postMode,
+    offerDetails,
+    instrumentsWanted: postMode === 'seeking' && instruments.length ? instruments : null,
+    voicesWanted: postMode === 'seeking' && voices.length ? voices : null,
     radiusKm: Number.isFinite(radius) ? radius : 50,
     authorLocation,
     location: postLocation,
@@ -1638,6 +1779,12 @@ async function publishPost() {
     if (postInstrumentsEl) postInstrumentsEl.value = '';
     if (postTargetCityEl) postTargetCityEl.value = '';
     if (postTargetCitySuggestionsEl) postTargetCitySuggestionsEl.hidden = true;
+    if (postOfferTeachInstruments) postOfferTeachInstruments.checked = false;
+    if (postOfferTeachSinging) postOfferTeachSinging.checked = false;
+    if (postOfferInstrumentsEl) postOfferInstrumentsEl.value = '';
+    if (postOfferRateEl) postOfferRateEl.value = '';
+    if (postOfferConcertsEl) postOfferConcertsEl.checked = false;
+    if (postOfferServicesEl) postOfferServicesEl.checked = false;
     selectedInstruments = [];
     selectedVoices = [];
     renderInstrumentChips();
@@ -1700,6 +1847,13 @@ if (postVoicesEl) {
       updateVoiceClearVisibility();
     }, 120);
   });
+}
+
+if (postTabSeekingBtn) {
+  postTabSeekingBtn.addEventListener('click', () => setPostMode('seeking'));
+}
+if (postTabOfferingBtn) {
+  postTabOfferingBtn.addEventListener('click', () => setPostMode('offering'));
 }
 
 if (postVoicesClearBtn) {
@@ -1853,6 +2007,7 @@ document.addEventListener('click', () => closeAllPostMenus());
 
 // Sync initial clear button state
 renderVoiceChips();
+setPostMode('seeking');
 
 // Mostra lo stato giusto appena disponibile, evitando flash
 onAuthStateChanged(auth, async (user) => {
@@ -1868,6 +2023,8 @@ onAuthStateChanged(auth, async (user) => {
       (user.displayName || '').trim() ||
       (user.email ? user.email.split('@')[0] : 'musicista');
     showUser(rawName);
+    refreshOfferVisibility();
+    setPostMode('seeking');
     prefillRadius(profile);
     loadFeed();
     handleEditFromQuery();
