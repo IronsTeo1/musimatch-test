@@ -164,21 +164,21 @@
       <h2>Bio e Curriculum</h2>
       <div class="stack">
         <div class="grid">
-          <label class="field" id="settings-instruments-field">
-            <span class="field-label" id="settings-label-instruments">Strumenti suonati</span>
-            <span class="field-hint muted xsmall">Separa gli strumenti con una virgola</span>
-            <div class="autocomplete with-clear">
-              <input type="text" id="set-instruments" placeholder="es. Chitarra, Pianoforte" autocomplete="off">
-              <button type="button" class="clear-input" id="clear-instruments" aria-label="Pulisci strumenti">✕</button>
-              <div id="set-instruments-suggestions" class="autocomplete-list" hidden></div>
-            </div>
-          </label>
           <label class="field" id="settings-mainInstrument-field">
             <span class="field-label" id="settings-label-mainInstrument">Strumento principale</span>
             <div class="autocomplete with-clear">
               <input type="text" id="set-mainInstrument" placeholder="es. Chitarra" autocomplete="off">
               <button type="button" class="clear-input" id="clear-mainInstrument" aria-label="Pulisci strumento principale">✕</button>
               <div id="set-mainInstrument-suggestions" class="autocomplete-list" hidden></div>
+            </div>
+          </label>
+          <label class="field" id="settings-instruments-field">
+            <span class="field-label" id="settings-label-instruments">Altri strumenti suonati</span>
+            <span class="field-hint muted xsmall">Separa gli strumenti con una virgola</span>
+            <div class="autocomplete with-clear">
+              <input type="text" id="set-instruments" placeholder="es. Chitarra, Pianoforte" autocomplete="off">
+              <button type="button" class="clear-input" id="clear-instruments" aria-label="Pulisci strumenti">✕</button>
+              <div id="set-instruments-suggestions" class="autocomplete-list" hidden></div>
             </div>
           </label>
         </div>
@@ -199,6 +199,15 @@
               <option value="Basso">Basso</option>
             </select>
           </label>
+          <label class="field">
+            <span class="field-label" id="settings-label-voices">Capacità vocale</span>
+            <span class="field-hint muted xsmall" id="settings-voices-hint">Separa le voci con una virgola</span>
+            <div class="autocomplete with-clear">
+              <input type="text" id="set-voices" placeholder="es. Soprano, Mezzosoprano" autocomplete="off">
+              <button type="button" class="clear-input" id="clear-voices" aria-label="Pulisci voci">✕</button>
+              <div id="set-voices-suggestions" class="autocomplete-list" hidden></div>
+            </div>
+          </label>
         </div>
         <div class="grid" id="personal-data-fields">
           <label class="field">
@@ -209,10 +218,10 @@
               <option value="female">Donna</option>
               <option value="non_binary">Non binario</option>
             </select>
-            <div class="inline-check" style="margin-top: -0.3rem;">
+            <label class="inline-check" style="margin-top: -0.3rem;">
               <input type="checkbox" id="set-gender-visible">
               <span class="muted small">Visibile nel profilo pubblico</span>
-            </div>
+            </label>
           </label>
           <label class="field">
             <span class="field-label">Nazionalità (opzionale)</span>
@@ -221,10 +230,10 @@
               <button type="button" class="combo-toggle" id="set-nationality-toggle" aria-label="Apri elenco">▼</button>
               <div id="set-nationality-suggestions" class="autocomplete-list" hidden></div>
             </div>
-            <div class="inline-check" style="margin-top: -0.3rem;">
+            <label class="inline-check" style="margin-top: -0.3rem;">
               <input type="checkbox" id="set-nationality-visible">
               <span class="muted small">Visibile nel profilo pubblico</span>
-            </div>
+            </label>
           </label>
         </div>
         <label class="field">
@@ -264,10 +273,10 @@
           <input type="number" id="set-rate-solo" min="0" step="1">
         </label>
       </div>
-      <div class="inline-check" id="stable-group-field">
-        <span class="field-label">In cerca di un gruppo stabile</span>
+      <label class="inline-check" id="stable-group-field">
         <input type="checkbox" id="set-willing">
-      </div>
+        <span class="field-label">In cerca di un gruppo stabile</span>
+      </label>
       <button type="button" id="btn-update-rates" class="ghost ghost-primary btn-block">Aggiorna tariffe</button>
       <p id="rates-message" class="helper-text"></p>
     </section>

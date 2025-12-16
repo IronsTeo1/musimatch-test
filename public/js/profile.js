@@ -173,8 +173,6 @@ function setPostMode(mode = 'seeking') {
   refreshOfferVisibility();
 }
 
-<<<<<<< HEAD
-=======
 function formatProfileKind(data = {}) {
   const kind = (data.profileKind || '').toLowerCase();
   const userType = (data.userType || '').toLowerCase();
@@ -190,7 +188,6 @@ function formatProfileKind(data = {}) {
   return userType === 'ensemble' ? 'Ensemble' : 'Musicista';
 }
 
->>>>>>> be0ca69 (affinato il filtro nella home e reso flottante il menù di navigazione.)
 function ensureProfileSentinel() {
   if (!profileSentinel) {
     profileSentinel = document.createElement('div');
@@ -1182,7 +1179,8 @@ function populateForm(data) {
     if (willingField) willingField.style.display = ensembleAddressLine || locationString ? '' : 'none';
     if (membersField) membersField.style.display = '';
     if (membersText) {
-      const membersVal = parseInt(data.ensembleMembers, 10);
+      const rawMembers = data.ensembleMembers ?? data.members;
+      const membersVal = parseInt(rawMembers, 10);
       membersText.textContent = Number.isFinite(membersVal) ? membersVal : '—';
     }
     if (ratesOpenModalBtn) ratesOpenModalBtn.textContent = 'Compensi';

@@ -113,10 +113,7 @@ let postModalOpen = false;
 let currentEditingPostId = null;
 let currentEditingPostData = null;
 let postMode = 'seeking';
-<<<<<<< HEAD
-=======
 const geocodedCityCache = new Map();
->>>>>>> be0ca69 (affinato il filtro nella home e reso flottante il menù di navigazione.)
 
 // Cache-busting versione avatar (forza refresh ad ogni load)
 const AVATAR_VERSION = Date.now().toString();
@@ -127,11 +124,7 @@ function formatProfileKind(data = {}) {
   const userType = (data.userType || '').toLowerCase();
   const role = (data.role || '').toLowerCase();
   const ensembleType = (data.ensembleType || '').toLowerCase();
-<<<<<<< HEAD
-  if (kind === 'band' || ensembleType === 'banda') return 'Banda';
-=======
   if (kind === 'band' || ensembleType === 'banda' || ensembleType === 'band') return 'Banda';
->>>>>>> be0ca69 (affinato il filtro nella home e reso flottante il menù di navigazione.)
   if (kind === 'choir' || ensembleType === 'coro') return 'Coro';
   if (kind === 'orchestra' || ensembleType === 'orchestra') return 'Orchestra';
   if (kind === 'singer' || role === 'singer' || role === 'cantante') return 'Cantante';

@@ -96,10 +96,10 @@
                 <option value="female">Donna</option>
                 <option value="non_binary">Non binario</option>
               </select>
-              <div class="inline-check" style="margin-top: -0.3rem;">
+              <label class="inline-check" style="margin-top: -0.3rem;">
                 <input type="checkbox" id="m-gender-visible">
                 <span class="muted small">Visibile nel profilo pubblico</span>
-              </div>
+              </label>
             </label>
             <label class="field">
               <span class="field-label">Nazionalità (opzionale)</span>
@@ -108,10 +108,10 @@
                 <button type="button" class="combo-toggle" id="m-nationality-toggle" aria-label="Apri elenco">▼</button>
                 <div id="nationality-suggestions" class="autocomplete-list" hidden></div>
               </div>
-              <div class="inline-check" style="margin-top: -0.3rem;">
+              <label class="inline-check" style="margin-top: -0.3rem;">
                 <input type="checkbox" id="m-nationality-visible">
                 <span class="muted small">Visibile nel profilo pubblico</span>
-              </div>
+              </label>
             </label>
             <label class="field">
               <span class="field-label">Città / paese</span>
@@ -128,18 +128,18 @@
 
           <div class="grid" id="instrument-block">
             <label class="field">
-              <span class="field-label" id="label-instruments">Strumenti / voci</span>
-              <small>Separati da virgole (es. Tromba, Clarinetto).</small>
-              <div class="autocomplete">
-                <input type="text" id="m-instruments" placeholder="Tromba, Clarinetto" autocomplete="off">
-                <div id="m-instruments-suggestions" class="autocomplete-list" hidden></div>
-              </div>
-            </label>
-            <label class="field">
               <span class="field-label" id="label-mainInstrument">Strumento / voce principale</span>
               <div class="autocomplete">
                 <input type="text" id="m-mainInstrument" placeholder="Tromba" autocomplete="off">
                 <div id="m-mainInstrument-suggestions" class="autocomplete-list" hidden></div>
+              </div>
+            </label>
+            <label class="field">
+              <span class="field-label" id="label-instruments">Altri strumenti suonati</span>
+              <small>Separati da virgole (es. Tromba, Clarinetto).</small>
+              <div class="autocomplete">
+                <input type="text" id="m-instruments" placeholder="Tromba, Clarinetto" autocomplete="off">
+                <div id="m-instruments-suggestions" class="autocomplete-list" hidden></div>
               </div>
             </label>
           </div>
@@ -271,6 +271,32 @@
             <label class="field">
               <span class="field-label">Sito web (opzionale)</span>
               <input type="url" id="e-website" placeholder="https://...">
+            </label>
+          </div>
+
+          <div class="grid">
+            <label class="field">
+              <span class="field-label">Tariffa prova (€)</span>
+              <input type="number" id="e-rate-rehearsal" min="0" step="1">
+            </label>
+            <label class="field">
+              <span class="field-label">Tariffa concerto/messa (€)</span>
+              <input type="number" id="e-rate-concert" min="0" step="1">
+            </label>
+          </div>
+
+          <div class="grid">
+            <label class="field">
+              <span class="field-label">Tariffa servizio civile/religioso (€)</span>
+              <input type="number" id="e-rate-service" min="0" step="1">
+            </label>
+            <label class="field">
+              <span class="field-label">Tariffa servizio civile (squilli+silenzio) (€)</span>
+              <input type="number" id="e-rate-trumpet" min="0" step="1">
+            </label>
+            <label class="field">
+              <span class="field-label">Tariffa esibizione da solista (€)</span>
+              <input type="number" id="e-rate-solo" min="0" step="1">
             </label>
           </div>
 

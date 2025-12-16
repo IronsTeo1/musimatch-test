@@ -78,6 +78,11 @@ const eCityInput = document.getElementById('e-city');
 const eCitySuggestions = document.getElementById('e-city-suggestions');
 const eStreet = document.getElementById('e-street');
 const eStreetNumber = document.getElementById('e-street-number');
+const eRateRehearsal = document.getElementById('e-rate-rehearsal');
+const eRateConcert = document.getElementById('e-rate-concert');
+const eRateService = document.getElementById('e-rate-service');
+const eRateTrumpet = document.getElementById('e-rate-trumpet');
+const eRateSolo = document.getElementById('e-rate-solo');
 
 const nationalitySuggestions = document.getElementById('nationality-suggestions');
 const nationalitySuggestionsEnsemble = document.getElementById('nationality-suggestions-ensemble');
@@ -656,6 +661,7 @@ async function submitForm(event) {
         email,
         description: description || null,
         members: Number.isNaN(members) ? null : members,
+        ensembleMembers: Number.isNaN(members) ? null : members,
         website: website || null,
         photoUrl: photoUrl || null,
         gender: gender || null,
@@ -671,6 +677,14 @@ async function submitForm(event) {
           lng: cityInfo.lng,
           street: eStreet?.value.trim() || null,
           streetNumber: eStreetNumber?.value.trim() || null
+        },
+        rates: {
+          rehearsal: eRateRehearsal?.value ? parseFloat(eRateRehearsal.value) : null,
+          concert_or_mass: eRateConcert?.value ? parseFloat(eRateConcert.value) : null,
+          service_civil_religious: eRateService?.value ? parseFloat(eRateService.value) : null,
+          service_civil_trumpet_full: eRateTrumpet?.value ? parseFloat(eRateTrumpet.value) : null,
+          solo_performance: eRateSolo?.value ? parseFloat(eRateSolo.value) : null,
+          willingToJoinForFree: false
         },
         isActive: true,
         createdAt: serverTimestamp(),

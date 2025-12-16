@@ -158,19 +158,23 @@ function applyRoleLabels(role) {
     if (settingsLabelInstruments) settingsLabelInstruments.textContent = '';
     if (settingsLabelMainInstrument) settingsLabelMainInstrument.textContent = '';
     if (settingsEnsembleMembersField) settingsEnsembleMembersField.style.display = '';
+    if (voiceSettingsFields) voiceSettingsFields.style.display = 'none';
     return;
   }
 
   if (role === 'singer') {
-    if (settingsLabelInstruments) settingsLabelInstruments.textContent = 'Capacità vocale';
+    if (settingsLabelInstruments) settingsLabelInstruments.textContent = 'Altri strumenti suonati';
     if (settingsLabelMainInstrument) settingsLabelMainInstrument.textContent = 'Voce principale';
     if (settingsMainInstrumentField) settingsMainInstrumentField.style.display = 'none';
-    if (settingsInstrumentsField) settingsInstrumentsField.style.display = '';
+    if (settingsInstrumentsField) settingsInstrumentsField.style.display = 'none';
+    if (voiceSettingsFields) voiceSettingsFields.style.display = 'grid';
+    if (settingsVoicesHint) settingsVoicesHint.textContent = 'Separa le voci con una virgola';
   } else {
     if (settingsLabelInstruments) settingsLabelInstruments.textContent = 'Altri strumenti suonati';
     if (settingsLabelMainInstrument) settingsLabelMainInstrument.textContent = 'Strumento principale';
     if (settingsMainInstrumentField) settingsMainInstrumentField.style.display = '';
     if (settingsInstrumentsField) settingsInstrumentsField.style.display = '';
+    if (voiceSettingsFields) voiceSettingsFields.style.display = 'none';
   }
 }
 
@@ -187,6 +191,10 @@ const settingsInstrumentsField = document.getElementById('settings-instruments-f
 const settingsMainInstrumentField = document.getElementById('settings-mainInstrument-field');
 const settingsLabelInstruments = document.getElementById('settings-label-instruments');
 const settingsLabelMainInstrument = document.getElementById('settings-label-mainInstrument');
+const setVoicesEl = document.getElementById('set-voices');
+const setVoicesSuggestionsEl = document.getElementById('set-voices-suggestions');
+const clearVoicesBtn = document.getElementById('clear-voices');
+const settingsVoicesHint = document.getElementById('settings-voices-hint');
 const settingsEnsembleMembersField = document.getElementById('settings-ensemble-members-field');
 const setEnsembleMembersEl = document.getElementById('set-ensemble-members');
 const clearInstrumentsBtn = document.getElementById('clear-instruments');
@@ -249,6 +257,15 @@ const instrumentSuggestions = [
   'Xilofono'
 ];
 
+const voiceSuggestions = [
+  'Soprano',
+  'Mezzosoprano',
+  'Contralto',
+  'Tenore',
+  'Baritono',
+  'Basso'
+];
+
 function setLocationMessage(text, isError = false) {
   if (!locationMsgEl) return;
   locationMsgEl.textContent = text || '';
@@ -284,6 +301,14 @@ function normalizeInstrumentsString(raw) {
     .map((t) => normalizeInstrumentName(t))
     .filter(Boolean);
   return tokens.join(', ');
+}
+
+function filterVoicesFromList(list = []) {
+  const lowerVoices = voiceSuggestions.map((v) => v.toLowerCase());
+  return (Array.isArray(list) ? list : [])
+    .map((v) => normalizeInstrumentName(v))
+    .filter(Boolean)
+    .filter((v) => lowerVoices.includes(v.toLowerCase()));
 }
 
 function slugifyInstrument(raw) {
@@ -354,14 +379,14 @@ loadCityList()
   .then((list) => { cityList = list; })
   .catch((err) => console.error('[MusiMatch] Errore caricamento lista città:', err));
 
-function renderInstrumentSuggestions(term, targetEl, inputEl, { mode = 'multi' } = {}) {
+function renderInstrumentSuggestions(term, targetEl, inputEl, { mode = 'multi', options = instrumentSuggestions } = {}) {
   if (!targetEl) return;
   targetEl.innerHTML = '';
   if (!term) {
     targetEl.hidden = true;
     return;
   }
-  const matches = instrumentSuggestions
+  const matches = options
     .filter((c) => c.toLowerCase().includes(term.toLowerCase()))
     .slice(0, 8);
   if (matches.length === 0) {
@@ -542,6 +567,27 @@ if (setMainInstrumentEl) {
   });
 }
 
+if (setVoicesEl) {
+  setVoicesEl.addEventListener('input', (e) => {
+    if (e.data === ',' && setVoicesEl.value.trim().slice(-1) === ',') {
+      setVoicesEl.value = `${setVoicesEl.value} `;
+    }
+    renderInstrumentSuggestions(e.target.value.split(',').pop().trim(), setVoicesSuggestionsEl, setVoicesEl, { options: voiceSuggestions });
+  });
+  setVoicesEl.addEventListener('blur', () => {
+    setTimeout(() => {
+      if (setVoicesSuggestionsEl) setVoicesSuggestionsEl.hidden = true;
+    }, 150);
+  });
+}
+
+if (clearVoicesBtn) {
+  clearVoicesBtn.addEventListener('click', () => {
+    if (setVoicesEl) setVoicesEl.value = '';
+    if (setVoicesSuggestionsEl) setVoicesSuggestionsEl.hidden = true;
+  });
+}
+
 if (clearInstrumentsBtn) {
   clearInstrumentsBtn.addEventListener('click', () => {
     if (setInstrumentsEl) setInstrumentsEl.value = '';
@@ -625,8 +671,9 @@ onAuthStateChanged(auth, async (user) => {
         docData.data.avatarUrl ||
         pickPreferredAvatarUrl(docData.data);
       if (avatarUrl) setAvatarPreview(avatarUrl);
-      if (setInstrumentsEl && Array.isArray(docData.data.instruments)) {
-        setInstrumentsEl.value = docData.data.instruments.join(', ');
+      const instrumentsArray = Array.isArray(docData.data.instruments) ? docData.data.instruments : [];
+      if (setInstrumentsEl) {
+        setInstrumentsEl.value = instrumentsArray.join(', ');
       }
       if (setMainInstrumentEl) {
         setMainInstrumentEl.value = docData.data.mainInstrument || '';
@@ -635,8 +682,14 @@ onAuthStateChanged(auth, async (user) => {
       if (voiceTypeSelect) {
         voiceTypeSelect.value = docData.data.voiceType || '';
       }
+      if (docData.data.role === 'singer') {
+        if (setVoicesEl) {
+          const voiceTokens = filterVoicesFromList(instrumentsArray);
+          setVoicesEl.value = voiceTokens.length ? voiceTokens.join(', ') : instrumentsArray.join(', ');
+        }
+      }
       if (voiceSettingsFields) {
-        voiceSettingsFields.style.display = docData.data.role === 'singer' ? 'flex' : 'none';
+        voiceSettingsFields.style.display = docData.data.role === 'singer' ? 'grid' : 'none';
       }
       const loc = docData.data.location || {};
       if (setCityEl) setCityEl.value = loc.city || '';
@@ -780,8 +833,11 @@ if (btnUpdateBio) {
     try {
       const docData = await loadUserDoc(auth.currentUser.uid);
       if (!docData) throw new Error('Profilo non trovato.');
+      const role = docData.data.role || '';
+      const isSinger = role === 'singer';
+      const voicesStr = normalizeInstrumentsString(setVoicesEl?.value || '');
       const instrumentsStr = normalizeInstrumentsString(setInstrumentsEl?.value || '');
-      const instruments = instrumentsStr
+      const instruments = (isSinger ? voicesStr : instrumentsStr)
         .split(',')
         .map((t) => normalizeInstrumentName(t))
         .filter(Boolean);
