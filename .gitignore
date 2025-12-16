@@ -71,3 +71,6 @@ node_modules/
 .dataconnect
 .DS_Store
 **/.DS_Store
+
+firebase-export-*/
+public/index.html.bak
