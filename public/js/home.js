@@ -85,6 +85,7 @@ const filterVoiceClearBtn = document.getElementById('filter-voice-clear');
 const filterVoiceSuggestionsEl = document.getElementById('filter-voice-suggestions');
 const filterTypeButtons = Array.from(document.querySelectorAll('.filter-type-btn'));
 const filterTypeState = { current: null };
+const floatingNav = document.querySelector('.floating-nav');
 let activeFilter = { center: null, radius: null, postType: null, instrumentTokens: [], instrument: '', voice: '' };
 let awaitingGeo = false;
 
@@ -306,6 +307,7 @@ function showGuest() {
   setUsername('');
   if (homeTitleEl) homeTitleEl.textContent = 'Benvenuto su MusiMatch';
   if (homeSubtitleEl) homeSubtitleEl.textContent = 'Registrati o accedi per cercare profili, pubblicare annunci e gestire il tuo profilo.';
+  if (floatingNav) floatingNav.style.display = 'none';
 }
 
 function showUser(name) {
@@ -315,6 +317,7 @@ function showUser(name) {
   if (userBlock) userBlock.style.display = '';
   if (homeTitleEl) homeTitleEl.textContent = 'Home';
   if (homeSubtitleEl) homeSubtitleEl.textContent = safeName ? `Ciao, ${safeName}. Consulta gli annunci vicino a te.` : 'Ciao!';
+  if (floatingNav) floatingNav.style.display = '';
 }
 
 function setPostMessage(text, isError = false) {

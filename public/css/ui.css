@@ -74,6 +74,14 @@
   gap: 1.3rem;
 }
 
+#home-guest > .card {
+  margin-bottom: 1.25rem;
+}
+
+#home-guest > .card:last-child {
+  margin-bottom: 0;
+}
+
 .home-hero::after {
   content: "";
   position: absolute;
@@ -246,7 +254,7 @@
 .home-steps-list li {
   counter-increment: step;
   position: relative;
-  padding: 0.95rem 0.9rem 0.9rem;
+  padding: 0.95rem 3.1rem 0.9rem 0.9rem;
   border: 1px dashed var(--surface-border);
   border-radius: calc(var(--radius) - 6px);
   background: color-mix(in srgb, var(--surface) 86%, var(--primary) 8%);
