@@ -560,6 +560,10 @@
   box-shadow: 0 8px 18px rgba(0, 0, 0, 0.12);
 }
 
+:root:not([data-nav-state="logged-in"]) .floating-nav {
+  display: none !important;
+}
+
 :root[data-nav-state="logged-in"] #nav-auth {
   display: none !important;
 }
