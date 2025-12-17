@@ -1151,7 +1151,7 @@ function populateForm(data) {
     profileLabelMainInstrument.textContent = data.role === 'singer' ? 'Estensione vocale principale' : 'Strumento principale';
   }
   if (profileLabelInstruments) {
-    profileLabelInstruments.textContent = data.role === 'singer' ? 'Capacità vocale' : 'Altri strumenti suonati';
+    profileLabelInstruments.textContent = data.role === 'singer' ? 'Altre capacità vocali' : 'Altri strumenti suonati';
   }
   if (bioText) bioText.textContent = data.bio || 'Nessuna bio';
   if (cvText) cvText.textContent = data.curriculum || 'Nessun curriculum';

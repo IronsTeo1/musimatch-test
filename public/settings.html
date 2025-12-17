@@ -163,7 +163,17 @@
     <section class="card">
       <h2>Bio e Curriculum</h2>
       <div class="stack">
-        <div class="grid">
+        <div class="grid" id="name-fields">
+          <label class="field">
+            <span class="field-label">Nome</span>
+            <input type="text" id="set-firstName" placeholder="es. Marco">
+          </label>
+          <label class="field">
+            <span class="field-label">Cognome</span>
+            <input type="text" id="set-lastName" placeholder="es. Bianchi">
+          </label>
+        </div>
+        <div class="grid" id="instrument-block">
           <label class="field" id="settings-mainInstrument-field">
             <span class="field-label" id="settings-label-mainInstrument">Strumento principale</span>
             <div class="autocomplete with-clear">
@@ -188,7 +198,7 @@
         </label>
         <div class="grid" id="voice-settings-fields" style="display: none;">
           <label class="field">
-            <span class="field-label">Estensione vocale principale</span>
+            <span class="field-label">Registro vocale primario</span>
             <select id="set-voiceType">
               <option value="">Seleziona</option>
               <option value="Soprano">Soprano</option>
@@ -200,7 +210,19 @@
             </select>
           </label>
           <label class="field">
-            <span class="field-label" id="settings-label-voices">Capacità vocale</span>
+            <span class="field-label">Registro vocale secondario (opzionale)</span>
+            <select id="set-voiceType-secondary">
+              <option value="">Seleziona</option>
+              <option value="Soprano">Soprano</option>
+              <option value="Mezzosoprano">Mezzosoprano</option>
+              <option value="Contralto">Contralto</option>
+              <option value="Tenore">Tenore</option>
+              <option value="Baritono">Baritono</option>
+              <option value="Basso">Basso</option>
+            </select>
+          </label>
+          <label class="field">
+            <span class="field-label" id="settings-label-voices">Altre capacità vocali</span>
             <span class="field-hint muted xsmall" id="settings-voices-hint">Separa le voci con una virgola</span>
             <div class="autocomplete with-clear">
               <input type="text" id="set-voices" placeholder="es. Soprano, Mezzosoprano" autocomplete="off">
@@ -208,6 +230,27 @@
               <div id="set-voices-suggestions" class="autocomplete-list" hidden></div>
             </div>
           </label>
+        </div>
+        <div class="field" id="activity-level-field">
+          <span class="field-label">Livello</span>
+          <div class="option-chips">
+            <label class="option-chip">
+              <input type="radio" name="activity-level" value="professional">
+              <span>Professionista</span>
+            </label>
+            <label class="option-chip">
+              <input type="radio" name="activity-level" value="amateur">
+              <span>Amatore</span>
+            </label>
+            <label class="option-chip">
+              <input type="radio" name="activity-level" value="student">
+              <span>Studente</span>
+            </label>
+            <label class="inline-check" id="stable-group-field" style="margin-left: 0.5rem;">
+              <input type="checkbox" id="set-willing">
+              <span class="field-label" style="font-weight: 600;">Disponibile a unirsi a un gruppo</span>
+            </label>
+          </div>
         </div>
         <div class="grid" id="personal-data-fields">
           <label class="field">
@@ -235,6 +278,14 @@
               <span class="muted small">Visibile nel profilo pubblico</span>
             </label>
           </label>
+          <label class="field" id="birthdate-field">
+            <span class="field-label">Data di nascita (opzionale)</span>
+            <input type="date" id="set-birthDate">
+          </label>
+          <label class="field" id="founded-field" style="display: none;">
+            <span class="field-label">Data di fondazione (opzionale)</span>
+            <input type="date" id="set-foundedDate">
+          </label>
         </div>
         <label class="field">
           <span class="field-label">Bio</span>
@@ -253,30 +304,27 @@
       <h2 id="rates-title">Tariffe</h2>
       <div class="grid">
         <label class="field">
-          <span class="field-label">Prova (€)</span>
-          <input type="number" id="set-rate-rehearsal" min="0" step="1">
+          <span class="field-label">Prova</span>
+          <input type="number" id="set-rate-rehearsal" min="0" step="1" placeholder="€">
         </label>
         <label class="field">
-          <span class="field-label">Concerto / messa (€)</span>
-          <input type="number" id="set-rate-concert" min="0" step="1">
+          <span class="field-label">Concerto / messa</span>
+          <input type="number" id="set-rate-concert" min="0" step="1" placeholder="€">
         </label>
         <label class="field">
-          <span class="field-label">Servizio civile/religioso (€)</span>
-          <input type="number" id="set-rate-service" min="0" step="1">
+          <span class="field-label">Servizio civile/religioso</span>
+          <input type="number" id="set-rate-service" min="0" step="1" placeholder="€">
+        </label>
+        <label class="field" id="set-rate-trumpet-field" style="display: none;">
+          <span class="field-label">Servizio civile/religioso</span>
+          <span class="field-hint muted xsmall">(con squilli e silenzio)</span>
+          <input type="number" id="set-rate-trumpet" min="0" step="1" placeholder="€">
         </label>
         <label class="field">
-          <span class="field-label">Servizio civile (squilli+silenzio) (€)</span>
-          <input type="number" id="set-rate-trumpet" min="0" step="1">
-        </label>
-        <label class="field">
-          <span class="field-label">Esibizione solista (€)</span>
-          <input type="number" id="set-rate-solo" min="0" step="1">
+          <span class="field-label">Esibizione solista</span>
+          <input type="number" id="set-rate-solo" min="0" step="1" placeholder="€">
         </label>
       </div>
-      <label class="inline-check" id="stable-group-field">
-        <input type="checkbox" id="set-willing">
-        <span class="field-label">In cerca di un gruppo stabile</span>
-      </label>
       <button type="button" id="btn-update-rates" class="ghost ghost-primary btn-block">Aggiorna tariffe</button>
       <p id="rates-message" class="helper-text"></p>
     </section>

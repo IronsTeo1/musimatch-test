@@ -52,34 +52,52 @@
 
   <main class="page-content">
     <section class="card">
-      <form id="register-form" class="stack">
-        <div class="field">
-          <span class="field-label">Chi sei?</span>
-          <div class="auth-actions">
-            <label><input type="radio" name="user-kind" value="musician"> Musicista</label>
-            <label><input type="radio" name="user-kind" value="singer"> Cantante</label>
-            <label><input type="radio" name="user-kind" value="choir"> Coro</label>
-            <label><input type="radio" name="user-kind" value="orchestra"> Orchestra</label>
-            <label><input type="radio" name="user-kind" value="band"> Banda</label>
+      <form id="register-form" class="stack form-shell">
+        <div class="form-section">
+          <div class="section-header">
+            <h3 class="section-title">Tipo di profilo</h3>
+            <p class="muted small">Crea un profilo personale o registra il tuo ensemble.</p>
+          </div>
+          <div class="option-chips">
+            <label class="option-chip"><input type="radio" name="user-kind" value="musician"><span>Musicista</span></label>
+            <label class="option-chip"><input type="radio" name="user-kind" value="singer"><span>Cantante</span></label>
+            <label class="option-chip"><input type="radio" name="user-kind" value="choir"><span>Coro</span></label>
+            <label class="option-chip"><input type="radio" name="user-kind" value="orchestra"><span>Orchestra</span></label>
+            <label class="option-chip"><input type="radio" name="user-kind" value="band"><span>Banda</span></label>
           </div>
         </div>
 
-        <div class="grid" id="password-fields" style="display: none;">
-          <label class="field">
-            <span class="field-label">Password</span>
-            <input type="password" id="reg-password" placeholder="Minimo 6 caratteri" autocomplete="new-password">
-          </label>
-          <label class="field">
-            <span class="field-label">Conferma password</span>
-            <input type="password" id="reg-password-confirm" placeholder="Ripeti la password" autocomplete="new-password">
-          </label>
+        <div class="form-section" id="password-fields" style="display: none;">
+          <div class="section-header">
+            <h3 class="section-title">Credenziali di accesso</h3>
+            <p class="muted small">Ti serviranno per accedere e modificare il profilo.</p>
+          </div>
+          <div class="grid">
+            <label class="field">
+              <span class="field-label">Password</span>
+              <input type="password" id="reg-password" placeholder="Minimo 6 caratteri" autocomplete="new-password">
+            </label>
+            <label class="field">
+              <span class="field-label">Conferma password</span>
+              <input type="password" id="reg-password-confirm" placeholder="Ripeti la password" autocomplete="new-password">
+            </label>
+          </div>
         </div>
 
-        <div id="musician-fields" class="stack" style="display: none;">
+        <div id="musician-fields" class="stack form-section" style="display: none;">
+          <div class="section-header">
+            <h3 class="section-title">Profilo musicista / cantante</h3>
+            <p class="muted small">Inserisci i dati pubblici e dove ti trovi.</p>
+          </div>
+
           <div class="grid">
             <label class="field">
               <span class="field-label">Nome</span>
-              <input type="text" id="m-displayName" placeholder="es. Marco Bianchi">
+              <input type="text" id="m-firstName" placeholder="es. Marco">
+            </label>
+            <label class="field">
+              <span class="field-label">Cognome</span>
+              <input type="text" id="m-lastName" placeholder="es. Bianchi">
             </label>
             <label class="field">
               <span class="field-label">Email</span>
@@ -114,6 +132,10 @@
               </label>
             </label>
             <label class="field">
+              <span class="field-label">Data di nascita (opzionale)</span>
+              <input type="date" id="m-birthDate">
+            </label>
+            <label class="field">
               <span class="field-label">Città / paese</span>
               <div class="autocomplete">
                 <input
@@ -136,33 +158,49 @@
             </label>
             <label class="field">
               <span class="field-label" id="label-instruments">Altri strumenti suonati</span>
-              <small>Separati da virgole (es. Tromba, Clarinetto).</small>
+              <span class="field-hint muted xsmall">Separali con una virgola</span>
               <div class="autocomplete">
                 <input type="text" id="m-instruments" placeholder="Tromba, Clarinetto" autocomplete="off">
                 <div id="m-instruments-suggestions" class="autocomplete-list" hidden></div>
               </div>
             </label>
           </div>
+
           <div class="grid">
             <label class="field">
               <span class="field-label">Livello</span>
-              <div class="auth-actions">
-                <label><input type="radio" name="m-activityLevel" value="professional"> Professionista</label>
-                <label><input type="radio" name="m-activityLevel" value="amateur"> Amatore</label>
+              <div class="option-chips">
+                <label class="option-chip"><input type="radio" name="m-activityLevel" value="professional"><span>Professionista</span></label>
+                <label class="option-chip"><input type="radio" name="m-activityLevel" value="amateur"><span>Amatore</span></label>
+                <label class="option-chip"><input type="radio" name="m-activityLevel" value="student"><span>Studente</span></label>
               </div>
             </label>
-            <label class="field" id="voice-fields" style="display: none;">
-              <span class="field-label">Registro vocale</span>
-              <select id="m-voiceType">
-                <option value="">Seleziona</option>
-                <option value="Soprano">Soprano</option>
-                <option value="Mezzosoprano">Mezzosoprano</option>
-                <option value="Contralto">Contralto</option>
-                <option value="Tenore">Tenore</option>
-                <option value="Baritono">Baritono</option>
-                <option value="Basso">Basso</option>
-              </select>
-            </label>
+            <div class="grid" id="voice-fields" style="display: none;">
+              <label class="field">
+                <span class="field-label">Registro vocale primario</span>
+                <select id="m-voiceType">
+                  <option value="">Seleziona</option>
+                  <option value="Soprano">Soprano</option>
+                  <option value="Mezzosoprano">Mezzosoprano</option>
+                  <option value="Contralto">Contralto</option>
+                  <option value="Tenore">Tenore</option>
+                  <option value="Baritono">Baritono</option>
+                  <option value="Basso">Basso</option>
+                </select>
+              </label>
+              <label class="field">
+                <span class="field-label">Registro vocale secondario (opzionale)</span>
+                <select id="m-voiceType-secondary">
+                  <option value="">Seleziona</option>
+                  <option value="Soprano">Soprano</option>
+                  <option value="Mezzosoprano">Mezzosoprano</option>
+                  <option value="Contralto">Contralto</option>
+                  <option value="Tenore">Tenore</option>
+                  <option value="Baritono">Baritono</option>
+                  <option value="Basso">Basso</option>
+                </select>
+              </label>
+            </div>
             <label class="field">
               <span class="field-label">Distanza massima (km)</span>
               <input type="number" id="m-maxTravelKm" value="20" min="0">
@@ -176,55 +214,74 @@
             </label>
             <label class="field">
               <span class="field-label">Disponibile a unirsi a un gruppo</span>
-              <div class="auth-actions">
-                <label><input type="checkbox" id="m-willing"> Sì</label>
-              </div>
+              <label class="inline-check">
+                <input type="checkbox" id="m-willing">
+                <span class="muted small">Mostralo nel profilo</span>
+              </label>
             </label>
           </div>
 
-          <div class="grid">
-            <label class="field">
-              <span class="field-label">Tariffa prova (€)</span>
-              <input type="number" id="rate-rehearsal" min="0" step="1">
-            </label>
-            <label class="field">
-              <span class="field-label">Tariffa concerto/messa (€)</span>
-              <input type="number" id="rate-concert" min="0" step="1">
-            </label>
+          <div class="stack">
+            <div class="section-subtitle">
+              <h4>Tariffe (opzionale)</h4>
+              <p class="muted small" style="margin: 0;">Compila solo se vuoi mostrare prezzi indicativi. Quando un profilo ensemble che offre compensi più alti rispetto ai tuoi, guarda il tuo profilo che ne chiede di più bassi, le tue tariffe saranno nascoste in modo da non condizionare l'offerta dell'ensemble al ribasso.</p>
+            </div>
+            <div class="grid">
+              <label class="field">
+                <span class="field-label">Tariffa prova</span>
+                <input type="number" id="rate-rehearsal" min="0" step="1" placeholder="€">
+              </label>
+              <label class="field">
+                <span class="field-label">Tariffa concerto/messa</span>
+                <input type="number" id="rate-concert" min="0" step="1" placeholder="€">
+              </label>
+            </div>
+
+            <div class="grid">
+              <label class="field">
+                <span class="field-label">Tariffa servizio civile/religioso</span>
+                <input type="number" id="rate-service" min="0" step="1" placeholder="€">
+              </label>
+              <label class="field" id="rate-trumpet-field" style="display: none;">
+                <span class="field-label">Tariffa servizio civile/religioso</span>
+                <span class="field-hint muted xsmall">(con squilli e silenzio)</span>
+                <input type="number" id="rate-trumpet" min="0" step="1" placeholder="€">
+              </label>
+              <label class="field">
+                <span class="field-label">Tariffa esibizione da solista</span>
+                <input type="number" id="rate-solo" min="0" step="1" placeholder="€">
+              </label>
+            </div>
           </div>
 
-          <div class="grid">
+          <div class="stack">
+            <div class="section-subtitle">
+              <h4>Bio e media</h4>
+              <p class="muted small" style="margin: 0;">Un breve testo aiuta chi ti trova nella ricerca.</p>
+            </div>
             <label class="field">
-              <span class="field-label">Tariffa servizio civile/religioso (€)</span>
-              <input type="number" id="rate-service" min="0" step="1">
+              <span class="field-label">Bio</span>
+              <textarea id="m-bio" rows="3" placeholder="Breve descrizione"></textarea>
             </label>
-            <label class="field" id="rate-trumpet-field">
-              <span class="field-label">Tariffa servizio civile (squilli+silenzio) (€)</span>
-              <input type="number" id="rate-trumpet" min="0" step="1">
-            </label>
+
             <label class="field">
-              <span class="field-label">Tariffa esibizione da solista (€)</span>
-              <input type="number" id="rate-solo" min="0" step="1">
+              <span class="field-label">Curriculum</span>
+              <textarea id="m-cv" rows="4" placeholder="Studi, esperienze, repertorio"></textarea>
+            </label>
+
+            <label class="field">
+              <span class="field-label">Carica foto profilo</span>
+              <input type="file" id="m-photoFile" accept="image/*">
             </label>
           </div>
-
-          <label class="field">
-            <span class="field-label">Bio</span>
-            <textarea id="m-bio" rows="3" placeholder="Breve descrizione"></textarea>
-          </label>
-
-          <label class="field">
-            <span class="field-label">Curriculum</span>
-            <textarea id="m-cv" rows="4" placeholder="Studi, esperienze, repertorio"></textarea>
-          </label>
-
-          <label class="field">
-            <span class="field-label">Carica foto profilo</span>
-            <input type="file" id="m-photoFile" accept="image/*">
-          </label>
         </div>
 
-        <div id="ensemble-fields" class="stack" style="display: none;">
+        <div id="ensemble-fields" class="stack form-section" style="display: none;">
+          <div class="section-header">
+            <h3 class="section-title">Profilo ensemble</h3>
+            <p class="muted small">Dati pubblici, sede e contatti dell’ensemble.</p>
+          </div>
+
           <div class="grid">
             <label class="field">
               <span class="field-label">Nome ensemble</span>
@@ -272,32 +329,42 @@
               <span class="field-label">Sito web (opzionale)</span>
               <input type="url" id="e-website" placeholder="https://...">
             </label>
-          </div>
-
-          <div class="grid">
             <label class="field">
-              <span class="field-label">Tariffa prova (€)</span>
-              <input type="number" id="e-rate-rehearsal" min="0" step="1">
-            </label>
-            <label class="field">
-              <span class="field-label">Tariffa concerto/messa (€)</span>
-              <input type="number" id="e-rate-concert" min="0" step="1">
+              <span class="field-label">Data di fondazione (opzionale)</span>
+              <input type="date" id="e-foundedDate">
             </label>
           </div>
 
-          <div class="grid">
-            <label class="field">
-              <span class="field-label">Tariffa servizio civile/religioso (€)</span>
-              <input type="number" id="e-rate-service" min="0" step="1">
-            </label>
-            <label class="field">
-              <span class="field-label">Tariffa servizio civile (squilli+silenzio) (€)</span>
-              <input type="number" id="e-rate-trumpet" min="0" step="1">
-            </label>
-            <label class="field">
-              <span class="field-label">Tariffa esibizione da solista (€)</span>
-              <input type="number" id="e-rate-solo" min="0" step="1">
-            </label>
+          <div class="stack">
+            <div class="section-subtitle">
+              <h4>Compensi (opzionale)</h4>
+              <p class="muted small" style="margin: 0;">Puoi inserirli per richieste rapide.</p>
+            </div>
+            <div class="grid">
+              <label class="field">
+                <span class="field-label">Tariffa prova</span>
+                <input type="number" id="e-rate-rehearsal" min="0" step="1" placeholder="€">
+              </label>
+              <label class="field">
+                <span class="field-label">Tariffa concerto/messa</span>
+                <input type="number" id="e-rate-concert" min="0" step="1" placeholder="€">
+              </label>
+            </div>
+
+            <div class="grid">
+              <label class="field">
+                <span class="field-label">Tariffa servizio civile/religioso</span>
+                <input type="number" id="e-rate-service" min="0" step="1" placeholder="€">
+              </label>
+              <label class="field">
+                <span class="field-label">Tariffa servizio civile con squilli e silenzio</span>
+                <input type="number" id="e-rate-trumpet" min="0" step="1" placeholder="€">
+              </label>
+              <label class="field">
+                <span class="field-label">Tariffa esibizione da solista</span>
+                <input type="number" id="e-rate-solo" min="0" step="1" placeholder="€">
+              </label>
+            </div>
           </div>
 
           <label class="field">

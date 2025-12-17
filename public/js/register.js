@@ -39,8 +39,10 @@ const mGenderEl = document.getElementById('m-gender');
 const mGenderVisibleEl = document.getElementById('m-gender-visible');
 const mNationalityEl = document.getElementById('m-nationality');
 const mNationalityVisibleEl = document.getElementById('m-nationality-visible');
+const mBirthDateEl = document.getElementById('m-birthDate');
 
-const mDisplayName = document.getElementById('m-displayName');
+const mFirstName = document.getElementById('m-firstName');
+const mLastName = document.getElementById('m-lastName');
 const mEmail = document.getElementById('m-email');
 const instrumentBlock = document.getElementById('instrument-block');
 const mInstruments = document.getElementById('m-instruments');
@@ -74,6 +76,7 @@ const eGenderEl = document.getElementById('e-gender');
 const eGenderVisibleEl = document.getElementById('e-gender-visible');
 const eNationalityEl = document.getElementById('e-nationality');
 const eNationalityVisibleEl = document.getElementById('e-nationality-visible');
+const eFoundedDateEl = document.getElementById('e-foundedDate');
 const eCityInput = document.getElementById('e-city');
 const eCitySuggestions = document.getElementById('e-city-suggestions');
 const eStreet = document.getElementById('e-street');
@@ -90,6 +93,7 @@ const nationalityToggleMusician = document.getElementById('m-nationality-toggle'
 const nationalityToggleEnsemble = document.getElementById('e-nationality-toggle');
 const voiceFields = document.getElementById('voice-fields');
 const voiceTypeEl = document.getElementById('m-voiceType');
+const voiceTypeSecondaryEl = document.getElementById('m-voiceType-secondary');
 
 let cityList = [];
 let countryList = [];
@@ -223,9 +227,12 @@ function toggleSections(kind) {
   ensembleFields.style.display = isMusician ? 'none' : 'flex';
   if (passwordFields) passwordFields.style.display = kind ? 'grid' : 'none';
   if (submitRow) submitRow.style.display = kind ? 'flex' : 'none';
-  if (voiceFields) voiceFields.style.display = kind === 'singer' ? 'flex' : 'none';
-  if (mMainInstrument) mMainInstrument.placeholder = kind === 'singer' ? 'Seleziona il registro vocale' : 'Tromba';
-  if (kind !== 'singer' && voiceTypeEl) voiceTypeEl.value = '';
+  if (voiceFields) voiceFields.style.display = kind === 'singer' ? 'grid' : 'none';
+  if (mMainInstrument) mMainInstrument.placeholder = kind === 'singer' ? 'Seleziona il registro vocale primario' : 'Tromba';
+  if (kind !== 'singer' && voiceTypeEl) {
+    voiceTypeEl.value = '';
+    if (voiceTypeSecondaryEl) voiceTypeSecondaryEl.value = '';
+  }
   if (instrumentBlock) instrumentBlock.style.display = kind === 'singer' ? 'none' : 'grid';
   if (mLabelInstruments) mLabelInstruments.textContent = kind === 'singer' ? 'Voci' : 'Strumenti';
   if (mLabelMainInstrument) mLabelMainInstrument.textContent = kind === 'singer' ? 'Voce principale' : 'Strumento principale';
@@ -490,7 +497,9 @@ async function submitForm(event) {
     let authUid = null;
     let emailForAuth = '';
     if (kind === 'musician' || kind === 'singer') {
-      const displayName = mDisplayName?.value.trim();
+      const firstName = mFirstName?.value.trim() || '';
+      const lastName = mLastName?.value.trim() || '';
+      const displayName = [firstName, lastName].filter(Boolean).join(' ').trim();
       const email = mEmail?.value.trim();
       const instrumentsStr = normalizeInstrumentsString(mInstruments?.value || '');
       let instruments = instrumentsStr
@@ -499,11 +508,14 @@ async function submitForm(event) {
         .filter(Boolean);
       let mainInstrument = normalizeInstrumentName(mMainInstrument?.value || '');
       let voiceType = null;
+      let voiceTypeSecondary = null;
       if (kind === 'singer') {
         voiceType = normalizeInstrumentName(voiceTypeEl?.value || '');
+        voiceTypeSecondary = normalizeInstrumentName(voiceTypeSecondaryEl?.value || '');
         if (voiceType) {
           mainInstrument = voiceType;
           instruments = [voiceType];
+          if (voiceTypeSecondary && !instruments.includes(voiceTypeSecondary)) instruments.push(voiceTypeSecondary);
         } else {
           instruments = [];
           mainInstrument = '';
@@ -520,6 +532,7 @@ async function submitForm(event) {
       const willingToJoinForFree = mWilling?.checked || false;
       const curriculum = mCv?.value.trim();
       const gender = mGenderEl?.value || '';
+      const birthDateRaw = mBirthDateEl?.value || '';
       const nationality = mNationalityEl?.value.trim() || '';
       const genderVisible = !!mGenderVisibleEl?.checked;
       const nationalityVisible = !!mNationalityVisibleEl?.checked;
@@ -561,11 +574,19 @@ async function submitForm(event) {
       if (rSolo != null) rates.solo_performance = rSolo;
 
       if (kind === 'singer' && !voiceType) {
-        throw new Error('Seleziona il registro vocale.');
+        throw new Error('Seleziona il registro vocale primario.');
       }
-
-      if (!displayName || !email || !mainInstrument || !activityLevel) {
-        throw new Error('Compila nome, email, strumento/voce principale e livello.');
+      if (!firstName || !lastName) {
+        throw new Error('Inserisci nome e cognome.');
+      }
+      if (!email) {
+        throw new Error('Inserisci l’email.');
+      }
+      if (!activityLevel) {
+        throw new Error('Seleziona il livello.');
+      }
+      if (!mainInstrument) {
+        throw new Error('Inserisci lo strumento/voce principale.');
       }
 
       emailForAuth = email;
@@ -576,10 +597,13 @@ async function submitForm(event) {
         role: kind, // musician | singer
         authUid,
         displayName,
+        firstName,
+        lastName,
         email,
         instruments,
         mainInstrument,
         voiceType: voiceType || null,
+        voiceTypeSecondary: voiceTypeSecondary || null,
         mainInstrumentSlug: mainInstrumentSlug || null,
         activityLevel,
         experienceYears: Number.isNaN(experienceYears) ? 0 : experienceYears,
@@ -589,6 +613,7 @@ async function submitForm(event) {
         genderVisible,
         nationality: nationality || null,
         nationalityVisible,
+        birthDate: birthDateRaw || null,
         location: {
           city: cityInfo.name,
           province: cityInfo.province || '',
@@ -630,6 +655,7 @@ async function submitForm(event) {
       const nationality = eNationalityEl?.value.trim() || '';
       const genderVisible = !!eGenderVisibleEl?.checked;
       const nationalityVisible = !!eNationalityVisibleEl?.checked;
+      const foundedDateRaw = eFoundedDateEl?.value || '';
 
       if (!displayName || !email) {
         throw new Error('Compila nome ensemble ed email.');
@@ -668,6 +694,7 @@ async function submitForm(event) {
         genderVisible,
         nationality: nationality || null,
         nationalityVisible,
+        foundedDate: foundedDateRaw || null,
         location: {
           city: cityInfo.name,
           province: cityInfo.province || '',

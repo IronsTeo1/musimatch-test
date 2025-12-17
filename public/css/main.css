@@ -136,6 +136,13 @@ label.field select,
 label.field .autocomplete {
   pointer-events: auto;
 }
+.field .inline-check {
+  pointer-events: auto;
+  cursor: pointer;
+}
+.inline-check span {
+  cursor: pointer;
+}
 
 .inline-check {
   display: flex;
@@ -396,6 +403,19 @@ select:focus {
   outline: none;
   border-color: var(--primary);
   box-shadow: 0 0 0 3px color-mix(in srgb, var(--primary) 30%, transparent);
+}
+
+/* select più minimal */
+select {
+  padding: 0.5rem 0.65rem;
+  border-radius: calc(var(--radius) - 8px);
+  border-color: var(--surface-border);
+  background: color-mix(in srgb, var(--surface) 94%, var(--surface-strong) 6%);
+  box-shadow: none;
+}
+
+select:focus {
+  box-shadow: 0 0 0 2px color-mix(in srgb, var(--primary) 24%, transparent);
 }
 
 textarea {
