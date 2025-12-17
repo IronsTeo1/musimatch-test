@@ -203,12 +203,10 @@ function applyRoleLabels(role) {
 
   if (normalizedRole === 'singer') {
     if (instrumentBlock) instrumentBlock.style.display = 'none';
-    if (settingsLabelInstruments) settingsLabelInstruments.textContent = 'Altre capacità vocali';
     if (settingsLabelMainInstrument) settingsLabelMainInstrument.textContent = 'Registro vocale primario';
     if (settingsMainInstrumentField) settingsMainInstrumentField.style.display = 'none';
     if (settingsInstrumentsField) settingsInstrumentsField.style.display = 'none';
     if (voiceSettingsFields) voiceSettingsFields.style.display = 'grid';
-    if (settingsVoicesHint) settingsVoicesHint.textContent = 'Separa le voci con una virgola';
   } else {
     if (instrumentBlock) instrumentBlock.style.display = '';
     if (settingsLabelInstruments) settingsLabelInstruments.textContent = 'Altri strumenti suonati';
@@ -232,10 +230,6 @@ const settingsInstrumentsField = document.getElementById('settings-instruments-f
 const settingsMainInstrumentField = document.getElementById('settings-mainInstrument-field');
 const settingsLabelInstruments = document.getElementById('settings-label-instruments');
 const settingsLabelMainInstrument = document.getElementById('settings-label-mainInstrument');
-const setVoicesEl = document.getElementById('set-voices');
-const setVoicesSuggestionsEl = document.getElementById('set-voices-suggestions');
-const clearVoicesBtn = document.getElementById('clear-voices');
-const settingsVoicesHint = document.getElementById('settings-voices-hint');
 const settingsEnsembleMembersField = document.getElementById('settings-ensemble-members-field');
 const setEnsembleMembersEl = document.getElementById('set-ensemble-members');
 const clearInstrumentsBtn = document.getElementById('clear-instruments');
@@ -637,27 +631,6 @@ if (setMainInstrumentEl) {
   });
 }
 
-if (setVoicesEl) {
-  setVoicesEl.addEventListener('input', (e) => {
-    if (e.data === ',' && setVoicesEl.value.trim().slice(-1) === ',') {
-      setVoicesEl.value = `${setVoicesEl.value} `;
-    }
-    renderInstrumentSuggestions(e.target.value.split(',').pop().trim(), setVoicesSuggestionsEl, setVoicesEl, { options: voiceSuggestions });
-  });
-  setVoicesEl.addEventListener('blur', () => {
-    setTimeout(() => {
-      if (setVoicesSuggestionsEl) setVoicesSuggestionsEl.hidden = true;
-    }, 150);
-  });
-}
-
-if (clearVoicesBtn) {
-  clearVoicesBtn.addEventListener('click', () => {
-    if (setVoicesEl) setVoicesEl.value = '';
-    if (setVoicesSuggestionsEl) setVoicesSuggestionsEl.hidden = true;
-  });
-}
-
 if (clearInstrumentsBtn) {
   clearInstrumentsBtn.addEventListener('click', () => {
     if (setInstrumentsEl) setInstrumentsEl.value = '';
@@ -775,12 +748,7 @@ onAuthStateChanged(auth, async (user) => {
       if (voiceTypeSecondarySelect) {
         voiceTypeSecondarySelect.value = docData.data.voiceTypeSecondary || '';
       }
-      if (docData.data.role === 'singer') {
-        if (setVoicesEl) {
-          const voiceTokens = filterVoicesFromList(instrumentsArray);
-          setVoicesEl.value = voiceTokens.length ? voiceTokens.join(', ') : instrumentsArray.join(', ');
-        }
-      }
+      // No altre capacità vocali per il cantante: non usiamo il campo strumenti aggiuntivi
       if (voiceSettingsFields) {
         voiceSettingsFields.style.display = docData.data.role === 'singer' ? 'grid' : 'none';
       }
@@ -933,12 +901,13 @@ if (btnUpdateBio) {
       const lastName = (setLastNameEl?.value || '').trim();
       const birthDateVal = birthDateEl?.value || null;
       const foundedDateVal = foundedDateEl?.value || null;
-      const voicesStr = normalizeInstrumentsString(setVoicesEl?.value || '');
       const instrumentsStr = normalizeInstrumentsString(setInstrumentsEl?.value || '');
-      const instruments = (isSinger ? voicesStr : instrumentsStr)
-        .split(',')
-        .map((t) => normalizeInstrumentName(t))
-        .filter(Boolean);
+      const instruments = isSinger
+        ? []
+        : instrumentsStr
+            .split(',')
+            .map((t) => normalizeInstrumentName(t))
+            .filter(Boolean);
       let mainInstrument = normalizeInstrumentName(setMainInstrumentEl?.value || '');
   const voiceType = normalizeInstrumentName(voiceTypeSelect?.value || '');
   const voiceTypeSecondary = normalizeInstrumentName(voiceTypeSecondarySelect?.value || '');

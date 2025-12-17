@@ -213,7 +213,7 @@
         <div class="grid" id="voice-settings-fields" style="display: none;">
           <label class="field">
             <span class="field-label">Registro vocale primario</span>
-            <select id="set-voiceType">
+            <select id="set-voiceType" class="select-clean">
               <option value="">Seleziona</option>
               <option value="Soprano">Soprano</option>
               <option value="Mezzosoprano">Mezzosoprano</option>
@@ -225,7 +225,7 @@
           </label>
           <label class="field">
             <span class="field-label">Registro vocale secondario (opzionale)</span>
-            <select id="set-voiceType-secondary">
+            <select id="set-voiceType-secondary" class="select-clean">
               <option value="">Seleziona</option>
               <option value="Soprano">Soprano</option>
               <option value="Mezzosoprano">Mezzosoprano</option>
@@ -234,15 +234,6 @@
               <option value="Baritono">Baritono</option>
               <option value="Basso">Basso</option>
             </select>
-          </label>
-          <label class="field">
-            <span class="field-label" id="settings-label-voices">Altre capacità vocali</span>
-            <span class="field-hint muted xsmall" id="settings-voices-hint">Separa le voci con una virgola</span>
-            <div class="autocomplete with-clear">
-              <input type="text" id="set-voices" placeholder="es. Soprano, Mezzosoprano" autocomplete="off">
-              <button type="button" class="clear-input" id="clear-voices" aria-label="Pulisci voci">✕</button>
-              <div id="set-voices-suggestions" class="autocomplete-list" hidden></div>
-            </div>
           </label>
         </div>
         <div class="field" id="activity-level-field">
@@ -269,7 +260,7 @@
         <div class="grid" id="personal-data-fields">
           <label class="field">
             <span class="field-label">Sesso (opzionale)</span>
-            <select id="set-gender">
+            <select id="set-gender" class="select-clean">
               <option value="">Preferisco non rispondere</option>
               <option value="male">Uomo</option>
               <option value="female">Donna</option>

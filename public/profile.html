@@ -144,6 +144,15 @@
               <span class="field-label">Testo annuncio</span>
               <textarea id="post-text" rows="3" maxlength="800" placeholder="Es. Cerco pianista per trio, prove serali zona centro."></textarea>
             </label>
+            <label class="field">
+              <span class="field-label">Raggio di visibilità (km)</span>
+              <span class="field-hint muted xsmall">Trascina il selettore o inserisci il numero: useremo questo raggio attorno alla tua città di profilo.</span>
+              <div class="inline" style="display: flex; align-items: center; gap: 0.75rem; flex-wrap: nowrap;">
+                <input type="range" id="post-radius-range" min="0" max="200" step="1" value="30" aria-label="Raggio in km" style="flex: 1 1 0; max-width: 220px; min-width: 140px; height: 36px;">
+                <input type="number" id="post-radius" min="0" step="1" placeholder="es. 30" style="width: 110px; height: 40px; margin: 0;">
+                <span class="muted xsmall">km</span>
+              </div>
+            </label>
             <div id="post-seeking-fields">
               <label class="field">
                 <span class="field-label">Mostra l’annuncio anche in un’altra città (opzionale)</span>
@@ -152,6 +161,15 @@
                   <input type="text" id="post-target-city" autocomplete="off" placeholder="Es. Milano, Bologna, Firenze" />
                   <div id="post-target-city-suggestions" class="autocomplete-list" hidden></div>
                 </div>
+              </label>
+              <label class="field">
+                <span class="field-label">Ensemble richiesto (opzionale)</span>
+                <select id="post-ensemble" class="select-clean">
+                  <option value="">Seleziona</option>
+                  <option value="Coro">Coro</option>
+                  <option value="Banda">Banda</option>
+                  <option value="Orchestra">Orchestra</option>
+                </select>
               </label>
               <div class="grid">
                 <label class="field">
@@ -164,7 +182,7 @@
                 <label class="field">
                   <span class="field-label">Voci richieste (opzionale)</span>
                   <div class="autocomplete with-clear">
-                    <input type="text" id="post-voices" readonly placeholder="Seleziona voci">
+                    <input type="text" id="post-voices" class="select-clean-input" readonly placeholder="Seleziona voci">
                     <button type="button" class="clear-input" id="post-voices-clear" aria-label="Pulisci voci" hidden>✕</button>
                     <div id="post-voices-suggestions" class="autocomplete-list" hidden></div>
                   </div>
@@ -176,7 +194,7 @@
               <div class="stack post-offer-musician">
                 <label class="inline-check">
                   <input type="checkbox" id="post-offer-teach-instruments">
-                  <span>Disponibile per lezioni di strumenti</span>
+                  <span>Disponibile per lezioni di strumento</span>
                 </label>
                 <label class="field">
                   <span class="field-label">Strumenti insegnati (opzionale)</span>

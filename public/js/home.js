@@ -32,11 +32,13 @@ const postTextEl = document.getElementById('post-text');
 const postInstrumentsEl = document.getElementById('post-instruments');
 const postInstrumentsSuggestionsEl = document.getElementById('post-instruments-suggestions');
 const postRadiusEl = document.getElementById('post-radius');
+const postRadiusRangeEl = document.getElementById('post-radius-range');
 const postVoicesEl = document.getElementById('post-voices');
 const postVoicesSuggestionsEl = document.getElementById('post-voices-suggestions');
 const postVoicesClearBtn = document.getElementById('post-voices-clear');
 const postTargetCityEl = document.getElementById('post-target-city');
 const postTargetCitySuggestionsEl = document.getElementById('post-target-city-suggestions');
+const postEnsembleEl = document.getElementById('post-ensemble');
 const postTabSeekingBtn = document.getElementById('post-tab-seeking');
 const postTabOfferingBtn = document.getElementById('post-tab-offering');
 const postSeekingFields = document.getElementById('post-seeking-fields');
@@ -88,6 +90,43 @@ const filterTypeState = { current: null };
 const floatingNav = document.querySelector('.floating-nav');
 let activeFilter = { center: null, radius: null, postType: null, instrumentTokens: [], instrument: '', voice: '' };
 let awaitingGeo = false;
+// Gestisce la chiusura dei modal senza trigger involontari quando si trascina il mouse fuori dal contenuto
+function setupModalSafeClose(modalEl, closeFn) {
+  if (!modalEl || typeof closeFn !== 'function') return;
+  let pointerDownOnBackdrop = false;
+  const resetPointerState = () => {
+    pointerDownOnBackdrop = false;
+  };
+  modalEl.addEventListener('mousedown', (e) => {
+    pointerDownOnBackdrop = e.target === modalEl;
+  });
+  modalEl.addEventListener('click', (e) => {
+    const clickedBackdrop = e.target === modalEl && e.currentTarget === e.target;
+    if (clickedBackdrop) {
+      closeFn();
+    }
+    resetPointerState();
+  });
+  const backdrop = modalEl.querySelector('.modal-backdrop');
+  if (backdrop) {
+    backdrop.addEventListener('mousedown', () => {
+      pointerDownOnBackdrop = true;
+    });
+    backdrop.addEventListener('click', () => {
+      if (pointerDownOnBackdrop) closeFn();
+      resetPointerState();
+    });
+  }
+}
+
+function setPostRadiusInputs(val) {
+  const hasVal = Number.isFinite(val);
+  if (postRadiusEl) postRadiusEl.value = hasVal ? val : '';
+  if (postRadiusRangeEl) {
+    const fallback = postRadiusRangeEl.defaultValue || '50';
+    postRadiusRangeEl.value = hasVal ? val : fallback;
+  }
+}
 
 // Assicura che il modal sia nascosto al load se aria-hidden è true
 if (postModal && postModal.getAttribute('aria-hidden') !== 'false') {
@@ -709,6 +748,49 @@ function renderInstrumentSuggestions(term) {
   postInstrumentsSuggestionsEl.hidden = false;
 }
 
+function renderOfferInstrumentSuggestions(term) {
+  if (!postOfferInstrumentsSuggestionsEl) return;
+  postOfferInstrumentsSuggestionsEl.innerHTML = '';
+  const fragment = (term || '').split(',').pop().trim();
+  if (!fragment) {
+    postOfferInstrumentsSuggestionsEl.hidden = true;
+    return;
+  }
+  const pool = [
+    'Arpa', 'Batteria', 'Basso elettrico', 'Chitarra', 'Chitarra acustica', 'Chitarra classica', 'Chitarra elettrica',
+    'Clarinetto', 'Contrabbasso', 'Corno francese', 'Euphonium', 'Fagotto', 'Fisarmonica', 'Flauto', 'Glockenspiel',
+    'Mandolino', 'Marimba', 'Oboe', 'Organo', 'Percussioni', 'Pianoforte', 'Sax contralto', 'Sax tenore', 'Sax baritono',
+    'Sax soprano', 'Tastiera', 'Timpani', 'Tromba', 'Trombone', 'Tuba', 'Viola', 'Violino', 'Violoncello', 'Xilofono'
+  ];
+  const normTerm = fragment.toLowerCase();
+  const filtered = pool.filter((i) => i.toLowerCase().includes(normTerm)).slice(0, 8);
+  if (!filtered.length) {
+    postOfferInstrumentsSuggestionsEl.hidden = true;
+    return;
+  }
+  filtered.forEach((item) => {
+    const el = document.createElement('div');
+    el.className = 'autocomplete-item';
+    el.textContent = item;
+    el.addEventListener('mousedown', (e) => {
+      e.preventDefault();
+      const currentRaw = postOfferInstrumentsEl?.value || '';
+      const parts = currentRaw.split(',');
+      if (parts.length) parts.pop(); // rimuovi frammento corrente
+      const baseTokens = parseInstruments(parts.join(','));
+      baseTokens.push(item);
+      const unique = Array.from(new Set(baseTokens.filter(Boolean)));
+      if (postOfferInstrumentsEl) {
+        postOfferInstrumentsEl.value = unique.join(', ') + ', ';
+        postOfferInstrumentsEl.focus();
+      }
+      postOfferInstrumentsSuggestionsEl.hidden = true;
+    });
+    postOfferInstrumentsSuggestionsEl.appendChild(el);
+  });
+  postOfferInstrumentsSuggestionsEl.hidden = false;
+}
+
 function renderVoiceSuggestions() {
   if (!postVoicesSuggestionsEl) return;
   postVoicesSuggestionsEl.innerHTML = '';
@@ -856,6 +938,7 @@ function startEditPost(post) {
   if (postTextEl) postTextEl.value = post.body || '';
   selectedInstruments = (post.instrumentsWanted || []).filter(Boolean);
   selectedVoices = (post.voicesWanted || []).filter(Boolean);
+  if (postEnsembleEl) postEnsembleEl.value = post.ensembleWanted || '';
   if (mode === 'offering') {
     const offer = post.offerDetails || {};
     if (postOfferTeachInstruments) postOfferTeachInstruments.checked = !!offer.teachInstruments;
@@ -875,6 +958,7 @@ function startEditPost(post) {
   renderInstrumentChips();
   renderVoiceChips();
   if (postTargetCityEl) postTargetCityEl.value = post.location?.city || '';
+  setPostRadiusInputs(Number.isFinite(post.radiusKm) ? post.radiusKm : null);
   if (postSubmitBtn) postSubmitBtn.textContent = 'Salva modifiche';
   openPostModal();
 }
@@ -1476,7 +1560,8 @@ function renderPostCard(post, distanceKm) {
   } else {
     const instruments = (post.instrumentsWanted || []).filter(Boolean);
     const voices = (post.voicesWanted || []).filter(Boolean);
-    const lookingFor = [...instruments, ...voices].filter(Boolean);
+    const ensembleWanted = post.ensembleWanted ? `Ensemble: ${post.ensembleWanted}` : null;
+    const lookingFor = [...instruments, ...voices, ensembleWanted].filter(Boolean);
     tags.innerHTML = '';
     const badge = document.createElement('span');
     badge.className = 'badge badge-type badge-seeking';
@@ -1740,7 +1825,21 @@ async function publishPost() {
     ? selectedInstruments
     : parseInstruments(postInstrumentsEl?.value || '');
   const voices = selectedVoices.slice();
-  const radius = currentUserProfile.data?.maxTravelKm || 50;
+  const ensembleWanted = (postEnsembleEl?.value || '').trim();
+  let radiusVal = null;
+  if (postRadiusEl && postRadiusEl.value !== '') {
+    const parsed = parseFloat(postRadiusEl.value);
+    if (!Number.isFinite(parsed) || parsed < 0) {
+      setPostMessage('Inserisci un raggio valido (km).', true);
+      return;
+    }
+    radiusVal = parsed;
+  }
+  const radius = Number.isFinite(radiusVal)
+    ? radiusVal
+    : Number.isFinite(currentUserProfile.data?.maxTravelKm)
+      ? currentUserProfile.data.maxTravelKm
+      : 50;
   const loc = currentUserProfile.data?.location || {};
   if (!loc || typeof loc.lat !== 'number' || typeof loc.lng !== 'number') {
     setPostMessage('Completa la tua città/sede prima di pubblicare.', true);
@@ -1851,6 +1950,7 @@ async function publishPost() {
     offerDetails,
     instrumentsWanted: postMode === 'seeking' && instruments.length ? instruments : null,
     voicesWanted: postMode === 'seeking' && voices.length ? voices : null,
+    ensembleWanted: postMode === 'seeking' && ensembleWanted ? ensembleWanted : null,
     radiusKm: Number.isFinite(radius) ? radius : 50,
     authorLocation,
     location: postLocation,
@@ -1883,6 +1983,11 @@ async function publishPost() {
     if (postOfferRateEl) postOfferRateEl.value = '';
     if (postOfferConcertsEl) postOfferConcertsEl.checked = false;
     if (postOfferServicesEl) postOfferServicesEl.checked = false;
+    if (postEnsembleEl) postEnsembleEl.value = '';
+    const fallbackRadius = Number.isFinite(currentUserProfile?.data?.maxTravelKm)
+      ? currentUserProfile.data.maxTravelKm
+      : null;
+    setPostRadiusInputs(fallbackRadius);
     selectedInstruments = [];
     selectedVoices = [];
     renderInstrumentChips();
@@ -1900,7 +2005,7 @@ async function publishPost() {
 
 function prefillRadius(profile) {
   const radius = profile?.data?.maxTravelKm;
-  if (postRadiusEl && Number.isFinite(radius)) postRadiusEl.value = radius;
+  setPostRadiusInputs(Number.isFinite(radius) ? radius : null);
 }
 
 if (postSubmitBtn) {
@@ -1962,6 +2067,23 @@ if (postVoicesClearBtn) {
   });
 }
 
+if (postOfferInstrumentsEl) {
+  postOfferInstrumentsEl.addEventListener('input', (e) => {
+    if (e.data === ',' && postOfferInstrumentsEl.value.trim().slice(-1) === ',') {
+      postOfferInstrumentsEl.value = `${postOfferInstrumentsEl.value} `;
+    }
+    renderOfferInstrumentSuggestions(e.target.value);
+  });
+  postOfferInstrumentsEl.addEventListener('focus', (e) => {
+    renderOfferInstrumentSuggestions(e.target.value);
+  });
+  postOfferInstrumentsEl.addEventListener('blur', () => {
+    setTimeout(() => {
+      if (postOfferInstrumentsSuggestionsEl) postOfferInstrumentsSuggestionsEl.hidden = true;
+    }, 120);
+  });
+}
+
 if (postTargetCityEl) {
   postTargetCityEl.addEventListener('input', (e) => {
     renderTargetCitySuggestions(e.target.value);
@@ -1973,6 +2095,22 @@ if (postTargetCityEl) {
     setTimeout(() => {
       if (postTargetCitySuggestionsEl) postTargetCitySuggestionsEl.hidden = true;
     }, 120);
+  });
+}
+
+if (postRadiusRangeEl && postRadiusEl) {
+  postRadiusRangeEl.addEventListener('input', (e) => {
+    postRadiusEl.value = e.target.value;
+  });
+  postRadiusEl.addEventListener('input', (e) => {
+    if (e.target.value === '') {
+      postRadiusRangeEl.value = postRadiusRangeEl.defaultValue || '50';
+      return;
+    }
+    const parsed = parseFloat(e.target.value);
+    if (Number.isFinite(parsed)) {
+      postRadiusRangeEl.value = parsed;
+    }
   });
 }
 
@@ -2092,21 +2230,8 @@ if (filterRadiusRangeEl && filterRadiusEl) {
   filterRadiusEl.addEventListener('input', syncNumberToRange);
 }
 
-if (postModal) {
-  postModal.addEventListener('click', (e) => {
-    if (e.target === postModal || e.target.classList.contains('modal-backdrop')) {
-      closePostModal();
-    }
-  });
-}
-
-if (filterModal) {
-  filterModal.addEventListener('click', (e) => {
-    if (e.target === filterModal || e.target.classList.contains('modal-backdrop')) {
-      closeFilterModal();
-    }
-  });
-}
+setupModalSafeClose(postModal, closePostModal);
+setupModalSafeClose(filterModal, closeFilterModal);
 
 document.addEventListener('keydown', (e) => {
   if (e.key === 'Escape') {

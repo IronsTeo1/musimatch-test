@@ -144,11 +144,7 @@
           <button type="button" class="ghost ghost-primary btn-compact modal-close" id="post-close-modal" aria-label="Chiudi">✕</button>
           <div class="inline-header" style="align-items: flex-end; gap: 0.5rem; flex-wrap: wrap;">
             <h3 style="margin: 0;" id="post-modal-title">Crea un annuncio</h3>
-<<<<<<< HEAD
-            <p class="muted helper-text" style="margin: 0;">Se non scegli altro, l’annuncio sarà visibile solo a chi è vicino a te.</p>
-=======
             <p class="muted helper-text" style="margin: 0;">Se non scegli altro, l'annuncio sarà visibile solo a chi è vicino a te.</p>
->>>>>>> be0ca69 (affinato il filtro nella home e reso flottante il menù di navigazione.)
           </div>
           <div class="post-tabs" role="tablist" aria-label="Tipo annuncio">
             <button type="button" class="post-tab active" id="post-tab-seeking" data-mode="seeking">Cercasi</button>
@@ -159,18 +155,32 @@
               <span class="field-label">Testo annuncio</span>
               <textarea id="post-text" rows="3" maxlength="800" placeholder="Es. Cerco pianista per trio, prove serali zona centro."></textarea>
             </label>
+            <label class="field">
+              <span class="field-label">Raggio di visibilità (km)</span>
+              <span class="field-hint muted xsmall">Trascina il selettore o inserisci il numero: useremo questo raggio attorno alla tua città di profilo.</span>
+              <div class="inline" style="display: flex; align-items: center; gap: 0.75rem; flex-wrap: nowrap;">
+                <input type="range" id="post-radius-range" min="0" max="200" step="1" value="30" aria-label="Raggio in km" style="flex: 1 1 0; max-width: 220px; min-width: 140px; height: 36px;">
+                <input type="number" id="post-radius" min="0" step="1" placeholder="es. 30" style="width: 110px; height: 40px; margin: 0;">
+                <span class="muted xsmall">km</span>
+              </div>
+            </label>
             <div id="post-seeking-fields">
               <label class="field">
-<<<<<<< HEAD
-                <span class="field-label">Mostra l’annuncio anche in un’altra città (opzionale)</span>
-=======
                 <span class="field-label">Mostra l'annuncio anche in un'altra città (opzionale)</span>
->>>>>>> be0ca69 (affinato il filtro nella home e reso flottante il menù di navigazione.)
                 <p class="helper-text" style="margin: 0.15rem 0 0.25rem;">Seleziona una città diversa per far comparire il post anche a chi abita lì.</p>
                 <div class="autocomplete with-clear">
                   <input type="text" id="post-target-city" autocomplete="off" placeholder="Es. Milano, Bologna, Firenze" />
                   <div id="post-target-city-suggestions" class="autocomplete-list" hidden></div>
                 </div>
+              </label>
+              <label class="field">
+                <span class="field-label">Ensemble richiesto (opzionale)</span>
+                <select id="post-ensemble" class="select-clean">
+                  <option value="">Seleziona</option>
+                  <option value="Coro">Coro</option>
+                  <option value="Banda">Banda</option>
+                  <option value="Orchestra">Orchestra</option>
+                </select>
               </label>
               <div class="grid">
                 <label class="field">
@@ -183,7 +193,7 @@
                 <label class="field">
                   <span class="field-label">Voci richieste (opzionale)</span>
                   <div class="autocomplete with-clear">
-                    <input type="text" id="post-voices" readonly placeholder="Seleziona voci">
+                    <input type="text" id="post-voices" class="select-clean-input" readonly placeholder="Seleziona voci">
                     <button type="button" class="clear-input" id="post-voices-clear" aria-label="Pulisci voci" hidden>✕</button>
                     <div id="post-voices-suggestions" class="autocomplete-list" hidden></div>
                   </div>
@@ -282,7 +292,7 @@
                   <label class="field">
                     <span class="field-label">Voce richiesta</span>
                     <div class="autocomplete with-clear">
-                      <input type="text" id="filter-voice" autocomplete="off" placeholder="Seleziona" readonly />
+                      <input type="text" id="filter-voice" class="select-clean-input" autocomplete="off" placeholder="Seleziona" readonly />
                       <button type="button" class="clear-input" id="filter-voice-clear" aria-label="Pulisci voce" hidden>✕</button>
                       <div id="filter-voice-suggestions" class="autocomplete-list" hidden></div>
                     </div>
