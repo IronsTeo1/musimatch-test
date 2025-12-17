@@ -106,6 +106,7 @@ let postModalOpen = false;
 let ratesModalOpen = false;
 let editingPostId = null;
 let editingPostData = null;
+let viewerProfile = null;
 
 const avatarContainer = document.getElementById('profile-avatar');
 const avatarModal = document.getElementById('avatar-modal');
@@ -1195,13 +1196,39 @@ function populateForm(data) {
     const ratesTitleEl = document.getElementById('rates-modal-title');
     if (ratesTitleEl) ratesTitleEl.textContent = 'Tariffe';
   }
-  renderRates(data.rates || {});
+  renderRates(data.rates || {}, data);
   markProfileReady();
 }
 
-function renderRates(rates) {
+function shouldHideRatesForViewer(targetData = {}, rates = {}) {
+  if (!viewerProfile) return false;
+  if ((viewerProfile.userType || '').toLowerCase() !== 'ensemble') return false;
+  const targetType = (targetData.userType || '').toLowerCase();
+  const targetRole = (targetData.role || '').toLowerCase();
+  const isMusician = targetType === 'musician' || targetRole === 'musician' || targetRole === 'singer';
+  if (!isMusician) return false;
+
+  const toValues = (obj = {}) =>
+    Object.values(obj)
+      .map((v) => (Number.isFinite(v) ? v : parseFloat(v)))
+      .filter((n) => Number.isFinite(n));
+
+  const targetVals = toValues(rates);
+  const viewerVals = toValues(viewerProfile.rates || {});
+  if (!targetVals.length || !viewerVals.length) return false;
+
+  return viewerVals.some((v) => targetVals.some((t) => v > t));
+}
+
+function renderRates(rates, targetData = {}) {
   if (!ratesTableBodyEl) return;
   ratesTableBodyEl.innerHTML = '';
+  const hideRates = shouldHideRatesForViewer(targetData, rates);
+  if (hideRates) {
+    ratesTableBodyEl.innerHTML =
+      '<tr><td colspan="2" class="muted">Tariffe nascoste quando visualizzate da ensemble con compensi più alti.</td></tr>';
+    return;
+  }
   const hasTrumpet = hasTrumpetSelected({
     mainInstrument: normalizeInstrumentName(dataCache?.mainInstrument || ''),
     instruments: Array.isArray(dataCache?.instruments) ? dataCache.instruments : []
@@ -1525,6 +1552,7 @@ function guard(user) {
   viewingOwnProfile = false;
   targetProfileId = null;
   dataCache = {};
+  viewerProfile = null;
   syncCreatePostButton();
   const renderTargetProfile = async () => {
     try {
@@ -1556,6 +1584,14 @@ function guard(user) {
       cacheProfileDoc(targetDoc);
       syncCreatePostButton();
       updatePageHeading(targetDoc.data, isOwnProfile);
+      if (user) {
+        if (isOwnProfile) {
+          viewerProfile = targetDoc.data;
+        } else {
+          const viewerDoc = await loadUserDoc(user.uid);
+          viewerProfile = viewerDoc?.data || null;
+        }
+      }
       if (titleEl) {
         if (isOwnProfile) {
           titleEl.style.display = '';
