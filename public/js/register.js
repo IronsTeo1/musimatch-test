@@ -534,8 +534,8 @@ async function submitForm(event) {
       const gender = mGenderEl?.value || '';
       const birthDateRaw = mBirthDateEl?.value || '';
       const nationality = mNationalityEl?.value.trim() || '';
-      const genderVisible = !!mGenderVisibleEl?.checked;
-      const nationalityVisible = !!mNationalityVisibleEl?.checked;
+      const genderVisible = !mGenderVisibleEl?.checked;
+      const nationalityVisible = !mNationalityVisibleEl?.checked;
       let photoUrl = null;
 
       try {

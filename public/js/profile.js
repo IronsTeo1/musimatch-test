@@ -52,6 +52,10 @@ const willingLabel = document.getElementById('profile-willing-label');
 const willingField = document.getElementById('profile-willing-field');
 const membersField = document.getElementById('profile-members-field');
 const membersText = document.getElementById('profile-members');
+const websiteField = document.getElementById('profile-website-field');
+const websiteLink = document.getElementById('profile-website');
+const foundedField = document.getElementById('profile-founded-field');
+const foundedText = document.getElementById('profile-founded');
 const ratesTableBodyEl = document.getElementById('rates-table-body');
 const profileMetaEl = document.getElementById('profile-meta');
 const ratesOpenModalBtn = document.getElementById('rates-open-modal');
@@ -107,6 +111,26 @@ let ratesModalOpen = false;
 let editingPostId = null;
 let editingPostData = null;
 let viewerProfile = null;
+
+function formatDateValue(dateStr) {
+  if (!dateStr) return null;
+  const d = new Date(dateStr);
+  if (Number.isNaN(d.getTime())) return null;
+  return d.toLocaleDateString('it-IT', { day: '2-digit', month: '2-digit', year: 'numeric' });
+}
+
+function formatWebsite(url) {
+  if (!url) return null;
+  const trimmed = url.trim();
+  if (!trimmed) return null;
+  const href = /^https?:\/\//i.test(trimmed) ? trimmed : `https://${trimmed}`;
+  try {
+    const u = new URL(href);
+    return { href, label: u.host.replace(/^www\./, '') };
+  } catch (e) {
+    return { href, label: trimmed };
+  }
+}
 
 const avatarContainer = document.getElementById('profile-avatar');
 const avatarModal = document.getElementById('avatar-modal');
@@ -1184,10 +1208,25 @@ function populateForm(data) {
       const membersVal = parseInt(rawMembers, 10);
       membersText.textContent = Number.isFinite(membersVal) ? membersVal : '—';
     }
+    if (foundedField) {
+      const formattedDate = formatDateValue(data.foundedDate);
+      foundedField.style.display = formattedDate ? '' : 'none';
+      if (foundedText && formattedDate) foundedText.textContent = formattedDate;
+    }
+    if (websiteField) {
+      const site = formatWebsite(data.website);
+      websiteField.style.display = site ? '' : 'none';
+      if (websiteLink && site) {
+        websiteLink.href = site.href;
+        websiteLink.textContent = site.label;
+      }
+    }
     if (ratesOpenModalBtn) ratesOpenModalBtn.textContent = 'Compensi';
     const ratesTitleEl = document.getElementById('rates-modal-title');
     if (ratesTitleEl) ratesTitleEl.textContent = 'Compensi';
   } else {
+    if (foundedField) foundedField.style.display = 'none';
+    if (websiteField) websiteField.style.display = 'none';
     if (willingLabel) willingLabel.textContent = 'Disponibile a unirsi a un gruppo';
     if (willingText) willingText.textContent = data.willingToJoinForFree ? 'Sì' : 'No';
     if (willingField) willingField.style.display = '';

@@ -196,6 +196,20 @@
           <span class="field-label">Componenti</span>
           <input type="number" id="set-ensemble-members" min="1" step="1" placeholder="es. 12">
         </label>
+        <div class="grid" id="ensemble-info-fields" style="display: none;">
+          <label class="field">
+            <span class="field-label">Nome ensemble</span>
+            <input type="text" id="set-ensemble-name" placeholder="es. Coro Arcobaleno">
+          </label>
+          <label class="field">
+            <span class="field-label">Sito web (opzionale)</span>
+            <input type="url" id="set-ensemble-website" placeholder="https://...">
+          </label>
+          <label class="field">
+            <span class="field-label">Data di fondazione (opzionale)</span>
+            <input type="date" id="set-foundedDate">
+          </label>
+        </div>
         <div class="grid" id="voice-settings-fields" style="display: none;">
           <label class="field">
             <span class="field-label">Registro vocale primario</span>
@@ -263,7 +277,7 @@
             </select>
             <label class="inline-check" style="margin-top: -0.3rem;">
               <input type="checkbox" id="set-gender-visible">
-              <span class="muted small">Visibile nel profilo pubblico</span>
+              <span class="muted small">Nascondi dal profilo pubblico</span>
             </label>
           </label>
           <label class="field">
@@ -275,16 +289,12 @@
             </div>
             <label class="inline-check" style="margin-top: -0.3rem;">
               <input type="checkbox" id="set-nationality-visible">
-              <span class="muted small">Visibile nel profilo pubblico</span>
+              <span class="muted small">Nascondi dal profilo pubblico</span>
             </label>
           </label>
           <label class="field" id="birthdate-field">
             <span class="field-label">Data di nascita (opzionale)</span>
             <input type="date" id="set-birthDate">
-          </label>
-          <label class="field" id="founded-field" style="display: none;">
-            <span class="field-label">Data di fondazione (opzionale)</span>
-            <input type="date" id="set-foundedDate">
           </label>
         </div>
         <label class="field">

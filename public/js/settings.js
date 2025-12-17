@@ -89,6 +89,10 @@ const nameFields = document.getElementById('name-fields');
 const setFirstNameEl = document.getElementById('set-firstName');
 const setLastNameEl = document.getElementById('set-lastName');
 const instrumentBlock = document.getElementById('instrument-block');
+const voiceTypeSecondarySelect = document.getElementById('set-voiceType-secondary');
+const ensembleInfoFields = document.getElementById('ensemble-info-fields');
+const setEnsembleNameEl = document.getElementById('set-ensemble-name');
+const setEnsembleWebsiteEl = document.getElementById('set-ensemble-website');
 
 const btnLogout = document.getElementById('btn-logout');
 
@@ -164,7 +168,7 @@ function applyEnsembleVisibility() {
   if (stableGroupField) stableGroupField.style.display = isEnsemble ? 'none' : '';
   if (nameFields) nameFields.style.display = isEnsemble ? 'none' : 'grid';
   if (birthDateField) birthDateField.style.display = isEnsemble ? 'none' : '';
-  if (foundedField) foundedField.style.display = isEnsemble ? '' : 'none';
+  if (ensembleInfoFields) ensembleInfoFields.style.display = isEnsemble ? 'grid' : 'none';
   if (ratesTitle) ratesTitle.textContent = isEnsemble ? 'Tariffe offerte' : 'Tariffe';
   if (rateTrumpetField) rateTrumpetField.style.display = isEnsemble ? 'none' : '';
   if (settingsEnsembleMembersField) settingsEnsembleMembersField.style.display = isEnsemble ? '' : 'none';
@@ -177,6 +181,9 @@ function applyEnsembleVisibility() {
     if (nationalityVisibleEl) nationalityVisibleEl.checked = false;
     if (setFirstNameEl) setFirstNameEl.value = '';
     if (setLastNameEl) setLastNameEl.value = '';
+    if (setEnsembleNameEl) setEnsembleNameEl.value = '';
+    if (setEnsembleWebsiteEl) setEnsembleWebsiteEl.value = '';
+    if (foundedDateEl) foundedDateEl.value = '';
     if (rateTrumpet) rateTrumpet.value = '';
   }
 }
@@ -235,7 +242,6 @@ const clearInstrumentsBtn = document.getElementById('clear-instruments');
 const clearMainInstrumentBtn = document.getElementById('clear-mainInstrument');
 const voiceSettingsFields = document.getElementById('voice-settings-fields');
 const voiceTypeSelect = document.getElementById('set-voiceType');
-const voiceTypeSecondarySelect = document.getElementById('set-voiceType-secondary');
 const travelCard = document.getElementById('travel-card');
 const stableGroupField = document.getElementById('stable-group-field');
 const ratesTitle = document.getElementById('rates-title');
@@ -732,12 +738,16 @@ onAuthStateChanged(auth, async (user) => {
       if (setEnsembleMembersEl) setEnsembleMembersEl.value = docData.data.ensembleMembers ?? '';
       setRatesFields(docData.data.rates || {});
       if (genderEl) genderEl.value = docData.data.gender || '';
-      if (genderVisibleEl) genderVisibleEl.checked = !!docData.data.genderVisible;
+      if (genderVisibleEl) genderVisibleEl.checked = !docData.data.genderVisible;
       if (nationalityEl) nationalityEl.value = docData.data.nationality || '';
-      if (nationalityVisibleEl) nationalityVisibleEl.checked = !!docData.data.nationalityVisible;
+      if (nationalityVisibleEl) nationalityVisibleEl.checked = !docData.data.nationalityVisible;
       if (willingEl) willingEl.checked = !!docData.data.willingToJoinForFree;
       if (birthDateEl) birthDateEl.value = docData.data.birthDate || '';
       if (foundedDateEl) foundedDateEl.value = docData.data.foundedDate || '';
+      if (currentUserType === 'ensemble') {
+        if (setEnsembleNameEl) setEnsembleNameEl.value = docData.data.displayName || '';
+        if (setEnsembleWebsiteEl) setEnsembleWebsiteEl.value = docData.data.website || '';
+      }
       const activityLevel = docData.data.activityLevel || '';
       if (activityLevelRadios.length) {
         activityLevelRadios.forEach((r) => {
@@ -930,10 +940,11 @@ if (btnUpdateBio) {
         .map((t) => normalizeInstrumentName(t))
         .filter(Boolean);
       let mainInstrument = normalizeInstrumentName(setMainInstrumentEl?.value || '');
-      const voiceType = normalizeInstrumentName(voiceTypeSelect?.value || '');
-      const voiceTypeSecondary = normalizeInstrumentName(voiceTypeSecondarySelect?.value || '');
-      const voiceTypeSecondary = normalizeInstrumentName(voiceTypeSecondarySelect?.value || '');
-      const membersRaw = setEnsembleMembersEl?.value ?? '';
+  const voiceType = normalizeInstrumentName(voiceTypeSelect?.value || '');
+  const voiceTypeSecondary = normalizeInstrumentName(voiceTypeSecondarySelect?.value || '');
+  const ensembleNameVal = (setEnsembleNameEl?.value || '').trim();
+  const ensembleWebsiteVal = (setEnsembleWebsiteEl?.value || '').trim();
+  const membersRaw = setEnsembleMembersEl?.value ?? '';
       const membersVal = membersRaw === '' ? null : parseInt(membersRaw, 10);
       const ensembleMembers = Number.isFinite(membersVal) ? membersVal : null;
       const selectedActivity = activityLevelRadios.find((r) => r.checked)?.value || null;
@@ -954,11 +965,11 @@ if (btnUpdateBio) {
         curriculum: cvEl?.value.trim() || null,
         firstName: isEnsemble ? null : firstName,
         lastName: isEnsemble ? null : lastName,
-        displayName: isEnsemble ? docData.data.displayName || null : `${firstName} ${lastName}`.trim(),
+        displayName: isEnsemble ? (ensembleNameVal || docData.data.displayName || null) : `${firstName} ${lastName}`.trim(),
         gender: isEnsemble ? null : (genderEl?.value || null),
-        genderVisible: isEnsemble ? false : !!genderVisibleEl?.checked,
+        genderVisible: isEnsemble ? false : !genderVisibleEl?.checked,
         nationality: isEnsemble ? null : (nationalityEl?.value.trim() || null),
-        nationalityVisible: isEnsemble ? false : !!nationalityVisibleEl?.checked,
+        nationalityVisible: isEnsemble ? false : !nationalityVisibleEl?.checked,
         ensembleMembers: isEnsemble ? ensembleMembers : null,
         instruments: instruments.length > 0 ? instruments : null,
         mainInstrument: isSinger ? null : (mainInstrument || null),
@@ -969,7 +980,8 @@ if (btnUpdateBio) {
         willingToJoinForFree: isEnsemble ? false : willingToJoin,
         birthDate: isEnsemble ? null : (birthDateVal || null),
         foundedDate: isEnsemble ? (foundedDateVal || null) : null,
-        updatedAt: serverTimestamp()
+        website: isEnsemble ? (ensembleWebsiteVal || null) : (docData.data.website || null),
+      updatedAt: serverTimestamp()
       });
       setBioMessage('Bio e curriculum aggiornati.');
     } catch (err) {
