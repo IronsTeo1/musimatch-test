@@ -50,6 +50,8 @@ const postOfferTeachSinging = document.getElementById('post-offer-teach-singing'
 const postOfferRateEl = document.getElementById('post-offer-rate');
 const postOfferConcertsEl = document.getElementById('post-offer-concerts');
 const postOfferServicesEl = document.getElementById('post-offer-services');
+const postOfferContextEl = document.getElementById('post-offer-context');
+const postOfferRoleEl = document.getElementById('post-offer-role');
 const postOpenModalBtn = document.getElementById('post-open-modal');
 const postCloseModalBtn = document.getElementById('post-close-modal');
 const postModal = document.getElementById('post-modal');
@@ -650,6 +652,26 @@ function parseInstruments(str) {
     .filter(Boolean);
 }
 
+function normalizeSearchToken(raw) {
+  return (raw || '')
+    .toString()
+    .normalize('NFD')
+    .replace(/[\u0300-\u036f]/g, '')
+    .toLowerCase()
+    .trim();
+}
+
+function expandInstrumentVariants(token) {
+  const norm = normalizeSearchToken(token);
+  const variants = {
+    tromba: ['trombe'],
+    contralto: ['contralti'],
+    fisarmonica: ['fisarmoniche']
+  };
+  const extra = variants[norm] || [];
+  return [norm, ...extra];
+}
+
 async function ensureCityListLoaded() {
   if (cityListLoaded && cityList.length > 0) return cityList;
   try {
@@ -947,6 +969,8 @@ function startEditPost(post) {
     if (postOfferRateEl) postOfferRateEl.value = offer.hourlyRate ?? '';
     if (postOfferConcertsEl) postOfferConcertsEl.checked = !!offer.concerts;
     if (postOfferServicesEl) postOfferServicesEl.checked = !!offer.services;
+    if (postOfferContextEl) postOfferContextEl.value = offer.offerContext || '';
+    if (postOfferRoleEl) postOfferRoleEl.value = offer.offerRole || '';
   } else {
     if (postOfferTeachInstruments) postOfferTeachInstruments.checked = false;
     if (postOfferInstrumentsEl) postOfferInstrumentsEl.value = '';
@@ -954,6 +978,8 @@ function startEditPost(post) {
     if (postOfferRateEl) postOfferRateEl.value = '';
     if (postOfferConcertsEl) postOfferConcertsEl.checked = false;
     if (postOfferServicesEl) postOfferServicesEl.checked = false;
+    if (postOfferContextEl) postOfferContextEl.value = '';
+    if (postOfferRoleEl) postOfferRoleEl.value = '';
   }
   renderInstrumentChips();
   renderVoiceChips();
@@ -1538,6 +1564,8 @@ function renderPostCard(post, distanceKm) {
   if (post.postType === 'offering') {
     const offer = post.offerDetails || {};
     const parts = [];
+    if (offer.offerContext) parts.push(offer.offerContext);
+    if (offer.offerRole) parts.push(offer.offerRole);
     if (offer.teachInstruments && Array.isArray(offer.instruments) && offer.instruments.length) {
       parts.push(`Lezioni: ${offer.instruments.join(', ')}`);
     } else if (offer.teachInstruments) {
@@ -1620,10 +1648,14 @@ function filterAndRenderPosts(posts, { append = false } = {}) {
   const viewerMain = currentUserProfile?.data?.mainInstrument || '';
   const viewerVoice = currentUserProfile?.data?.voiceType || currentUserProfile?.data?.mainInstrument || '';
   const viewerRadius = currentUserProfile?.data?.maxTravelKm || 50;
-  const filterInstrumentTokens = Array.isArray(activeFilter.instrumentTokens)
-    ? activeFilter.instrumentTokens.map((t) => t.toLowerCase()).filter(Boolean)
+  const filterInstrumentTokensRaw = Array.isArray(activeFilter.instrumentTokens)
+    ? activeFilter.instrumentTokens.filter(Boolean)
     : [];
-  const filterVoice = (activeFilter.voice || '').toLowerCase();
+  const filterInstrumentTokens = filterInstrumentTokensRaw
+    .flatMap((t) => expandInstrumentVariants(t))
+    .map((t) => normalizeSearchToken(t))
+    .filter(Boolean);
+  const filterVoice = normalizeSearchToken(activeFilter.voice || '');
   const filterPostType = (activeFilter.postType || '').toLowerCase();
 
   posts.forEach((post) => {
@@ -1683,14 +1715,25 @@ function filterAndRenderPosts(posts, { append = false } = {}) {
     // Match strumenti/voci se specificati
     const wantedInstruments = (post.instrumentsWanted || []).filter(Boolean);
     const wantedVoices = (post.voicesWanted || []).filter(Boolean);
+    const offerInstruments = post.offerDetails?.instruments || [];
+    const offerRole = normalizeSearchToken(post.offerDetails?.offerRole || '');
+    const offerContext = normalizeSearchToken(post.offerDetails?.offerContext || '');
+    const bodyNormalized = normalizeSearchToken(post.body || '');
     const hasInstrumentCriteria = wantedInstruments.length > 0;
     const hasVoiceCriteria = wantedVoices.length > 0;
     // Filtri manuali utente
     if (filterInstrumentTokens.length > 0) {
-      const wantedLower = wantedInstruments.map((i) => (i || '').toLowerCase());
-      const matchesInstr = filterInstrumentTokens.some((token) =>
-        wantedLower.some((i) => i.includes(token))
-      );
+      const wantedLower = wantedInstruments.map((i) => normalizeSearchToken(i || ''));
+      const offerLower = (offerInstruments || []).map((i) => normalizeSearchToken(i || ''));
+      const matchesInstr = filterInstrumentTokens.some((token) => {
+        const tokenVariants = expandInstrumentVariants(token);
+        return (
+          tokenVariants.some((v) => wantedLower.some((i) => i.includes(v))) ||
+          tokenVariants.some((v) => offerLower.some((i) => i.includes(v))) ||
+          tokenVariants.some((v) => offerRole.includes(v)) ||
+          tokenVariants.some((v) => bodyNormalized.includes(v))
+        );
+      });
       if (!matchesInstr) return;
     }
     if (filterVoice) {
@@ -1906,7 +1949,9 @@ async function publishPost() {
         teachInstruments: false,
         teachSinging: false,
         instruments: null,
-        hourlyRate: null
+        hourlyRate: null,
+        offerContext: postOfferContextEl?.value || '',
+        offerRole: (postOfferRoleEl?.value || '').trim()
       };
     } else {
       const offerInstruments = postOfferTeachInstruments?.checked
@@ -1920,7 +1965,9 @@ async function publishPost() {
         teachInstruments: !!postOfferTeachInstruments?.checked,
         instruments: offerInstruments.length ? offerInstruments : null,
         teachSinging: !!postOfferTeachSinging?.checked,
-        hourlyRate: Number.isFinite(rateVal) ? rateVal : null
+        hourlyRate: Number.isFinite(rateVal) ? rateVal : null,
+        offerContext: postOfferContextEl?.value || '',
+        offerRole: (postOfferRoleEl?.value || '').trim()
       };
     }
   }
@@ -1983,6 +2030,8 @@ async function publishPost() {
     if (postOfferRateEl) postOfferRateEl.value = '';
     if (postOfferConcertsEl) postOfferConcertsEl.checked = false;
     if (postOfferServicesEl) postOfferServicesEl.checked = false;
+    if (postOfferContextEl) postOfferContextEl.value = '';
+    if (postOfferRoleEl) postOfferRoleEl.value = '';
     if (postEnsembleEl) postEnsembleEl.value = '';
     const fallbackRadius = Number.isFinite(currentUserProfile?.data?.maxTravelKm)
       ? currentUserProfile.data.maxTravelKm
