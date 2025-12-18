@@ -100,6 +100,12 @@ const postOfferConcertsEl = document.getElementById('post-offer-concerts');
 const postOfferServicesEl = document.getElementById('post-offer-services');
 const postOfferContextEl = document.getElementById('post-offer-context');
 const postOfferRoleEl = document.getElementById('post-offer-role');
+const postOfferAccompanimentEl = document.getElementById('post-offer-accompaniment');
+const postOfferFormatEl = document.getElementById('post-offer-format');
+const postOfferGenreEl = document.getElementById('post-offer-genre');
+const postOfferGenreNotesEl = document.getElementById('post-offer-genre-notes');
+const postOfferRehearsalEl = document.getElementById('post-offer-rehearsal');
+const postOfferSetupEl = document.getElementById('post-offer-setup');
 const postRadiusRangeEl = document.getElementById('post-radius-range');
 const postRadiusEl = document.getElementById('post-radius');
 const urlUserId = new URLSearchParams(window.location.search).get('id');
@@ -1012,6 +1018,12 @@ function startEditProfilePost(post) {
     if (postOfferServicesEl) postOfferServicesEl.checked = !!offer.services;
     if (postOfferContextEl) postOfferContextEl.value = offer.offerContext || '';
     if (postOfferRoleEl) postOfferRoleEl.value = offer.offerRole || '';
+    if (postOfferAccompanimentEl) postOfferAccompanimentEl.checked = !!offer.accompaniment;
+    if (postOfferFormatEl) postOfferFormatEl.value = offer.format || '';
+    if (postOfferGenreEl) postOfferGenreEl.value = offer.genre || '';
+    if (postOfferGenreNotesEl) postOfferGenreNotesEl.value = offer.genreNotes || '';
+    if (postOfferRehearsalEl) postOfferRehearsalEl.value = offer.rehearsal || '';
+    if (postOfferSetupEl) postOfferSetupEl.value = offer.setupNotes || '';
   } else {
     if (postOfferTeachInstruments) postOfferTeachInstruments.checked = false;
     if (postOfferInstrumentsEl) postOfferInstrumentsEl.value = '';
@@ -1113,12 +1125,18 @@ function renderProfilePosts(posts, { reset = false } = {}) {
     footer.style.justifyContent = 'space-between';
 
     const tags = document.createElement('div');
-    tags.className = 'small muted';
+    tags.className = 'small';
     if (post.postType === 'offering') {
       const offer = post.offerDetails || {};
       const parts = [];
       if (offer.offerContext) parts.push(offer.offerContext);
       if (offer.offerRole) parts.push(offer.offerRole);
+      if (offer.accompaniment) parts.push('Accompagnamento');
+      if (offer.format) parts.push(`Formato: ${offer.format}`);
+      if (offer.genre) parts.push(`Repertorio: ${offer.genre}`);
+      if (offer.genreNotes) parts.push(offer.genreNotes);
+      if (offer.rehearsal) parts.push(`Prove: ${offer.rehearsal}`);
+      if (offer.setupNotes) parts.push(offer.setupNotes);
       if (offer.teachInstruments && Array.isArray(offer.instruments) && offer.instruments.length) {
         parts.push(`Lezioni: ${offer.instruments.join(', ')}`);
       } else if (offer.teachInstruments) {
@@ -1128,13 +1146,29 @@ function renderProfilePosts(posts, { reset = false } = {}) {
       if (offer.concerts) parts.push('Concerti');
       if (offer.services) parts.push('Servizi civili/religiosi');
       if (Number.isFinite(offer.hourlyRate)) parts.push(`Tariffa: ${offer.hourlyRate}€/h`);
-      tags.textContent = parts.length ? `A disposizione · ${parts.join(' · ')}` : 'A disposizione';
+      const badge = document.createElement('span');
+      badge.className = 'badge badge-type badge-offering';
+      badge.textContent = 'A disposizione';
+      tags.appendChild(badge);
+      if (parts.length) {
+        const txt = document.createElement('span');
+        txt.textContent = ' ' + parts.join(' · ');
+        tags.appendChild(txt);
+      }
     } else {
       const instruments = (post.instrumentsWanted || []).filter(Boolean);
       const voices = (post.voicesWanted || []).filter(Boolean);
       const ensembleWanted = post.ensembleWanted ? `Ensemble: ${post.ensembleWanted}` : null;
       const lookingFor = [...instruments, ...voices, ensembleWanted].filter(Boolean);
-      tags.textContent = lookingFor.length ? `Cercasi: ${lookingFor.join(', ')}` : 'Annuncio generico';
+      const badge = document.createElement('span');
+      badge.className = 'badge badge-type badge-seeking';
+      badge.textContent = 'Cercasi';
+      tags.appendChild(badge);
+      if (lookingFor.length) {
+        const txt = document.createElement('span');
+        txt.textContent = ': ' + lookingFor.join(', ');
+        tags.appendChild(txt);
+      }
     }
 
     const timeEl = document.createElement('span');
@@ -1433,6 +1467,12 @@ function resetPostForm({ keepMessage = false } = {}) {
   if (postOfferServicesEl) postOfferServicesEl.checked = false;
   if (postOfferContextEl) postOfferContextEl.value = '';
   if (postOfferRoleEl) postOfferRoleEl.value = '';
+  if (postOfferAccompanimentEl) postOfferAccompanimentEl.checked = false;
+  if (postOfferFormatEl) postOfferFormatEl.value = '';
+  if (postOfferGenreEl) postOfferGenreEl.value = '';
+  if (postOfferGenreNotesEl) postOfferGenreNotesEl.value = '';
+  if (postOfferRehearsalEl) postOfferRehearsalEl.value = '';
+  if (postOfferSetupEl) postOfferSetupEl.value = '';
   if (postEnsembleEl) postEnsembleEl.value = '';
   const fallbackRadius = Number.isFinite(dataCache?.maxTravelKm) ? dataCache.maxTravelKm : null;
   setPostRadiusInputs(fallbackRadius);
@@ -1594,7 +1634,13 @@ async function publishProfilePost() {
         teachSinging: false,
         hourlyRate: null,
         offerContext: postOfferContextEl?.value || '',
-        offerRole: (postOfferRoleEl?.value || '').trim()
+        offerRole: (postOfferRoleEl?.value || '').trim(),
+        accompaniment: !!postOfferAccompanimentEl?.checked,
+        format: postOfferFormatEl?.value || '',
+        genre: postOfferGenreEl?.value || '',
+        genreNotes: (postOfferGenreNotesEl?.value || '').trim(),
+        rehearsal: postOfferRehearsalEl?.value || '',
+        setupNotes: (postOfferSetupEl?.value || '').trim()
       };
     } else {
       const offerInstruments = postOfferTeachInstruments?.checked
@@ -1610,7 +1656,13 @@ async function publishProfilePost() {
         teachSinging: !!postOfferTeachSinging?.checked,
         hourlyRate: Number.isFinite(rateVal) ? rateVal : null,
         offerContext: postOfferContextEl?.value || '',
-        offerRole: (postOfferRoleEl?.value || '').trim()
+        offerRole: (postOfferRoleEl?.value || '').trim(),
+        accompaniment: !!postOfferAccompanimentEl?.checked,
+        format: postOfferFormatEl?.value || '',
+        genre: postOfferGenreEl?.value || '',
+        genreNotes: (postOfferGenreNotesEl?.value || '').trim(),
+        rehearsal: postOfferRehearsalEl?.value || '',
+        setupNotes: (postOfferSetupEl?.value || '').trim()
       };
     }
   }

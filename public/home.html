@@ -213,11 +213,63 @@
                     <option value="Duo">Duo</option>
                     <option value="Lezioni">Lezioni</option>
                     <option value="Sostituzioni">Sostituzioni last-minute</option>
+                    <option value="Accompagnatore">Accompagnatore</option>
+                    <option value="Piccolo ensemble">Piccolo ensemble</option>
                   </select>
                 </label>
                 <label class="field">
                   <span class="field-label">Ruolo offerto</span>
                   <input type="text" id="post-offer-role" placeholder="es. Violino I, Pianista accompagnatore">
+                </label>
+              </div>
+              <div class="stack" style="gap: 0.35rem;">
+                <label class="inline-check">
+                  <input type="checkbox" id="post-offer-accompaniment">
+                  <span>Disponibile per accompagnamento cantanti / ensemble</span>
+                </label>
+              </div>
+              <div class="grid" style="align-items: flex-end;">
+                <label class="field">
+                  <span class="field-label">Formato</span>
+                  <select id="post-offer-format" class="select-clean">
+                    <option value="">Seleziona</option>
+                    <option value="Solo">Solo</option>
+                    <option value="Accompagnatore">Accompagnatore</option>
+                    <option value="Duo/Trio">Duo/Trio</option>
+                    <option value="Piccolo ensemble">Piccolo ensemble</option>
+                  </select>
+                </label>
+                <label class="field">
+                  <span class="field-label">Repertorio</span>
+                  <select id="post-offer-genre" class="select-clean">
+                    <option value="">Seleziona</option>
+                    <option value="Classico">Classico</option>
+                    <option value="Pop">Pop</option>
+                    <option value="Jazz">Jazz</option>
+                    <option value="Musical">Musical</option>
+                    <option value="Sacro">Sacro</option>
+                    <option value="Altro">Altro</option>
+                  </select>
+                </label>
+                <label class="field">
+                  <span class="field-label">Note repertorio (opzionale)</span>
+                  <input type="text" id="post-offer-genre-notes" placeholder="es. Classico e pop leggeri">
+                </label>
+              </div>
+              <div class="grid" style="align-items: flex-end;">
+                <label class="field">
+                  <span class="field-label">Orari prove preferiti</span>
+                  <select id="post-offer-rehearsal" class="select-clean">
+                    <option value="">Seleziona</option>
+                    <option value="Mattina">Mattina</option>
+                    <option value="Pomeriggio">Pomeriggio</option>
+                    <option value="Sera">Sera</option>
+                    <option value="Weekend">Weekend</option>
+                  </select>
+                </label>
+                <label class="field">
+                  <span class="field-label">Note setup (opzionale)</span>
+                  <input type="text" id="post-offer-setup" placeholder="es. Porto tastiera / uso pianoforte in loco">
                 </label>
               </div>
               <div class="stack post-offer-musician">

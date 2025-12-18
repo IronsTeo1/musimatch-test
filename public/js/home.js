@@ -52,6 +52,12 @@ const postOfferConcertsEl = document.getElementById('post-offer-concerts');
 const postOfferServicesEl = document.getElementById('post-offer-services');
 const postOfferContextEl = document.getElementById('post-offer-context');
 const postOfferRoleEl = document.getElementById('post-offer-role');
+const postOfferAccompanimentEl = document.getElementById('post-offer-accompaniment');
+const postOfferFormatEl = document.getElementById('post-offer-format');
+const postOfferGenreEl = document.getElementById('post-offer-genre');
+const postOfferGenreNotesEl = document.getElementById('post-offer-genre-notes');
+const postOfferRehearsalEl = document.getElementById('post-offer-rehearsal');
+const postOfferSetupEl = document.getElementById('post-offer-setup');
 const postOpenModalBtn = document.getElementById('post-open-modal');
 const postCloseModalBtn = document.getElementById('post-close-modal');
 const postModal = document.getElementById('post-modal');
@@ -971,6 +977,12 @@ function startEditPost(post) {
     if (postOfferServicesEl) postOfferServicesEl.checked = !!offer.services;
     if (postOfferContextEl) postOfferContextEl.value = offer.offerContext || '';
     if (postOfferRoleEl) postOfferRoleEl.value = offer.offerRole || '';
+    if (postOfferAccompanimentEl) postOfferAccompanimentEl.checked = !!offer.accompaniment;
+    if (postOfferFormatEl) postOfferFormatEl.value = offer.format || '';
+    if (postOfferGenreEl) postOfferGenreEl.value = offer.genre || '';
+    if (postOfferGenreNotesEl) postOfferGenreNotesEl.value = offer.genreNotes || '';
+    if (postOfferRehearsalEl) postOfferRehearsalEl.value = offer.rehearsal || '';
+    if (postOfferSetupEl) postOfferSetupEl.value = offer.setupNotes || '';
   } else {
     if (postOfferTeachInstruments) postOfferTeachInstruments.checked = false;
     if (postOfferInstrumentsEl) postOfferInstrumentsEl.value = '';
@@ -980,6 +992,12 @@ function startEditPost(post) {
     if (postOfferServicesEl) postOfferServicesEl.checked = false;
     if (postOfferContextEl) postOfferContextEl.value = '';
     if (postOfferRoleEl) postOfferRoleEl.value = '';
+    if (postOfferAccompanimentEl) postOfferAccompanimentEl.checked = false;
+    if (postOfferFormatEl) postOfferFormatEl.value = '';
+    if (postOfferGenreEl) postOfferGenreEl.value = '';
+    if (postOfferGenreNotesEl) postOfferGenreNotesEl.value = '';
+    if (postOfferRehearsalEl) postOfferRehearsalEl.value = '';
+    if (postOfferSetupEl) postOfferSetupEl.value = '';
   }
   renderInstrumentChips();
   renderVoiceChips();
@@ -1566,6 +1584,12 @@ function renderPostCard(post, distanceKm) {
     const parts = [];
     if (offer.offerContext) parts.push(offer.offerContext);
     if (offer.offerRole) parts.push(offer.offerRole);
+    if (offer.accompaniment) parts.push('Accompagnamento');
+    if (offer.format) parts.push(`Formato: ${offer.format}`);
+    if (offer.genre) parts.push(`Repertorio: ${offer.genre}`);
+    if (offer.genreNotes) parts.push(offer.genreNotes);
+    if (offer.rehearsal) parts.push(`Prove: ${offer.rehearsal}`);
+    if (offer.setupNotes) parts.push(offer.setupNotes);
     if (offer.teachInstruments && Array.isArray(offer.instruments) && offer.instruments.length) {
       parts.push(`Lezioni: ${offer.instruments.join(', ')}`);
     } else if (offer.teachInstruments) {
@@ -1951,7 +1975,13 @@ async function publishPost() {
         instruments: null,
         hourlyRate: null,
         offerContext: postOfferContextEl?.value || '',
-        offerRole: (postOfferRoleEl?.value || '').trim()
+        offerRole: (postOfferRoleEl?.value || '').trim(),
+        accompaniment: !!postOfferAccompanimentEl?.checked,
+        format: postOfferFormatEl?.value || '',
+        genre: postOfferGenreEl?.value || '',
+        genreNotes: (postOfferGenreNotesEl?.value || '').trim(),
+        rehearsal: postOfferRehearsalEl?.value || '',
+        setupNotes: (postOfferSetupEl?.value || '').trim()
       };
     } else {
       const offerInstruments = postOfferTeachInstruments?.checked
@@ -1967,7 +1997,13 @@ async function publishPost() {
         teachSinging: !!postOfferTeachSinging?.checked,
         hourlyRate: Number.isFinite(rateVal) ? rateVal : null,
         offerContext: postOfferContextEl?.value || '',
-        offerRole: (postOfferRoleEl?.value || '').trim()
+        offerRole: (postOfferRoleEl?.value || '').trim(),
+        accompaniment: !!postOfferAccompanimentEl?.checked,
+        format: postOfferFormatEl?.value || '',
+        genre: postOfferGenreEl?.value || '',
+        genreNotes: (postOfferGenreNotesEl?.value || '').trim(),
+        rehearsal: postOfferRehearsalEl?.value || '',
+        setupNotes: (postOfferSetupEl?.value || '').trim()
       };
     }
   }
