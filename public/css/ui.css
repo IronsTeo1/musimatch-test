@@ -26,10 +26,11 @@
   width: 80px;
   height: 80px;
   border-radius: 12px;
-  object-fit: cover;
-  border: 1px solid var(--surface-border);
-  box-shadow: var(--shadow);
-  background: var(--surface);
+  object-fit: contain;
+  padding: 6px;
+  border: none;
+  box-shadow: none;
+  background: transparent;
 }
 
 .inline-header {

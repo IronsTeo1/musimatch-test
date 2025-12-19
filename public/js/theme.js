@@ -1,8 +1,21 @@
 // public/js/theme.js
 const rootEl = document.documentElement;
 const themeToggleBtn = document.getElementById('theme-toggle');
+const LOGO_LIGHT_SRC = 'assets/img/logo.svg';
+const LOGO_DARK_SRC = 'assets/img/logo-dark.svg';
 const THEME_KEY = 'musimatch-theme';
 let transitionTimer = null;
+
+function updateLogos(theme) {
+  const normalized = theme === 'dark' ? 'dark' : 'light';
+  const targetSrc = normalized === 'dark' ? LOGO_DARK_SRC : LOGO_LIGHT_SRC;
+  const logoEls = document.querySelectorAll('.logo-link img');
+  logoEls.forEach((img) => {
+    if (img.getAttribute('src') !== targetSrc) {
+      img.setAttribute('src', targetSrc);
+    }
+  });
+}
 
 function startThemeTransition() {
   if (!rootEl) return;
@@ -17,6 +30,7 @@ function startThemeTransition() {
 function applyTheme(theme) {
   const normalized = theme === 'light' ? 'light' : 'dark';
   rootEl.setAttribute('data-theme', normalized);
+  updateLogos(normalized);
   if (themeToggleBtn) {
     themeToggleBtn.textContent = normalized === 'dark' ? '🌙' : '☀️';
   }

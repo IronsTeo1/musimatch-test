@@ -34,6 +34,9 @@ const LAST_PROFILE_NAME_KEY = 'musimatch-last-profile-name';
 const titleEl = document.getElementById('profile-title');
 const mainInstrText = document.getElementById('profile-mainInstrument');
 const instrumentsText = document.getElementById('profile-instruments');
+const mainInstrField = document.getElementById('profile-mainInstrument-field');
+const mainInstrDetailText = document.getElementById('profile-mainInstrument-detail');
+const instrumentsField = document.getElementById('profile-instruments-field');
 const profileLabelMainInstrument = document.getElementById('profile-label-mainInstrument');
 const profileLabelInstruments = document.getElementById('profile-label-instruments');
 const profileCard = document.querySelector('.profile-compact');
@@ -689,7 +692,7 @@ function buildAvatarPath({ folder = '', nameParts = [] }) {
   const segments = [AVATAR_ROOT];
   if (folder) segments.push(folder);
   const name = ['avatar', ...nameParts.filter(Boolean)].join('-');
-  return `${segments.join('/')}/${name}.png?v=${AVATAR_VERSION}`;
+  return `${segments.join('/')}/${name}.webp?v=${AVATAR_VERSION}`;
 }
 
 function resolveAvatarUrls(data) {
@@ -1253,20 +1256,45 @@ function populateForm(data) {
     return;
   }
   dataCache = data;
+  const isSinger = (data.role || '').toLowerCase() === 'singer';
+  const voicePrimary = data.voiceType || '';
+  const voiceSecondary = data.voiceTypeSecondary || '';
+  const normalizedMainInstrument = normalizeInstrumentName(data.mainInstrument || '');
+  const mainInstrValue = isSinger
+    ? normalizeInstrumentName(voicePrimary || normalizedMainInstrument)
+    : normalizedMainInstrument || normalizeInstrumentName(voicePrimary || '');
+  const rawInstruments = Array.isArray(data.instruments) ? data.instruments : [];
+  const extraInstruments = rawInstruments.map((i) => normalizeInstrumentName(i)).filter(Boolean);
+  if (voiceSecondary) extraInstruments.push(normalizeInstrumentName(voiceSecondary));
+  if (isSinger && mainInstrValue) {
+    // evita di ripetere la voce principale fra le altre capacità
+    const mainSlug = normalizeInstrumentName(mainInstrValue);
+    const filtered = extraInstruments.filter((i) => normalizeInstrumentName(i) !== mainSlug);
+    extraInstruments.length = 0;
+    extraInstruments.push(...filtered);
+  }
   if (postRadiusEl && !editingPostId) {
     postRadiusEl.value = Number.isFinite(data.maxTravelKm) ? data.maxTravelKm : '';
   }
   refreshOfferVisibility();
   const isEnsemble = data.userType === 'ensemble';
   if (titleEl) titleEl.textContent = data.displayName || 'Profilo musicista';
-  const mainInstrValue = data.mainInstrument || '';
   if (mainInstrText) mainInstrText.textContent = mainInstrValue;
-  if (instrumentsText) {
-    instrumentsText.textContent = '';
+  if (mainInstrField) mainInstrField.style.display = mainInstrValue ? '' : 'none';
+  if (mainInstrDetailText) mainInstrDetailText.textContent = mainInstrValue || '—';
+  if (profileLabelMainInstrument) {
+    profileLabelMainInstrument.textContent = isSinger ? 'Registro vocale principale' : 'Strumento principale';
   }
+  const instrumentsLabel = isSinger ? 'Altre capacità vocali' : 'Altri strumenti suonati';
+  if (profileLabelInstruments) profileLabelInstruments.textContent = instrumentsLabel;
+  const uniqueExtras = Array.from(new Set(extraInstruments)).filter(Boolean);
+  const extrasText = uniqueExtras.join(', ');
+  if (instrumentsField) instrumentsField.style.display = extrasText ? '' : 'none';
+  if (instrumentsText) instrumentsText.textContent = extrasText || '';
   const levelMap = {
     professional: 'Professionista',
-    amateur: 'Amatore'
+    amateur: 'Amatore',
+    student: 'Studente'
   };
   const levelValue = levelMap[data.activityLevel] || '';
   if (levelText) levelText.textContent = levelValue;

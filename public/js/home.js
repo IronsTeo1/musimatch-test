@@ -215,7 +215,7 @@ function buildAvatarPath({ folder = '', nameParts = [] }) {
   const segments = [AVATAR_ROOT];
   if (folder) segments.push(folder);
   const name = ['avatar', ...nameParts.filter(Boolean)].join('-');
-  return `${segments.join('/')}/${name}.png?v=${AVATAR_VERSION}`;
+  return `${segments.join('/')}/${name}.webp?v=${AVATAR_VERSION}`;
 }
 
 function resolveAvatarUrls(data) {

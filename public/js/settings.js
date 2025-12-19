@@ -109,7 +109,7 @@ window.addEventListener('load', () => {
 
 function buildDefaultAvatarPath(gender = 'unknown') {
   const g = ['male', 'female', 'non_binary'].includes(gender) ? gender : 'unknown';
-  return `${AVATAR_ROOT}/avatar-default/avatar-default-${g}.png?v=${AVATAR_VERSION}`;
+  return `${AVATAR_ROOT}/avatar-default/avatar-default-${g}.webp?v=${AVATAR_VERSION}`;
 }
 
 function normalizeGenderSlug(raw) {
@@ -129,7 +129,7 @@ function splitDisplayName(name = '') {
 
 function buildAvatarPath({ nameParts = [] }) {
   const name = ['avatar', ...nameParts.filter(Boolean)].join('-');
-  return `${AVATAR_ROOT}/${name}.png?v=${AVATAR_VERSION}`;
+  return `${AVATAR_ROOT}/${name}.webp?v=${AVATAR_VERSION}`;
 }
 
 function pickPreferredAvatarUrl(data = {}) {
@@ -149,7 +149,7 @@ function pickPreferredAvatarUrl(data = {}) {
     variant = 'cantante';
   }
   if (role === 'ensemble' && data.ensembleType) {
-    urls.push(`${AVATAR_ROOT}/avatar-ensemble/avatar-${slugifyInstrument(data.ensembleType) || 'ensemble'}.png?v=${AVATAR_VERSION}`);
+    urls.push(`${AVATAR_ROOT}/avatar-ensemble/avatar-${slugifyInstrument(data.ensembleType) || 'ensemble'}.webp?v=${AVATAR_VERSION}`);
   }
   if (variant) urls.push(buildAvatarPath({ nameParts: [variant, gender] }));
   urls.push(buildDefaultAvatarPath(gender));
