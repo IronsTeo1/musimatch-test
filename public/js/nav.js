@@ -17,6 +17,16 @@ const NAV_OFFSET_KEY = 'musimatch-nav-offset-left';
 let navDragState = null;
 let initialized = false;
 
+function setNavLabel(link, text) {
+  if (!link) return;
+  const labelEl = link.querySelector('.nav-label');
+  if (labelEl) {
+    labelEl.textContent = text;
+  } else {
+    link.textContent = text;
+  }
+}
+
 function getCachedNavState() {
   let cached = null;
   try {
@@ -87,7 +97,7 @@ function updateNav(user) {
     if (settingsLink) settingsLink.style.display = 'inline-flex';
   } else {
     authLink.style.display = 'inline-flex';
-    authLink.textContent = 'Login';
+    setNavLabel(authLink, 'Login');
     authLink.dataset.state = 'login';
     authLink.href = 'login.html';
     if (profileLink) profileLink.style.display = 'none';
