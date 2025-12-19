@@ -13,8 +13,6 @@ let navWrapper = null;
 let navReady = false;
 const NAV_STATE_KEY = 'musimatch-nav-state';
 const NAV_STATE_ATTR = 'data-nav-state';
-const NAV_OFFSET_KEY = 'musimatch-nav-offset-left';
-let navDragState = null;
 let initialized = false;
 
 function setNavLabel(link, text) {
@@ -113,80 +111,6 @@ if (authLink) {
   });
 }
 
-function clampNavLeft(leftPx) {
-  if (!navWrapper) return leftPx;
-  const max = Math.max(8, window.innerWidth - navWrapper.offsetWidth - 8);
-  return Math.min(Math.max(8, leftPx), max);
-}
-
-function applyNavLeft(leftPx) {
-  const clamped = clampNavLeft(leftPx);
-  navWrapper.style.left = `${clamped}px`;
-  navWrapper.style.right = 'auto';
-  return clamped;
-}
-
-function restoreNavOffset() {
-  let stored = null;
-  try {
-    stored = parseFloat(localStorage.getItem(NAV_OFFSET_KEY));
-  } catch (e) {
-    stored = null;
-  }
-  if (Number.isFinite(stored)) {
-    applyNavLeft(stored);
-  }
-}
-
-function ensureNavAnchoredLeft() {
-  if (!navWrapper) return;
-  const rect = navWrapper.getBoundingClientRect();
-  applyNavLeft(rect.left);
-}
-
-function initNavDrag() {
-  if (!navWrapper) return;
-  navWrapper.style.touchAction = 'none';
-  const onMove = (e) => {
-    if (!navDragState) return;
-    const delta = e.clientX - navDragState.startX;
-    navDragState.lastLeft = applyNavLeft(navDragState.startLeft + delta);
-  };
-
-  const stopDrag = () => {
-    if (!navDragState) return;
-    window.removeEventListener('pointermove', onMove);
-    window.removeEventListener('pointerup', stopDrag);
-    window.removeEventListener('pointercancel', stopDrag);
-    navWrapper.classList.remove('nav-dragging');
-    if (navDragState.lastLeft != null) {
-      try {
-        localStorage.setItem(NAV_OFFSET_KEY, String(navDragState.lastLeft));
-      } catch (e) {
-        // ignore
-      }
-    }
-    navDragState = null;
-  };
-
-  navWrapper.addEventListener('pointerdown', (e) => {
-    if (!navWrapper) return;
-    if (e.button !== 0) return;
-    if (e.target.closest('a, button, input, select, textarea')) return;
-    e.preventDefault();
-    const rect = navWrapper.getBoundingClientRect();
-    navDragState = {
-      startX: e.clientX,
-      startLeft: rect.left,
-      lastLeft: rect.left
-    };
-    navWrapper.classList.add('nav-dragging');
-    window.addEventListener('pointermove', onMove);
-    window.addEventListener('pointerup', stopDrag);
-    window.addEventListener('pointercancel', stopDrag);
-  });
-}
-
 // Applica lo stato cache per mostrare il menu subito in navigazione tra pagine
 function initNav() {
   if (initialized) return;
@@ -205,15 +129,6 @@ function initNav() {
   });
 
   markActiveNav();
-  ensureNavAnchoredLeft();
-  restoreNavOffset();
-  initNavDrag();
-  window.addEventListener('resize', () => {
-    if (!navWrapper) return;
-    const currentLeft = parseFloat(navWrapper.style.left);
-    const fallback = navWrapper.getBoundingClientRect().left;
-    applyNavLeft(Number.isFinite(currentLeft) ? currentLeft : fallback);
-  });
 }
 
 if (document.readyState === 'loading') {
