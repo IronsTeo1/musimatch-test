@@ -87,6 +87,7 @@ const filterResetBtn = document.getElementById('filter-reset');
 const filterMsgEl = document.getElementById('filter-message');
 const filterUseProfileBtn = document.getElementById('filter-use-profile');
 const filterUseGeoBtn = document.getElementById('filter-use-geo');
+const filterKeywordEl = document.getElementById('filter-keywords');
 const filterInstrumentEl = document.getElementById('filter-instrument');
 const filterInstrumentClearBtn = document.getElementById('filter-instrument-clear');
 const filterInstrumentSuggestionsEl = document.getElementById('filter-instrument-suggestions');
@@ -96,8 +97,18 @@ const filterVoiceSuggestionsEl = document.getElementById('filter-voice-suggestio
 const filterTypeButtons = Array.from(document.querySelectorAll('.filter-type-btn'));
 const filterTypeState = { current: null };
 const floatingNav = document.querySelector('.floating-nav');
-let activeFilter = { center: null, radius: null, postType: null, instrumentTokens: [], instrument: '', voice: '' };
+let activeFilter = { center: null, radius: null, postType: null, keyword: '' };
 let awaitingGeo = false;
+const DEFAULT_TEST_LOCATION = {
+  lat: 45.4642, // Milano
+  lng: 9.19,
+  city: 'Milano (test)',
+  province: 'MI'
+};
+function isEnsembleProfile() {
+  const type = (currentUserProfile?.data?.userType || currentUserProfile?.data?.role || '').toLowerCase();
+  return type === 'ensemble';
+}
 // Gestisce la chiusura dei modal senza trigger involontari quando si trascina il mouse fuori dal contenuto
 function setupModalSafeClose(modalEl, closeFn) {
   if (!modalEl || typeof closeFn !== 'function') return;
@@ -367,19 +378,33 @@ function setPostMessage(text, isError = false) {
 }
 
 function refreshOfferVisibility() {
-  const isEnsemble = currentUserProfile?.data?.userType === 'ensemble';
+  const isEnsemble = isEnsembleProfile();
   const musicianBlocks = document.querySelectorAll('.post-offer-musician');
-  const ensembleBlocks = document.querySelectorAll('.post-offer-ensemble');
+  const seekingAdvanced = document.querySelectorAll('.post-seeking-advanced');
+  const seekingEnsemble = document.querySelectorAll('.post-seeking-ensemble');
+  const postTabs = document.querySelectorAll('.post-tabs');
   musicianBlocks.forEach((el) => {
     el.style.display = isEnsemble ? 'none' : '';
   });
-  ensembleBlocks.forEach((el) => {
-    el.style.display = isEnsemble ? '' : 'none';
+  seekingAdvanced.forEach((el) => {
+    el.style.display = isEnsemble ? 'none' : '';
   });
+  seekingEnsemble.forEach((el) => {
+    el.style.display = isEnsemble ? 'none' : '';
+  });
+  postTabs.forEach((el) => {
+    el.style.display = isEnsemble ? 'none' : '';
+  });
+  if (postTabOfferingBtn) {
+    postTabOfferingBtn.style.display = isEnsemble ? 'none' : '';
+    postTabOfferingBtn.setAttribute('aria-disabled', isEnsemble ? 'true' : 'false');
+  }
 }
 
 function setPostMode(mode = 'seeking') {
-  postMode = mode === 'offering' ? 'offering' : 'seeking';
+  const isEnsemble = isEnsembleProfile();
+  const requested = mode === 'offering' ? 'offering' : 'seeking';
+  postMode = isEnsemble ? 'seeking' : requested;
   if (postTabSeekingBtn) postTabSeekingBtn.classList.toggle('active', postMode === 'seeking');
   if (postTabOfferingBtn) postTabOfferingBtn.classList.toggle('active', postMode === 'offering');
   if (postSeekingFields) postSeekingFields.hidden = postMode !== 'seeking';
@@ -397,21 +422,16 @@ function setFilterMessage(text, isError = false) {
   filterMsgEl.style.color = isError ? '#f87171' : 'var(--muted)';
 }
 
-function setFilterClearVisibility() {
-  if (filterInstrumentClearBtn && filterInstrumentEl) {
-    filterInstrumentClearBtn.hidden = !(filterInstrumentEl.value && filterInstrumentEl.value.trim());
-  }
-  if (filterVoiceClearBtn && filterVoiceEl) {
-    filterVoiceClearBtn.hidden = !(filterVoiceEl.value && filterVoiceEl.value.trim());
-  }
-}
-
 function setFilterType(type) {
   filterTypeButtons.forEach((btn) => {
     const isActive = btn.dataset.type === type;
     btn.classList.toggle('active', isActive);
   });
   filterTypeState.current = type || null;
+}
+
+function setFilterClearVisibility() {
+  // mantenuto per compatibilità; filtri avanzati rimossi
 }
 
 function cacheHomeFeed(posts = []) {
@@ -665,6 +685,13 @@ function normalizeSearchToken(raw) {
     .replace(/[\u0300-\u036f]/g, '')
     .toLowerCase()
     .trim();
+}
+
+function keywordTokens(str) {
+  return (str || '')
+    .split(/[\\s,]+/)
+    .map((t) => normalizeSearchToken(t))
+    .filter(Boolean);
 }
 
 function expandInstrumentVariants(token) {
@@ -1058,6 +1085,7 @@ function openFilterModal() {
     filterModal.setAttribute('aria-hidden', 'false');
   });
   setFilterMessage('');
+  if (filterKeywordEl) filterKeywordEl.value = activeFilter.keyword || '';
   if (filterCityEl && activeFilter.center?.city) {
     filterCityEl.value = activeFilter.center.city;
   }
@@ -1142,13 +1170,10 @@ async function applyFilterFromForm() {
   let postType = null;
   if (selectedTypes.length === 1) postType = selectedTypes[0];
   if (selectedTypes.length === 0 && filterTypeState.current) postType = filterTypeState.current;
-  const instrumentTokens = parseInstruments(filterInstrumentEl?.value || '');
   activeFilter = {
     center,
     radius,
-    instrument: filterInstrumentEl?.value.trim() || '',
-    instrumentTokens,
-    voice: filterVoiceEl?.value.trim() || '',
+    keyword: filterKeywordEl?.value.trim() || '',
     postType
   };
   closeFilterModal();
@@ -1156,12 +1181,11 @@ async function applyFilterFromForm() {
 }
 
 async function resetFilter() {
-  activeFilter = { center: null, radius: null, instrument: '', instrumentTokens: [], voice: '', postType: null };
+  activeFilter = { center: null, radius: null, keyword: '', postType: null };
   if (filterCityEl) filterCityEl.value = '';
   if (filterRadiusEl) filterRadiusEl.value = '';
   if (filterRadiusRangeEl) filterRadiusRangeEl.value = filterRadiusRangeEl.defaultValue || '0';
-  if (filterInstrumentEl) filterInstrumentEl.value = '';
-  if (filterVoiceEl) filterVoiceEl.value = '';
+  if (filterKeywordEl) filterKeywordEl.value = '';
   filterTypeButtons.forEach((btn) => btn.classList.remove('active'));
   setFilterClearVisibility();
   setFilterMessage('');
@@ -1187,23 +1211,45 @@ function useGeoLocation() {
   awaitingGeo = true;
   if (!navigator.geolocation) {
     setFilterMessage('Geolocalizzazione non supportata dal browser.', true);
+    activeFilter.center = { ...DEFAULT_TEST_LOCATION };
+    if (filterCityEl) filterCityEl.value = DEFAULT_TEST_LOCATION.city;
+    awaitingGeo = false;
     awaitingGeo = false;
     return;
   }
-  navigator.geolocation.getCurrentPosition(
-    (pos) => {
-      const { latitude, longitude } = pos.coords;
-      activeFilter.center = { lat: latitude, lng: longitude, city: 'Posizione attuale', province: '' };
-      if (filterCityEl) filterCityEl.value = 'Posizione attuale';
-      setFilterMessage('Posizione impostata. Applica per aggiornare.', false);
-      awaitingGeo = false;
-    },
-    (err) => {
-      setFilterMessage(err.message || 'Impossibile ottenere la posizione.', true);
-      awaitingGeo = false;
-    },
-    { enableHighAccuracy: false, timeout: 8000, maximumAge: 30000 }
-  );
+  try {
+    navigator.geolocation.getCurrentPosition(
+      (pos) => {
+        const { latitude, longitude } = pos.coords;
+        activeFilter.center = { lat: latitude, lng: longitude, city: 'Posizione attuale', province: '' };
+        if (filterCityEl) filterCityEl.value = 'Posizione attuale';
+        setFilterMessage('Posizione impostata. Applica per aggiornare.', false);
+        awaitingGeo = false;
+      },
+      (err) => {
+        const friendly =
+          err?.code === 1
+            ? 'Permesso negato per la posizione.'
+            : err?.code === 2
+              ? 'Posizione non disponibile al momento.'
+              : err?.code === 3
+                ? 'Timeout nel recupero posizione.'
+                : 'Impossibile ottenere la posizione.';
+        const fallback = { ...DEFAULT_TEST_LOCATION };
+        activeFilter.center = fallback;
+        if (filterCityEl) filterCityEl.value = fallback.city;
+        setFilterMessage(`${friendly} — uso posizione di test (${fallback.city}).`, true);
+        awaitingGeo = false;
+      },
+      { enableHighAccuracy: false, timeout: 8000, maximumAge: 30000 }
+    );
+  } catch (err) {
+    const fallback = { ...DEFAULT_TEST_LOCATION };
+    activeFilter.center = fallback;
+    if (filterCityEl) filterCityEl.value = fallback.city;
+    setFilterMessage('Geolocalizzazione non disponibile, uso posizione di test.', true);
+    awaitingGeo = false;
+  }
 }
 
 async function loadUserProfile(uid) {
@@ -1672,14 +1718,7 @@ function filterAndRenderPosts(posts, { append = false } = {}) {
   const viewerMain = currentUserProfile?.data?.mainInstrument || '';
   const viewerVoice = currentUserProfile?.data?.voiceType || currentUserProfile?.data?.mainInstrument || '';
   const viewerRadius = currentUserProfile?.data?.maxTravelKm || 50;
-  const filterInstrumentTokensRaw = Array.isArray(activeFilter.instrumentTokens)
-    ? activeFilter.instrumentTokens.filter(Boolean)
-    : [];
-  const filterInstrumentTokens = filterInstrumentTokensRaw
-    .flatMap((t) => expandInstrumentVariants(t))
-    .map((t) => normalizeSearchToken(t))
-    .filter(Boolean);
-  const filterVoice = normalizeSearchToken(activeFilter.voice || '');
+  const keywordList = keywordTokens(activeFilter.keyword || '');
   const filterPostType = (activeFilter.postType || '').toLowerCase();
 
   posts.forEach((post) => {
@@ -1705,15 +1744,18 @@ function filterAndRenderPosts(posts, { append = false } = {}) {
       const baseLat = center?.lat;
       const baseLng = center?.lng;
       if (typeof baseLat === 'number' && typeof baseLng === 'number') {
-        let distToPost = null;
-        let distToAuthor = null;
-        if (post.location && typeof post.location.lat === 'number' && typeof post.location.lng === 'number') {
-          distToPost = haversineDistanceKm(baseLat, baseLng, post.location.lat, post.location.lng);
-        }
-        if (post.authorLocation && typeof post.authorLocation.lat === 'number' && typeof post.authorLocation.lng === 'number') {
-          distToAuthor = haversineDistanceKm(baseLat, baseLng, post.authorLocation.lat, post.authorLocation.lng);
-        }
-        const chosenDist = distToPost != null ? distToPost : distToAuthor;
+        const distances = [];
+        const locationsToCheck = [
+          post.location,
+          post.locationAlt,
+          post.authorLocation
+        ];
+        locationsToCheck.forEach((locCandidate) => {
+          if (locCandidate && typeof locCandidate.lat === 'number' && typeof locCandidate.lng === 'number') {
+            distances.push(haversineDistanceKm(baseLat, baseLng, locCandidate.lat, locCandidate.lng));
+          }
+        });
+        const chosenDist = distances.length ? Math.min(...distances) : null;
         if (chosenDist != null) {
           displayDistance = chosenDist;
           const limit = Number.isFinite(activeFilter.radius)
@@ -1739,30 +1781,50 @@ function filterAndRenderPosts(posts, { append = false } = {}) {
     // Match strumenti/voci se specificati
     const wantedInstruments = (post.instrumentsWanted || []).filter(Boolean);
     const wantedVoices = (post.voicesWanted || []).filter(Boolean);
+    const hasInstrumentCriteria = wantedInstruments.length > 0;
+    const hasVoiceCriteria = wantedVoices.length > 0;
     const offerInstruments = post.offerDetails?.instruments || [];
     const offerRole = normalizeSearchToken(post.offerDetails?.offerRole || '');
     const offerContext = normalizeSearchToken(post.offerDetails?.offerContext || '');
+    const offerGenre = normalizeSearchToken(post.offerDetails?.genre || '');
+    const offerFormat = normalizeSearchToken(post.offerDetails?.format || '');
+    const offerNotes = normalizeSearchToken(post.offerDetails?.genreNotes || post.offerDetails?.setupNotes || '');
     const bodyNormalized = normalizeSearchToken(post.body || '');
-    const hasInstrumentCriteria = wantedInstruments.length > 0;
-    const hasVoiceCriteria = wantedVoices.length > 0;
-    // Filtri manuali utente
-    if (filterInstrumentTokens.length > 0) {
-      const wantedLower = wantedInstruments.map((i) => normalizeSearchToken(i || ''));
-      const offerLower = (offerInstruments || []).map((i) => normalizeSearchToken(i || ''));
-      const matchesInstr = filterInstrumentTokens.some((token) => {
-        const tokenVariants = expandInstrumentVariants(token);
-        return (
-          tokenVariants.some((v) => wantedLower.some((i) => i.includes(v))) ||
-          tokenVariants.some((v) => offerLower.some((i) => i.includes(v))) ||
-          tokenVariants.some((v) => offerRole.includes(v)) ||
-          tokenVariants.some((v) => bodyNormalized.includes(v))
-        );
-      });
-      if (!matchesInstr) return;
-    }
-    if (filterVoice) {
-      const matchesVoice = wantedVoices.some((v) => (v || '').toLowerCase() === filterVoice);
-      if (!matchesVoice) return;
+    const authorName = normalizeSearchToken(post.authorName || '');
+    const locationStrings = [
+      post.location?.city,
+      post.location?.province,
+      post.authorLocation?.city,
+      post.authorLocation?.province
+    ]
+      .filter(Boolean)
+      .map((t) => normalizeSearchToken(t));
+    const instrumentsLower = [
+      ...wantedInstruments,
+      ...offerInstruments,
+      ...(post.authorProfileData?.instruments || [])
+    ]
+      .filter(Boolean)
+      .map((i) => normalizeSearchToken(i || ''));
+    const voicesLower = wantedVoices.map((v) => normalizeSearchToken(v || ''));
+    if (keywordList.length > 0) {
+      const haystack = [
+        bodyNormalized,
+        offerRole,
+        offerContext,
+        offerGenre,
+        offerFormat,
+        offerNotes,
+        authorName,
+        normalizeSearchToken(post.ensembleWanted || ''),
+        normalizeSearchToken(post.postType || '')
+      ]
+        .concat(locationStrings)
+        .concat(instrumentsLower)
+        .concat(voicesLower)
+        .join(' ');
+      const matchesKeyword = keywordList.every((token) => haystack.includes(token));
+      if (!matchesKeyword) return;
     }
     if (filterPostType && (post.postType || 'seeking').toLowerCase() !== filterPostType) {
       return;
@@ -1925,6 +1987,7 @@ async function publishPost() {
     lat: loc.lat,
     lng: loc.lng
   };
+  let postLocationAlt = null;
 
   const targetCity = postTargetCityEl?.value.trim();
   if (targetCity) {
@@ -1934,7 +1997,7 @@ async function publishPost() {
         ensureCityListLoaded()
       ]);
       const match = list && list.length ? findCityByName(list, targetCity) : null;
-      postLocation = {
+      postLocationAlt = {
         city: match?.name || targetCity,
         province: match?.province || '',
         lat: coords.lat,
@@ -1963,48 +2026,23 @@ async function publishPost() {
     '';
 
   const isEnsemble = (currentUserProfile.data?.userType || currentUserProfile.data?.role) === 'ensemble';
+  if (isEnsemble) {
+    postMode = 'seeking';
+  }
 
+  const previousOffer = currentEditingPostData?.offerDetails || {};
+  const hasOfferInputs = !!(postOfferContextEl || postOfferRoleEl);
   let offerDetails = null;
   if (postMode === 'offering') {
-    if (isEnsemble) {
+    if (hasOfferInputs) {
       offerDetails = {
-        concerts: !!postOfferConcertsEl?.checked,
-        services: !!postOfferServicesEl?.checked,
-        teachInstruments: false,
-        teachSinging: false,
-        instruments: null,
-        hourlyRate: null,
+        ...previousOffer,
         offerContext: postOfferContextEl?.value || '',
-        offerRole: (postOfferRoleEl?.value || '').trim(),
-        accompaniment: !!postOfferAccompanimentEl?.checked,
-        format: postOfferFormatEl?.value || '',
-        genre: postOfferGenreEl?.value || '',
-        genreNotes: (postOfferGenreNotesEl?.value || '').trim(),
-        rehearsal: postOfferRehearsalEl?.value || '',
-        setupNotes: (postOfferSetupEl?.value || '').trim()
+        offerRole: (postOfferRoleEl?.value || '').trim()
       };
     } else {
-      const offerInstruments = postOfferTeachInstruments?.checked
-        ? parseInstruments(postOfferInstrumentsEl?.value || '')
-        : [];
-      const rateRaw = postOfferRateEl?.value || '';
-      const rateVal = rateRaw === '' ? null : parseFloat(rateRaw);
-      offerDetails = {
-        concerts: false,
-        services: false,
-        teachInstruments: !!postOfferTeachInstruments?.checked,
-        instruments: offerInstruments.length ? offerInstruments : null,
-        teachSinging: !!postOfferTeachSinging?.checked,
-        hourlyRate: Number.isFinite(rateVal) ? rateVal : null,
-        offerContext: postOfferContextEl?.value || '',
-        offerRole: (postOfferRoleEl?.value || '').trim(),
-        accompaniment: !!postOfferAccompanimentEl?.checked,
-        format: postOfferFormatEl?.value || '',
-        genre: postOfferGenreEl?.value || '',
-        genreNotes: (postOfferGenreNotesEl?.value || '').trim(),
-        rehearsal: postOfferRehearsalEl?.value || '',
-        setupNotes: (postOfferSetupEl?.value || '').trim()
-      };
+      const hasPrevData = previousOffer && Object.keys(previousOffer).length > 0;
+      offerDetails = hasPrevData ? previousOffer : {};
     }
   }
 
@@ -2037,6 +2075,7 @@ async function publishPost() {
     radiusKm: Number.isFinite(radius) ? radius : 50,
     authorLocation,
     location: postLocation,
+    locationAlt: postLocationAlt,
     resolved: currentEditingPostData?.resolved || false
   };
 
@@ -2276,18 +2315,6 @@ if (filterUseProfileBtn) {
 }
 if (filterUseGeoBtn) {
   filterUseGeoBtn.addEventListener('click', () => useGeoLocation());
-}
-if (filterInstrumentClearBtn) {
-  filterInstrumentClearBtn.addEventListener('click', () => {
-    if (filterInstrumentEl) filterInstrumentEl.value = '';
-    setFilterClearVisibility();
-  });
-}
-if (filterVoiceClearBtn) {
-  filterVoiceClearBtn.addEventListener('click', () => {
-    if (filterVoiceEl) filterVoiceEl.value = '';
-    setFilterClearVisibility();
-  });
 }
 filterTypeButtons.forEach((btn) => {
   btn.addEventListener('click', () => {

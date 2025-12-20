@@ -231,17 +231,29 @@ function setPostMessage(text, isError = false) {
 }
 
 function refreshOfferVisibility() {
-  const isEnsemble = dataCache?.userType === 'ensemble';
+  const isEnsemble = (dataCache?.userType || dataCache?.role || '').toLowerCase() === 'ensemble';
   document.querySelectorAll('.post-offer-musician').forEach((el) => {
     el.style.display = isEnsemble ? 'none' : '';
   });
-  document.querySelectorAll('.post-offer-ensemble').forEach((el) => {
-    el.style.display = isEnsemble ? '' : 'none';
+  document.querySelectorAll('.post-seeking-advanced').forEach((el) => {
+    el.style.display = isEnsemble ? 'none' : '';
   });
+  document.querySelectorAll('.post-seeking-ensemble').forEach((el) => {
+    el.style.display = isEnsemble ? 'none' : '';
+  });
+  document.querySelectorAll('.post-tabs').forEach((el) => {
+    el.style.display = isEnsemble ? 'none' : '';
+  });
+  if (postTabOfferingBtn) {
+    postTabOfferingBtn.style.display = isEnsemble ? 'none' : '';
+    postTabOfferingBtn.setAttribute('aria-disabled', isEnsemble ? 'true' : 'false');
+  }
 }
 
 function setPostMode(mode = 'seeking') {
-  postMode = mode === 'offering' ? 'offering' : 'seeking';
+  const isEnsemble = (dataCache?.userType || dataCache?.role || '').toLowerCase() === 'ensemble';
+  const requested = mode === 'offering' ? 'offering' : 'seeking';
+  postMode = isEnsemble ? 'seeking' : requested;
   if (postTabSeekingBtn) postTabSeekingBtn.classList.toggle('active', postMode === 'seeking');
   if (postTabOfferingBtn) postTabOfferingBtn.classList.toggle('active', postMode === 'offering');
   if (postSeekingFields) postSeekingFields.hidden = postMode !== 'seeking';
@@ -1614,6 +1626,7 @@ async function publishProfilePost() {
     lat: loc.lat,
     lng: loc.lng
   };
+  let postLocationAlt = null;
 
   const targetCity = postTargetCityEl?.value.trim();
   if (targetCity) {
@@ -1623,7 +1636,7 @@ async function publishProfilePost() {
         ensureCityListLoaded()
       ]);
       const match = list && list.length ? findCityByName(list, targetCity) : null;
-      postLocation = {
+      postLocationAlt = {
         city: match?.name || targetCity,
         province: match?.province || '',
         lat: coords.lat,
@@ -1650,48 +1663,19 @@ async function publishProfilePost() {
     pickPreferredAvatarUrl(profileData) ||
     '';
 
-  const isEnsemble = dataCache?.userType === 'ensemble';
+  const previousOffer = editingPostData?.offerDetails || {};
+  const hasOfferInputs = !!(postOfferContextEl || postOfferRoleEl);
   let offerDetails = null;
   if (postMode === 'offering') {
-    if (isEnsemble) {
+    if (hasOfferInputs) {
       offerDetails = {
-        concerts: !!postOfferConcertsEl?.checked,
-        services: !!postOfferServicesEl?.checked,
-        teachInstruments: false,
-        instruments: null,
-        teachSinging: false,
-        hourlyRate: null,
+        ...previousOffer,
         offerContext: postOfferContextEl?.value || '',
-        offerRole: (postOfferRoleEl?.value || '').trim(),
-        accompaniment: !!postOfferAccompanimentEl?.checked,
-        format: postOfferFormatEl?.value || '',
-        genre: postOfferGenreEl?.value || '',
-        genreNotes: (postOfferGenreNotesEl?.value || '').trim(),
-        rehearsal: postOfferRehearsalEl?.value || '',
-        setupNotes: (postOfferSetupEl?.value || '').trim()
+        offerRole: (postOfferRoleEl?.value || '').trim()
       };
     } else {
-      const offerInstruments = postOfferTeachInstruments?.checked
-        ? parseInstruments(postOfferInstrumentsEl?.value || '')
-        : [];
-      const rateRaw = postOfferRateEl?.value || '';
-      const rateVal = rateRaw === '' ? null : parseFloat(rateRaw);
-      offerDetails = {
-        concerts: false,
-        services: false,
-        teachInstruments: !!postOfferTeachInstruments?.checked,
-        instruments: offerInstruments.length ? offerInstruments : null,
-        teachSinging: !!postOfferTeachSinging?.checked,
-        hourlyRate: Number.isFinite(rateVal) ? rateVal : null,
-        offerContext: postOfferContextEl?.value || '',
-        offerRole: (postOfferRoleEl?.value || '').trim(),
-        accompaniment: !!postOfferAccompanimentEl?.checked,
-        format: postOfferFormatEl?.value || '',
-        genre: postOfferGenreEl?.value || '',
-        genreNotes: (postOfferGenreNotesEl?.value || '').trim(),
-        rehearsal: postOfferRehearsalEl?.value || '',
-        setupNotes: (postOfferSetupEl?.value || '').trim()
-      };
+      const hasPrevData = previousOffer && Object.keys(previousOffer).length > 0;
+      offerDetails = hasPrevData ? previousOffer : {};
     }
   }
 
@@ -1724,6 +1708,7 @@ async function publishProfilePost() {
     radiusKm: Number.isFinite(radius) ? radius : 50,
     authorLocation,
     location: postLocation,
+    locationAlt: postLocationAlt,
     resolved: false
   };
 
