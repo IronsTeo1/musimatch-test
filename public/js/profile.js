@@ -13,6 +13,7 @@ import {
   limit,
   orderBy,
   query,
+  setDoc,
   startAfter,
   where,
   updateDoc,
@@ -33,6 +34,13 @@ const LAST_PROFILE_NAME_KEY = 'musimatch-last-profile-name';
 
 const titleEl = document.getElementById('profile-title');
 const profileSettingsLink = document.getElementById('profile-settings-link');
+const messageOpenModalBtn = document.getElementById('message-open-modal');
+const messageModal = document.getElementById('message-modal');
+const messageCloseModalBtn = document.getElementById('message-close-modal');
+const messageSendBtn = document.getElementById('message-send-btn');
+const messageTextEl = document.getElementById('message-text');
+const messageSendMsgEl = document.getElementById('message-send-msg');
+const messageModalTitleEl = document.getElementById('message-modal-title');
 const mainInstrText = document.getElementById('profile-mainInstrument');
 const instrumentsText = document.getElementById('profile-instruments');
 const mainInstrField = document.getElementById('profile-mainInstrument-field');
@@ -77,6 +85,7 @@ const profilePagination = {
 let profileSentinel = null;
 let profileObserver = null;
 const PROFILE_CACHE_KEY = 'mm:lastProfileDoc';
+const MESSAGES_STORAGE_KEY = 'musimatch-messages';
 const postOpenModalBtn = document.getElementById('post-open-modal');
 const postCloseModalBtn = document.getElementById('post-close-modal');
 const postModal = document.getElementById('post-modal');
@@ -224,6 +233,9 @@ if (titleEl) {
 if (profileSettingsLink) {
   profileSettingsLink.style.display = 'none';
 }
+if (messageOpenModalBtn) {
+  messageOpenModalBtn.style.display = 'none';
+}
 
 function clearLastProfileName() {
   try {
@@ -240,6 +252,12 @@ function setMessage(text, isError = false) {
   if (!msgEl) return;
   msgEl.textContent = text || '';
   msgEl.style.color = isError ? '#f87171' : 'var(--muted)';
+}
+
+function setMessageSend(text, isError = false) {
+  if (!messageSendMsgEl) return;
+  messageSendMsgEl.textContent = text || '';
+  messageSendMsgEl.style.color = isError ? '#f87171' : 'var(--muted)';
 }
 
 function setPostMessage(text, isError = false) {
@@ -309,6 +327,71 @@ function cacheProfileDoc(doc) {
   } catch (e) {
     // ignore cache write
   }
+}
+
+function loadStoredThreads() {
+  try {
+    const raw = localStorage.getItem(MESSAGES_STORAGE_KEY);
+    if (!raw) return [];
+    const parsed = JSON.parse(raw);
+    return Array.isArray(parsed) ? parsed : [];
+  } catch (e) {
+    return [];
+  }
+}
+
+function saveStoredThreads(threads) {
+  try {
+    localStorage.setItem(MESSAGES_STORAGE_KEY, JSON.stringify(threads || []));
+  } catch (e) {
+    // ignore
+  }
+}
+
+function loadMessageStore() {
+  try {
+    const raw = localStorage.getItem(MESSAGES_STORAGE_KEY);
+    const parsed = raw ? JSON.parse(raw) : {};
+    if (Array.isArray(parsed)) return {}; // vecchio formato
+    return parsed && typeof parsed === 'object' ? parsed : {};
+  } catch (e) {
+    return {};
+  }
+}
+
+function saveMessageStore(store) {
+  try {
+    localStorage.setItem(MESSAGES_STORAGE_KEY, JSON.stringify(store || {}));
+  } catch (e) {
+    // ignore
+  }
+}
+
+function getUserThreads(store, userId) {
+  if (!userId) return [];
+  const list = store[userId];
+  return Array.isArray(list) ? list : [];
+}
+
+function setUserThreads(store, userId, threads) {
+  if (!userId) return store;
+  store[userId] = threads || [];
+  return store;
+}
+
+function mergeThreads(base = [], extra = []) {
+  const map = new Map();
+  (base || []).forEach((t) => {
+    if (t && t.id) map.set(t.id, t);
+  });
+  (extra || []).forEach((t) => {
+    if (t && t.id) map.set(t.id, t);
+  });
+  return Array.from(map.values());
+}
+
+function buildThreadId(a, b) {
+  return [a, b].filter(Boolean).sort().join('__');
 }
 
 function loadCachedProfileDoc() {
@@ -1630,6 +1713,37 @@ function closeRatesModal() {
   }, 260);
 }
 
+function openMessageModal() {
+  if (!messageModal) return;
+  messageModal.style.display = 'grid';
+  messageModal.style.visibility = 'visible';
+  messageModal.style.pointerEvents = 'auto';
+  messageModal.setAttribute('aria-hidden', 'true');
+  requestAnimationFrame(() => {
+    messageModal.setAttribute('aria-hidden', 'false');
+  });
+  if (messageTextEl) {
+    messageTextEl.value = '';
+    setTimeout(() => messageTextEl.focus({ preventScroll: true }), 50);
+  }
+  setMessageSend('');
+}
+
+function closeMessageModal() {
+  if (!messageModal) return;
+  messageModal.setAttribute('aria-hidden', 'true');
+  messageModal.style.visibility = 'hidden';
+  messageModal.style.pointerEvents = 'none';
+  setTimeout(() => {
+    if (messageModal.getAttribute('aria-hidden') === 'true') {
+      messageModal.style.display = 'none';
+    }
+  }, 260);
+  if (messageOpenModalBtn && typeof messageOpenModalBtn.focus === 'function') {
+    messageOpenModalBtn.focus({ preventScroll: true });
+  }
+}
+
 async function publishProfilePost() {
   setPostMessage('');
   if (!canPublishFromProfile()) {
@@ -1782,6 +1896,93 @@ async function publishProfilePost() {
   }
 }
 
+function upsertMessageThread(threads, targetId, targetName) {
+  const existingIdx = threads.findIndex((t) => t.id === targetId);
+  if (existingIdx >= 0) return { threads, thread: threads[existingIdx] };
+  const newThread = {
+    id: targetId,
+    name: targetName || 'Profilo',
+    preview: '',
+    updatedAt: new Date().toISOString(),
+    messages: []
+  };
+  const nextThreads = [...threads, newThread];
+  return { threads: nextThreads, thread: newThread };
+}
+
+async function sendMessageToProfile(text) {
+  setMessageSend('');
+  if (!targetProfileId) {
+    setMessageSend('Profilo non valido.', true);
+    return;
+  }
+  const trimmed = (text || '').trim();
+  if (!trimmed) {
+    setMessageSend('Scrivi un messaggio prima di inviare.', true);
+    return;
+  }
+  const sender = auth.currentUser;
+  if (!sender) {
+    setMessageSend('Devi essere loggato per inviare messaggi.', true);
+    return;
+  }
+  const senderUid = sender.uid;
+  const senderName =
+    viewerProfile?.displayName ||
+    viewerProfile?.data?.displayName ||
+    sender.displayName ||
+    sender.email ||
+    'Utente';
+  const targetAuthId = dataCache?.authUid || targetProfileId;
+  if (!targetAuthId) {
+    setMessageSend('Destinatario non valido.', true);
+    return;
+  }
+  const targetName = dataCache?.displayName || titleEl?.textContent || 'Profilo';
+  const threadId = buildThreadId(senderUid, targetAuthId);
+  const threadRef = doc(db, 'threads', threadId);
+  try {
+    if (messageSendBtn) messageSendBtn.setAttribute('disabled', 'true');
+    const snap = await getDoc(threadRef);
+    const baseData = {
+      participants: [senderUid, targetAuthId],
+      participantNames: {
+        [senderUid]: senderName,
+        [targetAuthId]: targetName
+      }
+    };
+    if (snap.exists()) {
+      await updateDoc(threadRef, {
+        ...baseData,
+        lastMessage: trimmed,
+        lastSenderUid: senderUid,
+        updatedAt: serverTimestamp()
+      });
+    } else {
+      await setDoc(threadRef, {
+        ...baseData,
+        lastMessage: trimmed,
+        lastSenderUid: senderUid,
+        createdAt: serverTimestamp(),
+        updatedAt: serverTimestamp()
+      });
+    }
+    await addDoc(collection(threadRef, 'messages'), {
+      text: trimmed,
+      fromUid: senderUid,
+      createdAt: serverTimestamp()
+    });
+    if (messageTextEl) messageTextEl.value = '';
+    setMessageSend('Messaggio inviato.');
+    closeMessageModal();
+  } catch (err) {
+    console.error('[MusiMatch] Errore invio messaggio (profilo):', err);
+    setMessageSend('Non è stato possibile inviare il messaggio.', true);
+  } finally {
+    if (messageSendBtn) messageSendBtn.removeAttribute('disabled');
+  }
+}
+
 function setProfileAvatarImage(urls = []) {
   if (!avatarContainer) return;
   let img = avatarContainer.querySelector('img');
@@ -1867,7 +2068,8 @@ function guard(user) {
       if (titleEl) {
         titleEl.style.display = '';
         titleEl.textContent = targetDoc.data?.displayName || 'Profilo musicista';
-        if (profileSettingsLink) profileSettingsLink.style.display = '';
+        if (profileSettingsLink) profileSettingsLink.style.display = viewingOwnProfile ? '' : 'none';
+        if (messageOpenModalBtn) messageOpenModalBtn.style.display = viewingOwnProfile ? 'none' : '';
         if (isOwnProfile) {
           clearLastProfileName();
         }
@@ -2042,10 +2244,22 @@ if (ratesCloseModalBtn) {
 
 setupModalSafeClose(ratesModal, closeRatesModal);
 
+if (messageOpenModalBtn) {
+  messageOpenModalBtn.addEventListener('click', openMessageModal);
+}
+if (messageCloseModalBtn) {
+  messageCloseModalBtn.addEventListener('click', closeMessageModal);
+}
+if (messageSendBtn) {
+  messageSendBtn.addEventListener('click', () => sendMessageToProfile(messageTextEl?.value || ''));
+}
+setupModalSafeClose(messageModal, closeMessageModal);
+
 document.addEventListener('keydown', (e) => {
   if (e.key === 'Escape') {
     if (postModalOpen) closePostModal();
     if (ratesModalOpen) closeRatesModal();
+    if (messageModal && messageModal.getAttribute('aria-hidden') === 'false') closeMessageModal();
   }
 });
 
