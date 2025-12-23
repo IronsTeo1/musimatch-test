@@ -32,6 +32,7 @@ const pageSubtitleEl = document.getElementById('profile-page-subtitle');
 const LAST_PROFILE_NAME_KEY = 'musimatch-last-profile-name';
 
 const titleEl = document.getElementById('profile-title');
+const profileSettingsLink = document.getElementById('profile-settings-link');
 const mainInstrText = document.getElementById('profile-mainInstrument');
 const instrumentsText = document.getElementById('profile-instruments');
 const mainInstrField = document.getElementById('profile-mainInstrument-field');
@@ -219,6 +220,9 @@ if (ratesModalElement && ratesModalElement.getAttribute('aria-hidden') !== 'fals
 if (titleEl) {
   titleEl.style.display = 'none';
   titleEl.textContent = '';
+}
+if (profileSettingsLink) {
+  profileSettingsLink.style.display = 'none';
 }
 
 function clearLastProfileName() {
@@ -1863,6 +1867,7 @@ function guard(user) {
       if (titleEl) {
         titleEl.style.display = '';
         titleEl.textContent = targetDoc.data?.displayName || 'Profilo musicista';
+        if (profileSettingsLink) profileSettingsLink.style.display = '';
         if (isOwnProfile) {
           clearLastProfileName();
         }

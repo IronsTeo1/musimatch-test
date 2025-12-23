@@ -95,6 +95,9 @@ const setEnsembleNameEl = document.getElementById('set-ensemble-name');
 const setEnsembleWebsiteEl = document.getElementById('set-ensemble-website');
 
 const btnLogout = document.getElementById('btn-logout');
+const btnThemeLight = document.getElementById('btn-theme-light');
+const btnThemeDark = document.getElementById('btn-theme-dark');
+const themeMsgEl = document.getElementById('theme-message');
 
 let currentUserType = null;
 let cityList = [];
@@ -215,6 +218,19 @@ function applyRoleLabels(role) {
     if (settingsInstrumentsField) settingsInstrumentsField.style.display = '';
     if (voiceSettingsFields) voiceSettingsFields.style.display = 'none';
   }
+}
+
+function syncThemeButtons(current) {
+  const normalized = current === 'dark' ? 'dark' : 'light';
+  if (btnThemeLight) {
+    btnThemeLight.classList.toggle('ghost-primary', normalized === 'light');
+    btnThemeLight.classList.toggle('ghost-secondary', normalized !== 'light');
+  }
+  if (btnThemeDark) {
+    btnThemeDark.classList.toggle('ghost-primary', normalized === 'dark');
+    btnThemeDark.classList.toggle('ghost-secondary', normalized !== 'dark');
+  }
+  if (themeMsgEl) themeMsgEl.textContent = normalized === 'dark' ? 'Tema scuro attivo.' : 'Tema chiaro attivo.';
 }
 
 const avatarPreview = document.getElementById('settings-avatar');
@@ -1031,6 +1047,38 @@ if (btnLogout) {
     window.location.href = 'login.html';
   });
 }
+
+// Gestione tema (chiaro/scuro)
+function initThemeControls() {
+  const getTheme = () => {
+    if (typeof window.getMusimatchTheme === 'function') return window.getMusimatchTheme();
+    return document.documentElement.getAttribute('data-theme') || 'light';
+  };
+  const setTheme = (val) => {
+    const normalized = val === 'dark' ? 'dark' : 'light';
+    try {
+      if (typeof window.setMusimatchTheme === 'function') {
+        window.setMusimatchTheme(normalized);
+      } else {
+        document.documentElement.setAttribute('data-theme', normalized);
+        localStorage.setItem('musimatch-theme', normalized);
+      }
+    } catch (e) {
+      document.documentElement.setAttribute('data-theme', normalized);
+    }
+    syncThemeButtons(normalized);
+  };
+  const currentTheme = getTheme();
+  syncThemeButtons(currentTheme);
+  if (btnThemeLight) {
+    btnThemeLight.addEventListener('click', () => setTheme('light'));
+  }
+  if (btnThemeDark) {
+    btnThemeDark.addEventListener('click', () => setTheme('dark'));
+  }
+}
+
+initThemeControls();
 
 // Avatar upload/remove
 if (avatarFileInput) {

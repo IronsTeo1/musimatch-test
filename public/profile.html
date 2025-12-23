@@ -58,13 +58,18 @@
             <div class="avatar-fallback">👤</div>
           </div>
         </div>
-        <div class="profile-name-block">
+      <div class="profile-name-block">
+        <div class="profile-name-row">
           <h2 id="profile-title" style="margin: 0; display: none;"></h2>
-          <div class="profile-meta small muted" id="profile-meta" aria-live="polite">
-            <span class="meta-item" id="profile-mainInstrument"></span>
-            <span class="meta-item" id="profile-level"></span>
-            <span class="meta-item" id="profile-location"></span>
-          </div>
+          <a href="settings.html" class="profile-settings-link" id="profile-settings-link" aria-label="Impostazioni profilo" style="display: none;">
+            <img src="assets/icons/settings.svg" alt="" width="20" height="20">
+          </a>
+        </div>
+      <div class="profile-meta small muted" id="profile-meta" aria-live="polite">
+        <span class="meta-item" id="profile-mainInstrument"></span>
+        <span class="meta-item" id="profile-level"></span>
+        <span class="meta-item" id="profile-location"></span>
+      </div>
         </div>
         <div class="profile-actions">
           <button type="button" class="ghost btn-full rates-btn" id="rates-open-modal">Tariffe</button>
@@ -243,7 +248,6 @@
   <script type="module" src="js/nav.js"></script>
   <script type="module" src="js/profile.js"></script>
   <nav class="floating-nav">
-    <button type="button" id="theme-toggle" class="theme-toggle" aria-label="Cambia tema">🌙</button>
     <a href="home.html">
       <span class="nav-icon" aria-hidden="true"><img src="assets/icons/home.svg" alt=""></span>
       <span class="nav-label">Home</span>
@@ -252,15 +256,11 @@
       <span class="nav-icon" aria-hidden="true"><img src="assets/icons/search.svg" alt=""></span>
       <span class="nav-label">Ricerca</span>
     </a>
-    <a href="login.html" id="nav-auth">
-      <span class="nav-icon" aria-hidden="true"><img src="assets/icons/profile.svg" alt=""></span>
-      <span class="nav-label">Login</span>
+    <a href="messages.html" id="nav-messages">
+      <span class="nav-icon" aria-hidden="true"><img src="assets/icons/messages.svg" alt=""></span>
+      <span class="nav-label">Messaggi</span>
     </a>
-    <a href="settings.html" id="nav-settings" style="display: none;">
-      <span class="nav-icon" aria-hidden="true"><img src="assets/icons/settings.svg" alt=""></span>
-      <span class="nav-label">Impostazioni</span>
-    </a>
-    <a href="profile.html" id="nav-profile" style="display: none;">
+    <a href="profile.html" id="nav-profile" class="active">
       <span class="nav-icon" aria-hidden="true"><img src="assets/icons/profile.svg" alt=""></span>
       <span class="nav-label">Profilo</span>
     </a>

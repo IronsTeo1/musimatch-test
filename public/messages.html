@@ -2,7 +2,7 @@
 <html lang="it" data-theme="light">
 <head>
   <meta charset="utf-8">
-  <title>MusiMatch – Login</title>
+  <title>MusiMatch – Messaggi</title>
   <meta name="viewport" content="width=device-width, initial-scale=1">
   <script>
     (function() {
@@ -37,50 +37,50 @@
   <link rel="stylesheet" href="css/ui.css">
 </head>
 <body>
-  <main class="auth-layout">
-    <section class="auth-card">
-      <header class="auth-header">
-        <div class="logo-link">
-          <a href="home.html" class="logo-img">
-            <img src="assets/img/logo.svg" alt="MusiMatch">
-          </a>
+  <header class="page-header">
+    <div class="logo-link">
+      <a href="home.html" class="logo-img">
+        <img src="assets/img/logo.svg" alt="MusiMatch">
+      </a>
+      <div>
+        <p class="eyebrow" style="margin: 0;">MusiMatch</p>
+        <h1 style="margin: 0;" id="messages-title">Messaggi</h1>
+        <p style="margin: 0;" class="muted">Conversazioni in corso.</p>
+      </div>
+    </div>
+  </header>
+
+  <main class="page-content">
+    <section class="messages-layout">
+      <aside class="card threads-panel">
+        <div class="inline-header" style="align-items: center; gap: 0.5rem;">
+          <h3 style="margin: 0;">Chat</h3>
+          <span class="muted small" id="threads-count"></span>
+        </div>
+        <div class="threads-list" id="threads-list"></div>
+      </aside>
+      <section class="card chat-panel">
+        <div class="chat-header">
           <div>
-            <p class="eyebrow" style="margin: 0;">MusiMatch</p>
-            <h1 style="margin: 0;">Accedi o registrati</h1>
+            <p class="eyebrow" style="margin: 0;">Conversazione</p>
+            <h3 style="margin: 0;" id="chat-name">Seleziona una chat</h3>
           </div>
+          <p class="muted small" id="chat-info" style="margin: 0;"></p>
         </div>
-        <p>Entra con email e password. Se non hai un profilo, puoi crearne uno subito.</p>
-      </header>
-
-      <form id="auth-form" class="stack">
-        <label class="field">
-          <span class="field-label">Email</span>
-          <input type="email" id="auth-email" autocomplete="email" required placeholder="es. nome@example.com">
-        </label>
-
-        <label class="field">
-          <span class="field-label">Password</span>
-          <input type="password" id="auth-password" autocomplete="current-password" required placeholder="Minimo 6 caratteri">
-        </label>
-
-        <div class="auth-actions">
-          <button type="submit" id="btn-login">Accedi</button>
-          <button type="button" id="btn-register" class="ghost">Registrati</button>
+        <div class="chat-history" id="chat-history">
+          <p class="muted" id="chat-empty">Nessun messaggio. Seleziona una chat per iniziare.</p>
         </div>
-
-        <button type="button" id="btn-reset" class="link-btn">Recupera password</button>
-        <p id="auth-message" class="helper-text"></p>
-      </form>
-
-      <footer class="auth-footer">
-        <a href="home.html">← Torna alla home</a>
-      </footer>
+        <div class="chat-input" aria-hidden="true">
+          <input type="text" placeholder="Scrivi un messaggio..." disabled>
+          <button type="button" disabled>Invia</button>
+        </div>
+      </section>
     </section>
   </main>
 
   <script type="module" src="js/theme.js"></script>
   <script type="module" src="js/nav.js"></script>
-  <script type="module" src="js/auth.js"></script>
+  <script type="module" src="js/messages.js"></script>
   <nav class="floating-nav">
     <a href="home.html">
       <span class="nav-icon" aria-hidden="true"><img src="assets/icons/home.svg" alt=""></span>
@@ -90,7 +90,7 @@
       <span class="nav-icon" aria-hidden="true"><img src="assets/icons/search.svg" alt=""></span>
       <span class="nav-label">Ricerca</span>
     </a>
-    <a href="messages.html" id="nav-messages">
+    <a href="messages.html" id="nav-messages" class="active">
       <span class="nav-icon" aria-hidden="true"><img src="assets/icons/messages.svg" alt=""></span>
       <span class="nav-label">Messaggi</span>
     </a>

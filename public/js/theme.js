@@ -51,6 +51,16 @@ const storedTheme = (() => {
 
 applyTheme(storedTheme || 'light');
 
+// Espone helper globali per altri script (es. settings)
+window.setMusimatchTheme = (theme) => {
+  startThemeTransition();
+  applyTheme(theme);
+};
+
+window.getMusimatchTheme = () => {
+  return rootEl.getAttribute('data-theme') || storedTheme || 'light';
+};
+
 if (themeToggleBtn) {
   themeToggleBtn.addEventListener('click', () => {
     const current = rootEl.getAttribute('data-theme') || 'dark';

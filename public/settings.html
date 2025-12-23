@@ -330,16 +330,25 @@
       <p id="rates-message" class="helper-text"></p>
     </section>
 
-    <section class="card">
-      <button type="button" id="btn-logout" class="danger btn-block">Logout</button>
-    </section>
+      <section class="card">
+        <h3 style="margin: 0 0 0.4rem;">Cambio tema</h3>
+        <p class="muted" style="margin: 0 0 0.6rem;">Scegli tema chiaro o scuro, lo ricorderemo per questo profilo.</p>
+        <div class="inline" style="display: flex; gap: 0.6rem; flex-wrap: wrap;">
+          <button type="button" class="ghost ghost-primary" id="btn-theme-light" data-theme="light" style="min-width: 110px;">Chiaro</button>
+          <button type="button" class="ghost ghost-secondary" id="btn-theme-dark" data-theme="dark" style="min-width: 110px;">Scuro</button>
+        </div>
+        <p id="theme-message" class="helper-text"></p>
+      </section>
+
+      <section class="card">
+        <button type="button" id="btn-logout" class="danger btn-block">Logout</button>
+      </section>
   </main>
 
   <script type="module" src="js/theme.js"></script>
   <script type="module" src="js/nav.js"></script>
   <script type="module" src="js/settings.js"></script>
   <nav class="floating-nav">
-    <button type="button" id="theme-toggle" class="theme-toggle" aria-label="Cambia tema">🌙</button>
     <a href="home.html">
       <span class="nav-icon" aria-hidden="true"><img src="assets/icons/home.svg" alt=""></span>
       <span class="nav-label">Home</span>
@@ -348,15 +357,11 @@
       <span class="nav-icon" aria-hidden="true"><img src="assets/icons/search.svg" alt=""></span>
       <span class="nav-label">Ricerca</span>
     </a>
-    <a href="login.html" id="nav-auth">
-      <span class="nav-icon" aria-hidden="true"><img src="assets/icons/profile.svg" alt=""></span>
-      <span class="nav-label">Login</span>
+    <a href="messages.html" id="nav-messages">
+      <span class="nav-icon" aria-hidden="true"><img src="assets/icons/messages.svg" alt=""></span>
+      <span class="nav-label">Messaggi</span>
     </a>
-    <a href="settings.html" id="nav-settings" style="display: none;">
-      <span class="nav-icon" aria-hidden="true"><img src="assets/icons/settings.svg" alt=""></span>
-      <span class="nav-label">Impostazioni</span>
-    </a>
-    <a href="profile.html" id="nav-profile" style="display: none;">
+    <a href="profile.html" id="nav-profile">
       <span class="nav-icon" aria-hidden="true"><img src="assets/icons/profile.svg" alt=""></span>
       <span class="nav-label">Profilo</span>
     </a>
