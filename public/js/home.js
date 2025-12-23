@@ -357,7 +357,7 @@ function showGuest() {
   if (userBlock) userBlock.style.display = 'none';
   setUsername('');
   if (homeTitleEl) homeTitleEl.textContent = 'Benvenuto su MusiMatch';
-  if (homeSubtitleEl) homeSubtitleEl.textContent = 'Registrati o accedi per cercare profili, pubblicare annunci e gestire il tuo profilo.';
+  if (homeSubtitleEl) homeSubtitleEl.textContent = 'Registrati o accedi per vedere e pubblicare annunci vicino a te.';
   if (floatingNav) floatingNav.style.display = 'none';
 }
 

@@ -48,86 +48,96 @@
         <p style="margin: 0;" id="home-subtitle">Registrati o accedi per cercare profili, pubblicare annunci e gestire il tuo profilo.</p>
       </div>
     </div>
+    <div class="header-auth-actions">
+      <a class="ghost ghost-secondary" href="login.html">Accedi</a>
+      <a class="ghost ghost-primary" href="register.html">Registrati</a>
+    </div>
   </header>
 
   <main class="page-content">
     <div id="home-guest" style="display: none;">
-      <section class="card home-hero">
-        <div class="home-hero-copy">
-          <p class="eyebrow">Non sei loggato</p>
-          <h2 class="home-hero-title">Scopri, contatta e pubblica su MusiMatch</h2>
-          <p class="muted">Trova musicisti e ensemble per città, strumento e voce. Crea il tuo profilo, pubblica un annuncio mirato o sfoglia quelli già disponibili.</p>
-          <div class="home-actions">
-            <a class="primary primary-quiet" href="register.html">Crea il tuo profilo</a>
-            <a class="ghost ghost-primary" href="ricerca.html">Apri la ricerca</a>
-            <a class="ghost" href="login.html">Ho già un account</a>
+      <section class="card guest-card guest-hero">
+        <div class="guest-hero-text">
+          <p class="eyebrow" style="margin: 0;">Non sei loggato</p>
+          <div class="guest-title-row">
+            <h2 class="guest-title">Trova musicisti e cantanti vicino a te</h2>
+            <a class="ghost ghost-compact guest-title-action" href="ricerca.html" aria-label="Vai alla ricerca">
+              <img src="assets/img/guest/guest-refresh.svg" alt="" class="guest-title-icon">
+            </a>
           </div>
-          <div class="pill-row">
-            <span class="pill">Filtri città + raggio</span>
-            <span class="pill">Annunci "Cercasi" e "A disposizione"</span>
-            <span class="pill">Profilo con bio e tariffe</span>
+          <p class="muted">Scopri chi suona nella tua zona, pubblica un annuncio “Cercasi” e fai conoscere il tuo profilo.</p>
+          <div class="guest-chips">
+            <span class="pill pill-quiet">Annunci “Cercasi” geolocalizzati</span>
+            <span class="pill pill-quiet">Filtri per città + raggio</span>
+            <span class="pill pill-quiet">Profili con bio e tariffe</span>
           </div>
         </div>
-        <div class="home-hero-panel">
-          <div class="home-panel-card">
-            <p class="eyebrow" style="margin: 0;">Cosa trovi dentro</p>
-            <ul class="home-checklist">
-              <li>Ricerca profili e annunci per città, raggio, strumento e voce.</li>
-              <li>Pubblica annunci geolocalizzati e duplica la visibilità in più città.</li>
-              <li>Gestisci un profilo pubblico con foto, tariffe, bio, curriculum e disponibilità.</li>
-              <li>Controlla tema e preferenze direttamente dal menu flottante.</li>
-            </ul>
-          </div>
+        <div class="guest-hero-visual" aria-hidden="true">
+          <img src="assets/img/guest/guest-nearby.svg" alt="" class="guest-hero-img">
         </div>
       </section>
 
-      <section class="card home-feature-section">
-        <div class="section-heading">
+      <section class="card guest-card guest-feature-grid">
+        <article class="guest-feature">
+          <div class="guest-feature-icon">
+            <img src="assets/img/guest/guest-find.svg" alt="" loading="lazy">
+          </div>
           <div>
-            <p class="eyebrow" style="margin: 0;">Funzioni principali</p>
-            <h3 class="section-title">Tutto quello che puoi fare con MusiMatch</h3>
-            <p class="muted">Pensato per musicisti, cantanti e ensemble: ricerca precisa, annunci rapidi e profili curati.</p>
-          </div>
-          <a class="ghost ghost-secondary" href="login.html">Accedi</a>
-        </div>
-        <div class="grid home-feature-grid">
-          <article class="home-feature">
-            <div class="home-feature-icon" aria-hidden="true">🎯</div>
             <h4>Ricerca mirata</h4>
-            <p class="muted">Filtra per città, raggio, strumento e voce. Usa la città del profilo o la posizione attuale per vedere chi è vicino.</p>
-          </article>
-          <article class="home-feature">
-            <div class="home-feature-icon" aria-hidden="true">📢</div>
-            <h4>Annunci veloci</h4>
-            <p class="muted">Scegli "Cercasi" o "A disposizione", aggiungi strumenti/voci richiesti e rendi l'annuncio visibile anche in altre città.</p>
-          </article>
-          <article class="home-feature">
-            <div class="home-feature-icon" aria-hidden="true">🪪</div>
-            <h4>Profilo completo</h4>
-            <p class="muted">Foto, bio, curriculum, disponibilità di spostamento e tariffe: aggiorna tutto in pochi click.</p>
-          </article>
-          <article class="home-feature">
-            <div class="home-feature-icon" aria-hidden="true">🎼</div>
-            <h4>Per solisti e ensemble</h4>
-            <p class="muted">Supporto per cori, bande e orchestre: descrivi l'organico, segnala le sezioni scoperte e condividi il profilo pubblico.</p>
-          </article>
-        </div>
+            <p class="muted">Filtra per città, raggio, strumenti o voce. Vedi subito chi è vicino a te.</p>
+          </div>
+        </article>
+        <article class="guest-feature">
+          <div class="guest-feature-icon">
+            <img src="assets/img/guest/guest-create.svg" alt="" loading="lazy">
+          </div>
+          <div>
+            <h4>Annunci semplici</h4>
+            <p class="muted">Scrivi il testo, scegli la visibilità e pubblica in pochi secondi.</p>
+          </div>
+        </article>
+        <article class="guest-feature">
+          <div class="guest-feature-icon">
+            <img src="assets/img/guest/guest-profile.svg" alt="" loading="lazy">
+          </div>
+          <div>
+            <h4>Profilo curato</h4>
+            <p class="muted">Bio, strumenti, voce, tariffe e disponibilità in un’unica pagina.</p>
+          </div>
+        </article>
       </section>
 
-      <section class="card home-steps">
-        <div class="section-heading">
+      <section class="card guest-card guest-steps">
+        <div class="guest-steps-header">
           <div>
             <p class="eyebrow" style="margin: 0;">Percorso rapido</p>
-            <h3 class="section-title">Come iniziare in meno di 2 minuti</h3>
+            <h3 class="section-title" style="margin: 0.1rem 0 0;">Inizia in tre mosse</h3>
           </div>
           <a class="ghost ghost-primary" href="register.html">Registrati</a>
         </div>
-        <ol class="home-steps-list">
-          <li><strong>Crea l'account</strong> con email e password.</li>
-          <li><strong>Compila il profilo</strong> con città, strumenti/voce, bio, curriculum e disponibilità di spostamento.</li>
-          <li><strong>Pubblica o filtra annunci</strong> impostando raggio, strumenti, voci e città extra se ti servono.</li>
-          <li><strong>Condividi il profilo pubblico</strong> o torna alla ricerca per trovare nuovi contatti.</li>
-        </ol>
+        <div class="guest-step-grid">
+          <article class="guest-step">
+            <span class="guest-step-num">1</span>
+            <div>
+              <h4>Crea l’account</h4>
+              <p class="muted">Email e password: meno di un minuto.</p>
+            </div>
+          </article>
+          <article class="guest-step">
+            <span class="guest-step-num">2</span>
+            <div>
+              <h4>Completa il profilo</h4>
+              <p class="muted">Città, strumenti/voce, bio e disponibilità.</p>
+            </div>
+          </article>
+          <article class="guest-step">
+            <span class="guest-step-num">3</span>
+            <div>
+              <h4>Pubblica o filtra</h4>
+              <p class="muted">Scegli il raggio, aggiungi strumenti o voce e contatta.</p>
+            </div>
+          </article>
+        </div>
       </section>
     </div>
 
