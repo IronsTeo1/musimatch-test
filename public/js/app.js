@@ -30,6 +30,20 @@ function normalizeGenderSlug(raw) {
   return 'unknown';
 }
 
+function normalizeAvatarUrl(raw) {
+  if (!raw) return null;
+  const url = raw.trim();
+  if (!url) return null;
+  const pngMatch = url.match(/^(https?:\/\/[^/]+)?\/?(assets\/img\/avatars\/[^?]+)\.png(\?.*)?$/i);
+  if (pngMatch) {
+    const origin = pngMatch[1] || '';
+    const path = pngMatch[2] || '';
+    const qs = pngMatch[3] || '';
+    return `${origin}/${path}.webp${qs}`;
+  }
+  return url;
+}
+
 function setLastProfileName(name) {
   try {
     sessionStorage.setItem(LAST_PROFILE_NAME_KEY, name || '');
@@ -57,7 +71,8 @@ function buildAvatarCandidates(data, searchTarget) {
   const gender = normalizeGenderSlug(data?.gender);
   const candidates = [];
 
-  if (data?.photoUrl) candidates.push(data.photoUrl);
+  const normalizedPhoto = data?.photoUrl ? normalizeAvatarUrl(data.photoUrl) : null;
+  if (normalizedPhoto) candidates.push(normalizedPhoto);
 
   if (searchTarget === 'ensembles') {
     const ensembleSlug = (data?.ensembleType || '').toString().toLowerCase();
@@ -75,7 +90,7 @@ function buildAvatarCandidates(data, searchTarget) {
 
   candidates.push(`${base}/avatar-default/avatar-default-${gender}.webp?v=${AVATAR_VERSION}`);
   candidates.push(`${base}/avatar-default/avatar-default-unknown.webp?v=${AVATAR_VERSION}`);
-  return candidates;
+  return candidates.map((c) => normalizeAvatarUrl(c)).filter(Boolean);
 }
 
 document.addEventListener('DOMContentLoaded', () => {
@@ -256,12 +271,30 @@ document.addEventListener('DOMContentLoaded', () => {
               ? 'Orchestra'
               : 'Ensemble';
 
-        const title = document.createElement('a');
-        title.href = profileUrl;
-        title.textContent = data.displayName || 'Senza nome';
-        title.className = 'result-title';
-        title.addEventListener('click', () => setLastProfileName(data.displayName || ''));
-        card.addEventListener('click', () => setLastProfileName(data.displayName || ''));
+        const thumb = document.createElement('div');
+        thumb.className = 'avatar-placeholder';
+        const avatarLink = document.createElement('a');
+        avatarLink.href = profileUrl;
+        avatarLink.className = 'result-avatar-link';
+        avatarLink.setAttribute('aria-label', `Apri il profilo di ${data.displayName || 'utente'}`);
+        avatarLink.addEventListener('click', () => setLastProfileName(data.displayName || ''));
+
+        const img = document.createElement('img');
+        img.alt = data.displayName || 'Avatar';
+        const avatarQueue = buildAvatarCandidates(data, searchTarget);
+        const applyNext = () => {
+          const next = avatarQueue.shift();
+          if (!next) {
+            img.remove();
+            thumb.textContent = '👤';
+            return;
+          }
+          img.onerror = applyNext;
+          img.src = next;
+          thumb.appendChild(img);
+        };
+        applyNext();
+        avatarLink.appendChild(thumb);
 
         const subtitle = document.createElement('div');
         subtitle.className = 'muted';
@@ -283,32 +316,26 @@ document.addEventListener('DOMContentLoaded', () => {
         meta.className = 'muted small';
         meta.textContent = `Distanza: ${r.distanceKm.toFixed(1)} km`;
 
-        const thumb = document.createElement('div');
-        thumb.className = 'avatar-placeholder';
-        const img = document.createElement('img');
-        img.alt = data.displayName || 'Avatar';
-        const avatarQueue = buildAvatarCandidates(data, searchTarget);
-        const applyNext = () => {
-          const next = avatarQueue.shift();
-          if (!next) {
-            img.remove();
-            thumb.textContent = '👤';
-            return;
-          }
-          img.onerror = applyNext;
-          img.src = next;
-          thumb.appendChild(img);
-        };
-        applyNext();
+        const nameLink = document.createElement('a');
+        nameLink.href = profileUrl;
+        nameLink.textContent = data.displayName || 'Senza nome';
+        nameLink.className = 'result-title result-title-top';
+        nameLink.addEventListener('click', () => setLastProfileName(data.displayName || ''));
+
+        card.addEventListener('click', () => setLastProfileName(data.displayName || ''));
 
         const body = document.createElement('div');
         body.className = 'result-body';
-        body.appendChild(title);
         body.appendChild(subtitle);
         body.appendChild(meta);
 
-        card.appendChild(thumb);
-        card.appendChild(body);
+        const infoRow = document.createElement('div');
+        infoRow.className = 'result-info-row';
+        infoRow.appendChild(avatarLink);
+        infoRow.appendChild(body);
+
+        card.appendChild(nameLink);
+        card.appendChild(infoRow);
         resultsList.appendChild(card);
       }
     } catch (error) {

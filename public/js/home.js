@@ -95,9 +95,11 @@ const filterVoiceEl = document.getElementById('filter-voice');
 const filterVoiceClearBtn = document.getElementById('filter-voice-clear');
 const filterVoiceSuggestionsEl = document.getElementById('filter-voice-suggestions');
 const filterTypeButtons = Array.from(document.querySelectorAll('.filter-type-btn'));
+const filterLevelButtons = Array.from(document.querySelectorAll('.filter-level-btn'));
 const filterTypeState = { current: null };
 const floatingNav = document.querySelector('.floating-nav');
-let activeFilter = { center: null, radius: null, postType: null, keyword: '' };
+const headerAuthActions = document.querySelector('.header-auth-actions');
+let activeFilter = { center: null, radius: null, postType: null, keyword: '', levels: [] };
 let awaitingGeo = false;
 const DEFAULT_TEST_LOCATION = {
   lat: 45.4642, // Milano
@@ -183,7 +185,7 @@ function formatProfileKind(data = {}) {
   const role = (data.role || '').toLowerCase();
   const ensembleType = (data.ensembleType || '').toLowerCase();
   if (kind === 'band' || ensembleType === 'banda' || ensembleType === 'band') return 'Banda';
-  if (kind === 'choir' || ensembleType === 'coro') return 'Coro';
+  if (kind === 'choir' || ensembleType === 'coro' || ensembleType === 'choir') return 'Coro';
   if (kind === 'orchestra' || ensembleType === 'orchestra') return 'Orchestra';
   if (kind === 'singer' || role === 'singer' || role === 'cantante') return 'Cantante';
   if (userType === 'ensemble' && ensembleType) {
@@ -220,6 +222,20 @@ function normalizeGenderSlug(raw) {
   const g = (raw || '').toString().toLowerCase();
   if (g === 'male' || g === 'female' || g === 'non_binary') return g;
   return 'unknown';
+}
+
+function normalizeAvatarUrl(raw) {
+  if (!raw) return null;
+  const url = raw.trim();
+  if (!url) return null;
+  const pngMatch = url.match(/^(https?:\/\/[^/]+)?\/?(assets\/img\/avatars\/[^?]+)\.png(\?.*)?$/i);
+  if (pngMatch) {
+    const origin = pngMatch[1] || '';
+    const path = pngMatch[2] || '';
+    const qs = pngMatch[3] || '';
+    return `${origin}/${path}.webp${qs}`;
+  }
+  return url;
 }
 
 function buildAvatarPath({ folder = '', nameParts = [] }) {
@@ -263,9 +279,12 @@ function resolveAvatarUrls(data) {
     }
   }
   const urls = [];
-  if (data.photoUrl) urls.push(data.photoUrl);
-  if (data.photoURL) urls.push(data.photoURL);
-  if (data.avatarUrl) urls.push(data.avatarUrl);
+  const photoUrl = normalizeAvatarUrl(data.photoUrl);
+  const photoURL = normalizeAvatarUrl(data.photoURL);
+  const avatarUrl = normalizeAvatarUrl(data.avatarUrl);
+  if (photoUrl) urls.push(photoUrl);
+  if (photoURL) urls.push(photoURL);
+  if (avatarUrl) urls.push(avatarUrl);
 
   if (data.userType === 'ensemble') {
     const ensembleSlug = (data.ensembleType || '').toString().toLowerCase();
@@ -279,7 +298,7 @@ function resolveAvatarUrls(data) {
 
   urls.push(buildAvatarPath({ folder: 'avatar-default', nameParts: ['default', genderSlug] }));
   urls.push(buildAvatarPath({ folder: 'avatar-default', nameParts: ['default'] }));
-  return urls.filter(Boolean);
+  return urls.map((u) => normalizeAvatarUrl(u)).filter(Boolean);
 }
 
 function pickPreferredAvatarUrl(data) {
@@ -291,14 +310,15 @@ function expandAvatarCandidates(list) {
   const out = [];
   const seen = new Set();
   (list || []).forEach((item) => {
-    if (!item) return;
+    const base = normalizeAvatarUrl(item);
+    if (!base) return;
     const variants = [];
-    variants.push(item);
-    const clean = item.replace(/^\//, '');
-    if (!item.startsWith('/')) variants.push('/' + clean);
+    variants.push(base);
+    const clean = base.replace(/^\//, '');
+    if (!base.startsWith('/')) variants.push('/' + clean);
     variants.push(window.location.origin + '/' + clean);
-    const noQuery = item.split('?')[0];
-    if (noQuery && noQuery !== item) variants.push(noQuery);
+    const noQuery = base.split('?')[0];
+    if (noQuery && noQuery !== base) variants.push(noQuery);
     if (!noQuery.startsWith('/')) variants.push('/' + noQuery);
     variants.push(window.location.origin + '/' + noQuery.replace(/^\//, ''));
     variants.forEach((v) => {
@@ -355,6 +375,7 @@ function cleanDisplayName(raw) {
 function showGuest() {
   if (guestBlock) guestBlock.style.display = '';
   if (userBlock) userBlock.style.display = 'none';
+  if (headerAuthActions) headerAuthActions.style.display = '';
   setUsername('');
   if (homeTitleEl) homeTitleEl.textContent = 'Benvenuto su MusiMatch';
   if (homeSubtitleEl) homeSubtitleEl.textContent = 'Registrati o accedi per vedere e pubblicare annunci vicino a te.';
@@ -366,6 +387,7 @@ function showUser(name) {
   setUsername(safeName);
   if (guestBlock) guestBlock.style.display = 'none';
   if (userBlock) userBlock.style.display = '';
+  if (headerAuthActions) headerAuthActions.style.display = 'none';
   if (homeTitleEl) homeTitleEl.textContent = 'Home';
   if (homeSubtitleEl) homeSubtitleEl.textContent = safeName ? `Ciao, ${safeName}. Consulta gli annunci vicino a te.` : 'Ciao!';
   if (floatingNav) floatingNav.style.display = '';
@@ -689,9 +711,39 @@ function normalizeSearchToken(raw) {
 
 function keywordTokens(str) {
   return (str || '')
-    .split(/[\\s,]+/)
+    .split(/[\s,]+/)
     .map((t) => normalizeSearchToken(t))
     .filter(Boolean);
+}
+
+function keywordVariantSet(token) {
+  const base = normalizeSearchToken(token);
+  const variants = new Set();
+  const push = (v) => {
+    if (v && v.length >= 2) variants.add(v);
+  };
+  push(base);
+  // rimozione di vocali finali (plurali/maschile-femminile)
+  push(base.replace(/[aeiou]$/i, ''));
+  push(base.replace(/(i|e)$/i, ''));
+  // gestisce "che/chi" -> "ch" e "c"
+  if (base.endsWith('he') || base.endsWith('hi')) push(base.slice(0, -1));
+  if (base.endsWith('che') || base.endsWith('chi')) push(base.slice(0, -2));
+  // taglia suffissi comuni
+  if (base.endsWith('mente')) push(base.replace(/mente$/, ''));
+  if (base.endsWith('zioni')) push(base.replace(/zioni$/, 'zion'));
+  if (base.endsWith('zione')) push(base.replace(/zione$/, 'zion'));
+  if (base.endsWith('isti') || base.endsWith('iste')) push(base.replace(/ist[ie]$/, 'ista'));
+  if (base.endsWith('ali') || base.endsWith('ale')) push(base.replace(/al[ie]$/, 'al'));
+  return Array.from(variants);
+}
+
+function expandKeywordVariants(tokens) {
+  const variants = new Set();
+  tokens.forEach((t) => {
+    keywordVariantSet(t).forEach((v) => variants.add(v));
+  });
+  return Array.from(variants);
 }
 
 function expandInstrumentVariants(token) {
@@ -1098,6 +1150,10 @@ function openFilterModal() {
   filterTypeButtons.forEach((btn) => {
     btn.classList.toggle('active', !!activeFilter.postType && btn.dataset.type === activeFilter.postType);
   });
+  filterLevelButtons.forEach((btn) => {
+    const level = (btn.dataset.level || '').toLowerCase();
+    btn.classList.toggle('active', activeFilter.levels?.includes(level));
+  });
 }
 
 function closeFilterModal() {
@@ -1167,6 +1223,10 @@ async function applyFilterFromForm() {
   const selectedTypes = filterTypeButtons
     .filter((btn) => btn.classList.contains('active'))
     .map((btn) => btn.dataset.type);
+  const selectedLevels = filterLevelButtons
+    .filter((btn) => btn.classList.contains('active'))
+    .map((btn) => (btn.dataset.level || '').toLowerCase())
+    .filter(Boolean);
   let postType = null;
   if (selectedTypes.length === 1) postType = selectedTypes[0];
   if (selectedTypes.length === 0 && filterTypeState.current) postType = filterTypeState.current;
@@ -1174,19 +1234,21 @@ async function applyFilterFromForm() {
     center,
     radius,
     keyword: filterKeywordEl?.value.trim() || '',
-    postType
+    postType,
+    levels: selectedLevels
   };
   closeFilterModal();
   await loadFeed();
 }
 
 async function resetFilter() {
-  activeFilter = { center: null, radius: null, keyword: '', postType: null };
+  activeFilter = { center: null, radius: null, keyword: '', postType: null, levels: [] };
   if (filterCityEl) filterCityEl.value = '';
   if (filterRadiusEl) filterRadiusEl.value = '';
   if (filterRadiusRangeEl) filterRadiusRangeEl.value = filterRadiusRangeEl.defaultValue || '0';
   if (filterKeywordEl) filterKeywordEl.value = '';
   filterTypeButtons.forEach((btn) => btn.classList.remove('active'));
+  filterLevelButtons.forEach((btn) => btn.classList.remove('active'));
   setFilterClearVisibility();
   setFilterMessage('');
   closeFilterModal();
@@ -1718,8 +1780,9 @@ function filterAndRenderPosts(posts, { append = false } = {}) {
   const viewerMain = currentUserProfile?.data?.mainInstrument || '';
   const viewerVoice = currentUserProfile?.data?.voiceType || currentUserProfile?.data?.mainInstrument || '';
   const viewerRadius = currentUserProfile?.data?.maxTravelKm || 50;
-  const keywordList = keywordTokens(activeFilter.keyword || '');
+  const keywordList = expandKeywordVariants(keywordTokens(activeFilter.keyword || ''));
   const filterPostType = (activeFilter.postType || '').toLowerCase();
+  const filterLevels = Array.isArray(activeFilter.levels) ? activeFilter.levels : [];
 
   posts.forEach((post) => {
     const isOwner = isPostOwner(post);
@@ -1791,6 +1854,7 @@ function filterAndRenderPosts(posts, { append = false } = {}) {
     const offerNotes = normalizeSearchToken(post.offerDetails?.genreNotes || post.offerDetails?.setupNotes || '');
     const bodyNormalized = normalizeSearchToken(post.body || '');
     const authorName = normalizeSearchToken(post.authorName || '');
+    const authorProfile = post.authorProfileData || {};
     const locationStrings = [
       post.location?.city,
       post.location?.province,
@@ -1807,6 +1871,14 @@ function filterAndRenderPosts(posts, { append = false } = {}) {
       .filter(Boolean)
       .map((i) => normalizeSearchToken(i || ''));
     const voicesLower = wantedVoices.map((v) => normalizeSearchToken(v || ''));
+    const authorMainInstrument = normalizeSearchToken(authorProfile.mainInstrument || authorProfile.mainInstrumentSlug || '');
+    const authorVoiceTypes = [
+      authorProfile.voiceType,
+      authorProfile.voiceTypeSecondary
+    ]
+      .filter(Boolean)
+      .map((v) => normalizeSearchToken(v));
+    const authorEnsembleType = normalizeSearchToken(authorProfile.ensembleType || authorProfile.profileKind || '');
     if (keywordList.length > 0) {
       const haystack = [
         bodyNormalized,
@@ -1822,11 +1894,21 @@ function filterAndRenderPosts(posts, { append = false } = {}) {
         .concat(locationStrings)
         .concat(instrumentsLower)
         .concat(voicesLower)
+        .concat(authorVoiceTypes)
+        .concat([
+          authorMainInstrument,
+          authorEnsembleType,
+          normalizeSearchToken(authorProfile.role || authorProfile.userType || '')
+        ])
         .join(' ');
-      const matchesKeyword = keywordList.every((token) => haystack.includes(token));
+      const matchesKeyword = keywordList.some((token) => haystack.includes(token));
       if (!matchesKeyword) return;
     }
     if (filterPostType && (post.postType || 'seeking').toLowerCase() !== filterPostType) {
+      return;
+    }
+    const authorLevel = (post.authorProfileData?.activityLevel || '').toLowerCase();
+    if (filterLevels.length && !filterLevels.includes(authorLevel)) {
       return;
     }
     let matchesSkill = true;
@@ -2056,6 +2138,7 @@ async function publishPost() {
     authorProfileData: {
       userType: profileData.userType || 'musician',
       role: profileData.role || '',
+      activityLevel: profileData.activityLevel || '',
       gender: profileData.gender || '',
       mainInstrument: profileData.mainInstrument || '',
       mainInstrumentSlug: profileData.mainInstrumentSlug || '',
@@ -2326,6 +2409,11 @@ filterTypeButtons.forEach((btn) => {
     } else {
       setFilterType(null);
     }
+  });
+});
+filterLevelButtons.forEach((btn) => {
+  btn.addEventListener('click', () => {
+    btn.classList.toggle('active');
   });
 });
 if (filterRadiusRangeEl && filterRadiusEl) {

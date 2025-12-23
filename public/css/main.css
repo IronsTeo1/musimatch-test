@@ -190,6 +190,7 @@ h2 {
 
 .profile-header {
   gap: 0.9rem;
+  align-items: center;
 }
 
 .profile-meta {
@@ -221,6 +222,22 @@ h2 {
   justify-content: center;
   min-height: 80px;
   gap: 0.1rem;
+  align-self: center;
+}
+
+.profile-actions {
+  align-self: center;
+}
+
+/* Home: evita flash guest quando nav-state è già noto come logged-in */
+html[data-nav-state='logged-in'] #home-guest {
+  display: none !important;
+}
+html[data-nav-state='logged-in'] #home-user {
+  display: block !important;
+}
+html[data-nav-state='logged-in'] .header-auth-actions {
+  display: none !important;
 }
 
 .rates-btn {

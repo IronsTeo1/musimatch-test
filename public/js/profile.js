@@ -183,6 +183,20 @@ function formatWebsite(url) {
   }
 }
 
+function normalizeAvatarUrl(raw) {
+  if (!raw) return null;
+  const url = raw.trim();
+  if (!url) return null;
+  const pngMatch = url.match(/^(https?:\/\/[^/]+)?\/?(assets\/img\/avatars\/[^?]+)\.png(\?.*)?$/i);
+  if (pngMatch) {
+    const origin = pngMatch[1] || '';
+    const path = pngMatch[2] || '';
+    const qs = pngMatch[3] || '';
+    return `${origin}/${path}.webp${qs}`;
+  }
+  return url;
+}
+
 const avatarContainer = document.getElementById('profile-avatar');
 const avatarModal = document.getElementById('avatar-modal');
 const avatarModalImg = document.getElementById('avatar-modal-img');
@@ -267,7 +281,7 @@ function formatProfileKind(data = {}) {
   const role = (data.role || '').toLowerCase();
   const ensembleType = (data.ensembleType || '').toLowerCase();
   if (kind === 'band' || ensembleType === 'banda' || ensembleType === 'band') return 'Banda';
-  if (kind === 'choir' || ensembleType === 'coro') return 'Coro';
+  if (kind === 'choir' || ensembleType === 'coro' || ensembleType === 'choir') return 'Coro';
   if (kind === 'orchestra' || ensembleType === 'orchestra') return 'Orchestra';
   if (kind === 'singer' || role === 'singer' || role === 'cantante') return 'Cantante';
   if (userType === 'ensemble' && ensembleType) {
@@ -474,14 +488,15 @@ async function hydrateAuthor(post, avatarEl, profileLinks = []) {
 }
 
 function createPostAvatar(name, url) {
+  const safeUrl = normalizeAvatarUrl(url);
   const avatar = document.createElement('div');
   avatar.className = 'post-avatar';
   avatar.title = name || 'Profilo';
   const fallbackChar = ((name || 'M').trim()[0] || 'M').toUpperCase();
 
-  if (url) {
+  if (safeUrl) {
     const img = document.createElement('img');
-    img.src = url;
+    img.src = safeUrl;
     img.alt = name || 'Avatar';
     avatar.appendChild(img);
   } else {
@@ -495,7 +510,29 @@ function createPostAvatar(name, url) {
 
 function setInlineAvatarImage(linkEl, urls, name) {
   if (!linkEl) return;
-  const queue = Array.isArray(urls) ? urls.filter(Boolean) : [urls].filter(Boolean);
+  const seen = new Set();
+  const queue = [];
+  const pushVariant = (val) => {
+    if (!val || seen.has(val)) return;
+    seen.add(val);
+    queue.push(val);
+  };
+  const baseList = (Array.isArray(urls) ? urls : [urls])
+    .map((u) => normalizeAvatarUrl(u))
+    .filter(Boolean);
+  baseList.forEach((u) => {
+    pushVariant(u);
+    const clean = u.replace(/^\//, '');
+    pushVariant('/' + clean);
+    pushVariant(window.location.origin + '/' + clean);
+    const noQuery = u.split('?')[0];
+    if (noQuery && noQuery !== u) {
+      const cleanNoQuery = noQuery.replace(/^\//, '');
+      pushVariant(noQuery);
+      pushVariant('/' + cleanNoQuery);
+      pushVariant(window.location.origin + '/' + cleanNoQuery);
+    }
+  });
   if (queue.length === 0) return;
   const tryNext = () => {
     const nextUrl = queue.shift();
@@ -708,6 +745,7 @@ function buildAvatarPath({ folder = '', nameParts = [] }) {
 }
 
 function resolveAvatarUrls(data) {
+  if (!data) return [];
   const genderSlug = normalizeGenderSlug(data?.gender);
   const instrumentSlug =
     data?.mainInstrumentSlug ||
@@ -738,9 +776,12 @@ function resolveAvatarUrls(data) {
     }
   }
   const urls = [];
-  if (data?.photoUrl) urls.push(data.photoUrl);
-  if (data?.photoURL) urls.push(data.photoURL);
-  if (data?.avatarUrl) urls.push(data.avatarUrl);
+  const photoUrl = normalizeAvatarUrl(data?.photoUrl);
+  const photoURL = normalizeAvatarUrl(data?.photoURL);
+  const avatarUrl = normalizeAvatarUrl(data?.avatarUrl);
+  if (photoUrl) urls.push(photoUrl);
+  if (photoURL) urls.push(photoURL);
+  if (avatarUrl) urls.push(avatarUrl);
 
   if (data?.userType === 'ensemble') {
     const ensembleSlug = (data.ensembleType || '').toString().toLowerCase();
@@ -752,9 +793,10 @@ function resolveAvatarUrls(data) {
     });
   }
 
+  urls.push(buildAvatarPath({ nameParts: ['cantante', genderSlug] }));
   urls.push(buildAvatarPath({ folder: 'avatar-default', nameParts: ['default', genderSlug] }));
   urls.push(buildAvatarPath({ folder: 'avatar-default', nameParts: ['default'] }));
-  return urls.filter(Boolean);
+  return urls.map((u) => normalizeAvatarUrl(u)).filter(Boolean);
 }
 
 function pickPreferredAvatarUrl(data) {
@@ -768,9 +810,8 @@ function updatePageHeading(data, isOwnProfile) {
     pageTitleEl.textContent = 'Il tuo profilo';
     pageSubtitleEl.textContent = 'Visualizza il profilo come lo vedono gli altri musicisti.';
   } else {
-    const displayName = data?.displayName || 'Profilo musicista';
-    pageTitleEl.textContent = displayName;
-    pageSubtitleEl.textContent = 'Visualizzazione pubblica di questo profilo.';
+    pageTitleEl.textContent = 'Profilo pubblico';
+    pageSubtitleEl.textContent = 'Stai consultando la scheda di un altro utente.';
   }
 }
 
@@ -783,8 +824,8 @@ if (pageTitleEl && pageSubtitleEl) {
     } catch (e) {
       cachedName = '';
     }
-    pageTitleEl.textContent = cachedName || 'Profilo musicista';
-    pageSubtitleEl.textContent = 'Visualizzazione pubblica di questo profilo.';
+    pageTitleEl.textContent = 'Profilo pubblico';
+    pageSubtitleEl.textContent = 'Stai consultando la scheda di un altro utente.';
   } else {
     clearLastProfileName();
     pageTitleEl.textContent = 'Il tuo profilo';
@@ -1181,7 +1222,7 @@ function renderProfilePosts(posts, { reset = false } = {}) {
       tags.appendChild(badge);
       if (lookingFor.length) {
         const txt = document.createElement('span');
-        txt.textContent = ': ' + lookingFor.join(', ');
+        txt.textContent = ' ' + lookingFor.join(', ');
         tags.appendChild(txt);
       }
     }
@@ -1436,7 +1477,7 @@ function renderRates(rates, targetData = {}) {
   const hideRates = shouldHideRatesForViewer(targetData, rates);
   if (hideRates) {
     ratesTableBodyEl.innerHTML =
-      '<tr><td colspan="2" class="muted">Tariffe nascoste quando visualizzate da ensemble con compensi più alti.</td></tr>';
+      '<tr><td colspan="2" class="muted">Tariffe nascoste.</td></tr>';
     return;
   }
   const hasTrumpet = hasTrumpetSelected({
@@ -1689,6 +1730,7 @@ async function publishProfilePost() {
     authorProfileData: {
       userType: profileData.userType || 'musician',
       role: profileData.role || '',
+      activityLevel: profileData.activityLevel || '',
       gender: profileData.gender || '',
       mainInstrument: profileData.mainInstrument || '',
       mainInstrumentSlug: profileData.mainInstrumentSlug || '',
@@ -1819,13 +1861,10 @@ function guard(user) {
         }
       }
       if (titleEl) {
+        titleEl.style.display = '';
+        titleEl.textContent = targetDoc.data?.displayName || 'Profilo musicista';
         if (isOwnProfile) {
-          titleEl.style.display = '';
-          titleEl.textContent = targetDoc.data?.displayName || 'Profilo musicista';
           clearLastProfileName();
-        } else {
-          titleEl.style.display = 'none';
-          titleEl.textContent = '';
         }
       }
       populateForm(targetDoc.data);
