@@ -46,6 +46,22 @@ function getProfileTypeTag(data = {}) {
   return 'musician';
 }
 
+function mapLevel(level) {
+  const l = (level || '').toString().toLowerCase();
+  if (l.includes('pro')) return 'Professionista';
+  if (l.includes('amat')) return 'Amatore';
+  if (l.includes('stud')) return 'Studente';
+  return level || '';
+}
+
+function mapEnsembleType(role = '') {
+  const r = role.toString().toLowerCase();
+  if (r.includes('band')) return 'Banda';
+  if (r.includes('choir') || r.includes('coro')) return 'Coro';
+  if (r.includes('orchestra')) return 'Orchestra';
+  return role;
+}
+
 function normalizeAvatarUrl(raw) {
   if (!raw) return null;
   const url = raw.trim();
@@ -172,13 +188,18 @@ function buildRow(profile, fav) {
 
   const left = document.createElement('div');
   left.className = 'favorite-left';
+  const avatarLink = document.createElement('a');
+  avatarLink.href = `profile.html?id=${fav.targetId}`;
+  avatarLink.className = 'favorite-avatar-link';
+  avatarLink.title = 'Visita profilo';
   const avatar = document.createElement('div');
   avatar.className = 'favorite-avatar';
   const img = document.createElement('img');
   img.alt = 'Avatar';
   img.src = getAvatarUrl(profile);
   avatar.appendChild(img);
-  left.appendChild(avatar);
+  avatarLink.appendChild(avatar);
+  left.appendChild(avatarLink);
 
   const info = document.createElement('div');
   info.className = 'favorite-info';
@@ -193,8 +214,10 @@ function buildRow(profile, fav) {
   const city = profile.city || profile.location?.city || '';
   const mainInstrument = profile.mainInstrument || profile.mainInstrumentSlug || '';
   const voice = profile.voiceType || '';
-  const role = profile.ensembleType || profile.role || '';
-  const details = [city, voice || mainInstrument || role].filter(Boolean).join(' · ');
+  const role = mapEnsembleType(profile.ensembleType || profile.role || '');
+  const level = profile.activityLevel || profile.level || '';
+  const levelLabel = mapLevel(level);
+  const details = [city, voice || mainInstrument || role, levelLabel].filter(Boolean).join(' · ');
   cityEl.textContent = details || city;
   info.appendChild(nameEl);
   info.appendChild(cityEl);

@@ -23,6 +23,7 @@ import {
   geocodeCityName
 } from './search.js';
 
+const NAV_STATE_KEY = 'musimatch-nav-state';
 const guestBlock = document.getElementById('home-guest');
 const userBlock = document.getElementById('home-user');
 const usernameEls = Array.from(document.querySelectorAll('[data-home-username]'));
@@ -373,6 +374,11 @@ function cleanDisplayName(raw) {
 }
 
 function showGuest() {
+  try {
+    sessionStorage.setItem(NAV_STATE_KEY, 'logged-out');
+    localStorage.setItem(NAV_STATE_KEY, 'logged-out');
+  } catch (err) {}
+  document.documentElement.setAttribute('data-nav-state', 'logged-out');
   if (guestBlock) guestBlock.style.display = '';
   if (userBlock) userBlock.style.display = 'none';
   if (headerAuthActions) headerAuthActions.style.display = '';
@@ -383,6 +389,11 @@ function showGuest() {
 }
 
 function showUser(name) {
+  try {
+    sessionStorage.setItem(NAV_STATE_KEY, 'logged-in');
+    localStorage.setItem(NAV_STATE_KEY, 'logged-in');
+  } catch (err) {}
+  document.documentElement.setAttribute('data-nav-state', 'logged-in');
   const safeName = cleanDisplayName(name) || 'musicista';
   setUsername(safeName);
   if (guestBlock) guestBlock.style.display = 'none';
