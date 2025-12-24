@@ -34,6 +34,8 @@ const LAST_PROFILE_NAME_KEY = 'musimatch-last-profile-name';
 
 const titleEl = document.getElementById('profile-title');
 const profileSettingsLink = document.getElementById('profile-settings-link');
+const profileFavToggle = document.getElementById('profile-fav-toggle');
+const profileFavOpen = document.getElementById('profile-fav-open');
 const messageOpenModalBtn = document.getElementById('message-open-modal');
 const messageModal = document.getElementById('message-modal');
 const messageCloseModalBtn = document.getElementById('message-close-modal');
@@ -122,9 +124,11 @@ const postOfferSetupEl = document.getElementById('post-offer-setup');
 const postRadiusRangeEl = document.getElementById('post-radius-range');
 const postRadiusEl = document.getElementById('post-radius');
 const urlUserId = new URLSearchParams(window.location.search).get('id');
+const openMessageParam = new URLSearchParams(window.location.search).get('openMessage');
 let dataCache = {};
 let viewingOwnProfile = false;
 let targetProfileId = null;
+let viewerProfileId = null;
 let selectedInstruments = [];
 let selectedVoices = [];
 let postMode = 'seeking';
@@ -233,6 +237,8 @@ if (titleEl) {
 if (profileSettingsLink) {
   profileSettingsLink.style.display = 'none';
 }
+if (profileFavOpen) profileFavOpen.style.display = 'none';
+if (profileFavToggle) profileFavToggle.style.display = 'none';
 if (messageOpenModalBtn) {
   messageOpenModalBtn.style.display = 'none';
 }
@@ -258,6 +264,17 @@ function setMessageSend(text, isError = false) {
   if (!messageSendMsgEl) return;
   messageSendMsgEl.textContent = text || '';
   messageSendMsgEl.style.color = isError ? '#f87171' : 'var(--muted)';
+}
+
+function setFavButtonState(isFav) {
+  if (!profileFavToggle) return;
+  const icon = profileFavToggle.querySelector('img');
+  if (icon) {
+    icon.src = isFav ? 'assets/icons/favorite.svg' : 'assets/icons/favorite_add.svg';
+    icon.alt = isFav ? 'Preferito' : 'Aggiungi ai preferiti';
+  }
+  profileFavToggle.classList.toggle('is-active', !!isFav);
+  profileFavToggle.setAttribute('aria-pressed', isFav ? 'true' : 'false');
 }
 
 function setPostMessage(text, isError = false) {
@@ -457,6 +474,20 @@ function refreshMetaSeparators(container) {
   items.forEach((item, idx) => {
     item.classList.toggle('with-sep', idx > 0);
   });
+}
+
+function getProfileTypeTag(data = {}) {
+  const userType = (data.userType || '').toLowerCase();
+  const ensembleType = (data.ensembleType || data.role || '').toLowerCase();
+  const voiceType = (data.voiceType || '').trim();
+  if (userType === 'ensemble') {
+    if (ensembleType.includes('banda')) return 'band';
+    if (ensembleType.includes('coro') || ensembleType.includes('choir')) return 'choir';
+    if (ensembleType.includes('orchestra')) return 'orchestra';
+    return 'ensemble';
+  }
+  if (voiceType) return 'singer';
+  return 'musician';
 }
 
 function slugifyInstrument(raw) {
@@ -1744,6 +1775,47 @@ function closeMessageModal() {
   }
 }
 
+async function refreshFavoriteToggle() {
+  if (!profileFavToggle) return;
+  profileFavToggle.style.display = 'none';
+  if (!auth.currentUser || viewingOwnProfile || !targetProfileId || !viewerProfileId) return;
+  try {
+    const favRef = doc(db, 'users', viewerProfileId, 'favorites', targetProfileId);
+    const snap = await getDoc(favRef);
+    const isFav = snap.exists();
+    setFavButtonState(isFav);
+    profileFavToggle.style.display = '';
+  } catch (err) {
+    console.error('[MusiMatch] Errore lettura preferito:', err);
+  }
+}
+
+async function toggleFavorite() {
+  if (!auth.currentUser || viewingOwnProfile || !profileFavToggle || !targetProfileId || !viewerProfileId) return;
+  try {
+    profileFavToggle.disabled = true;
+    const favRef = doc(db, 'users', viewerProfileId, 'favorites', targetProfileId);
+    const currentSnap = await getDoc(favRef);
+    if (currentSnap.exists()) {
+      await deleteDoc(favRef);
+      setFavButtonState(false);
+    } else {
+      const favType = getProfileTypeTag(dataCache);
+      await setDoc(favRef, {
+        targetId: targetProfileId,
+        targetType: favType,
+        targetName: dataCache?.displayName || '',
+        createdAt: serverTimestamp()
+      });
+      setFavButtonState(true);
+    }
+  } catch (err) {
+    console.error('[MusiMatch] Errore toggle preferito:', err);
+  } finally {
+    profileFavToggle.disabled = false;
+  }
+}
+
 async function publishProfilePost() {
   setPostMessage('');
   if (!canPublishFromProfile()) {
@@ -2054,21 +2126,25 @@ function guard(user) {
       const isOwnProfile = !!(targetDoc.data?.authUid && targetDoc.data.authUid === user?.uid) || !urlUserId;
       viewingOwnProfile = isOwnProfile;
       targetProfileId = targetDoc.id;
+      viewerProfileId = null;
       cacheProfileDoc(targetDoc);
       syncCreatePostButton();
       updatePageHeading(targetDoc.data, isOwnProfile);
       if (user) {
         if (isOwnProfile) {
           viewerProfile = targetDoc.data;
+          viewerProfileId = targetDoc.id;
         } else {
           const viewerDoc = await loadUserDoc(user.uid);
           viewerProfile = viewerDoc?.data || null;
+          viewerProfileId = viewerDoc?.id || null;
         }
       }
       if (titleEl) {
         titleEl.style.display = '';
         titleEl.textContent = targetDoc.data?.displayName || 'Profilo musicista';
         if (profileSettingsLink) profileSettingsLink.style.display = viewingOwnProfile ? '' : 'none';
+        if (profileFavOpen) profileFavOpen.style.display = viewingOwnProfile ? '' : 'none';
         if (messageOpenModalBtn) messageOpenModalBtn.style.display = viewingOwnProfile ? 'none' : '';
         if (isOwnProfile) {
           clearLastProfileName();
@@ -2078,6 +2154,10 @@ function guard(user) {
       const avatarUrls = resolveAvatarUrls(targetDoc.data);
       setProfileAvatarImage(avatarUrls);
       loadProfilePosts(targetDoc.id);
+      refreshFavoriteToggle();
+      if (!isOwnProfile && openMessageParam === '1') {
+        openMessageModal();
+      }
     } catch (err) {
       console.error('[MusiMatch] Errore caricamento profilo:', err);
       if (isFirestoreOfflineError(err)) {
@@ -2252,6 +2332,9 @@ if (messageCloseModalBtn) {
 }
 if (messageSendBtn) {
   messageSendBtn.addEventListener('click', () => sendMessageToProfile(messageTextEl?.value || ''));
+}
+if (profileFavToggle) {
+  profileFavToggle.addEventListener('click', toggleFavorite);
 }
 setupModalSafeClose(messageModal, closeMessageModal);
 

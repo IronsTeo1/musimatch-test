@@ -5,12 +5,15 @@ import {
   collection,
   deleteDoc,
   doc,
+  getDocs,
   onSnapshot,
   orderBy,
   query,
   serverTimestamp,
   setDoc,
+  startAfter,
   updateDoc,
+  limit,
   where
 } from 'https://www.gstatic.com/firebasejs/12.6.0/firebase-firestore.js';
 import { onAuthStateChanged } from 'https://www.gstatic.com/firebasejs/12.6.0/firebase-auth.js';
@@ -23,6 +26,8 @@ const chatHistoryEl = document.getElementById('chat-history');
 const chatEmptyEl = document.getElementById('chat-empty');
 const chatInputEl = document.getElementById('chat-input-text');
 const chatSendBtn = document.getElementById('chat-send-btn');
+const chatBackBtn = document.getElementById('chat-back-btn');
+const messagesLayoutEl = document.querySelector('.messages-layout');
 
 let activeThreadId = null;
 let activeThreadData = null;
@@ -33,6 +38,13 @@ let currentUserId = null;
 let currentUserName = '';
 let unsubThreads = null;
 let unsubMessages = null;
+let isMobile = window.matchMedia('(max-width: 900px)').matches;
+let mobileView = 'list';
+let oldestMsgDoc = null;
+let messagesDone = false;
+let loadingOlder = false;
+const MSG_PAGE_SIZE = 30;
+const profileIdCache = new Map();
 
 function buildThreadId(uidA, uidB) {
   return [uidA, uidB].sort().join('__');
@@ -42,6 +54,25 @@ function formatDateTime(ts) {
   if (!ts) return '';
   const d = ts?.toDate ? ts.toDate() : new Date(ts);
   return d.toLocaleString('it-IT', { day: '2-digit', month: '2-digit', year: 'numeric', hour: '2-digit', minute: '2-digit' });
+}
+
+async function resolveProfileId(authUid) {
+  if (!authUid) return null;
+  if (profileIdCache.has(authUid)) return profileIdCache.get(authUid);
+  try {
+    const snap = await getDocs(query(collection(db, 'users'), where('authUid', '==', authUid), limit(1)));
+    if (snap.empty) {
+      profileIdCache.set(authUid, null);
+      return null;
+    }
+    const docSnap = snap.docs[0];
+    profileIdCache.set(authUid, docSnap.id);
+    return docSnap.id;
+  } catch (err) {
+    console.error('[MusiMatch] Errore lettura profilo per authUid:', err);
+    profileIdCache.set(authUid, null);
+    return null;
+  }
 }
 
 function renderThreads(list) {
@@ -65,6 +96,7 @@ function renderThreads(list) {
       activeThreadData = thread;
       renderThreads(threads);
       subscribeMessages(thread.id, thread);
+      if (isMobile) setMobileView('chat');
     });
 
     const header = document.createElement('div');
@@ -93,6 +125,14 @@ function renderThreads(list) {
     if (openThreadMenuId === thread.id) {
       menu.classList.add('open');
     }
+    const visitBtn = document.createElement('button');
+    visitBtn.type = 'button';
+    visitBtn.textContent = 'Visita profilo';
+    visitBtn.addEventListener('click', async (e) => {
+      e.stopPropagation();
+      const pid = await resolveProfileId(otherId);
+      if (pid) window.location.href = `profile.html?id=${pid}`;
+    });
     const deleteBtn = document.createElement('button');
     deleteBtn.type = 'button';
     deleteBtn.textContent = 'Cancella chat';
@@ -104,6 +144,7 @@ function renderThreads(list) {
       await deleteDoc(doc(db, 'threads', thread.id));
       renderThreads(threads);
     });
+    menu.appendChild(visitBtn);
     menu.appendChild(deleteBtn);
     menuWrapper.appendChild(menuBtn);
     menuWrapper.appendChild(menu);
@@ -130,6 +171,9 @@ function renderChat(thread) {
   if (!chatHistoryEl || !chatNameEl) return;
   if (!thread) {
     chatNameEl.textContent = 'Chat';
+    chatNameEl.removeAttribute('data-auth-id');
+    chatNameEl.classList.remove('chat-name-link');
+    chatNameEl.onclick = null;
     if (chatInfoEl) chatInfoEl.textContent = '';
     chatHistoryEl.innerHTML = '';
     const p = document.createElement('p');
@@ -145,6 +189,14 @@ function renderChat(thread) {
     otherId ||
     'Chat';
   chatNameEl.textContent = otherName;
+  chatNameEl.dataset.authId = otherId || '';
+  chatNameEl.classList.add('chat-name-link');
+  chatNameEl.title = 'Visita profilo';
+  chatNameEl.onclick = async () => {
+    if (!chatNameEl.dataset.authId) return;
+    const pid = await resolveProfileId(chatNameEl.dataset.authId);
+    if (pid) window.location.href = `profile.html?id=${pid}`;
+  };
   if (chatInfoEl) chatInfoEl.textContent = thread.updatedAt ? `Ultimo messaggio: ${formatDateTime(thread.updatedAt)}` : '';
   chatHistoryEl.innerHTML = '';
   if (!messages.length) {
@@ -173,20 +225,40 @@ function renderChat(thread) {
   chatHistoryEl.scrollTop = chatHistoryEl.scrollHeight;
 }
 
+function setMobileView(view = 'list') {
+  mobileView = view;
+  if (!messagesLayoutEl) return;
+  const listMode = isMobile && view === 'list';
+  const chatMode = isMobile && view === 'chat';
+  messagesLayoutEl.classList.toggle('mobile-list', listMode);
+  messagesLayoutEl.classList.toggle('mobile-chat', chatMode);
+  if (chatBackBtn) {
+    chatBackBtn.style.display = chatMode ? 'inline-flex' : 'none';
+  }
+}
+
 function subscribeMessages(threadId, threadData) {
   if (unsubMessages) {
     unsubMessages();
     unsubMessages = null;
   }
+  oldestMsgDoc = null;
+  messagesDone = false;
+  loadingOlder = false;
   if (!threadId) {
     messages = [];
     renderChat(null);
     return;
   }
   const msgsCol = collection(db, 'threads', threadId, 'messages');
-  const qMsgs = query(msgsCol, orderBy('createdAt', 'asc'));
+  const qMsgs = query(msgsCol, orderBy('createdAt', 'desc'), limit(MSG_PAGE_SIZE));
   unsubMessages = onSnapshot(qMsgs, (snap) => {
-    messages = snap.docs.map((d) => ({ id: d.id, ...d.data() }));
+    const batch = snap.docs.map((d) => ({ id: d.id, ...d.data() }));
+    if (snap.docs.length) {
+      oldestMsgDoc = snap.docs[snap.docs.length - 1];
+    }
+    if (snap.docs.length < MSG_PAGE_SIZE) messagesDone = true;
+    messages = mergeMessages(messages, batch);
     activeThreadData = threadData;
     renderChat(threadData);
   });
@@ -209,6 +281,45 @@ async function sendMessage(text) {
     updatedAt: serverTimestamp(),
     lastSenderUid: currentUserId
   });
+}
+
+function mergeMessages(existing = [], incoming = []) {
+  const map = new Map();
+  existing.forEach((m) => {
+    if (m?.id) map.set(m.id, m);
+  });
+  incoming.forEach((m) => {
+    if (m?.id) map.set(m.id, m);
+  });
+  const result = Array.from(map.values());
+  result.sort((a, b) => {
+    const ta = a.createdAt?.toMillis ? a.createdAt.toMillis() : new Date(a.createdAt || 0).getTime();
+    const tb = b.createdAt?.toMillis ? b.createdAt.toMillis() : new Date(b.createdAt || 0).getTime();
+    return ta - tb;
+  });
+  return result;
+}
+
+async function loadOlderMessages() {
+  if (!activeThreadId || messagesDone || loadingOlder || !oldestMsgDoc) return;
+  loadingOlder = true;
+  try {
+    const msgsCol = collection(db, 'threads', activeThreadId, 'messages');
+    const snap = await getDocs(query(msgsCol, orderBy('createdAt', 'desc'), startAfter(oldestMsgDoc), limit(MSG_PAGE_SIZE)));
+    if (snap.empty) {
+      messagesDone = true;
+      return;
+    }
+    const older = snap.docs.map((d) => ({ id: d.id, ...d.data() }));
+    oldestMsgDoc = snap.docs[snap.docs.length - 1];
+    if (snap.docs.length < MSG_PAGE_SIZE) messagesDone = true;
+    messages = mergeMessages(messages, older);
+    renderChat(activeThreadData);
+  } catch (err) {
+    console.error('[MusiMatch] Errore caricamento messaggi precedenti:', err);
+  } finally {
+    loadingOlder = false;
+  }
 }
 
 function subscribeThreads(userId) {
@@ -234,6 +345,12 @@ function subscribeThreads(userId) {
     } else {
       renderChat(null);
     }
+    // Prefetch profile ids per partecipante remoto per evitare attese al click
+    threads.forEach((t) => {
+      const otherId = t.participants.find((p) => p !== currentUserId);
+      if (otherId) resolveProfileId(otherId);
+    });
+    if (isMobile && mobileView === 'list') setMobileView('list');
   });
 }
 
@@ -267,7 +384,36 @@ function initMessages() {
         handlerSend();
       }
     });
+    chatInputEl.addEventListener('input', () => {
+      chatInputEl.style.height = 'auto';
+      chatInputEl.style.height = `${Math.min(chatInputEl.scrollHeight, 180)}px`;
+    });
   }
+  if (chatHistoryEl) {
+    chatHistoryEl.addEventListener('scroll', () => {
+      if (chatHistoryEl.scrollTop <= 20) {
+        loadOlderMessages();
+      }
+    });
+  }
+
+  if (chatBackBtn) {
+    chatBackBtn.addEventListener('click', () => {
+      setMobileView('list');
+    });
+  }
+
+  const handleResize = () => {
+    isMobile = window.matchMedia('(max-width: 900px)').matches;
+    if (!isMobile) {
+      if (messagesLayoutEl) messagesLayoutEl.classList.remove('mobile-list', 'mobile-chat');
+      if (chatBackBtn) chatBackBtn.style.display = 'none';
+    } else {
+      setMobileView(mobileView || 'list');
+    }
+  };
+  window.addEventListener('resize', handleResize);
+  handleResize();
 
   document.addEventListener('click', () => {
     if (openThreadMenuId) {

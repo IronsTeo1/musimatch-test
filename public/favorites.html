@@ -1,8 +1,8 @@
 <!doctype html>
-<html lang="it" data-theme="light">
+<html lang="it">
 <head>
   <meta charset="utf-8">
-  <title>MusiMatch – Messaggi</title>
+  <title>MusiMatch – Preferiti</title>
   <meta name="viewport" content="width=device-width, initial-scale=1">
   <script>
     (function() {
@@ -20,11 +20,7 @@
       const KEY = 'musimatch-nav-state';
       try {
         const state = sessionStorage.getItem(KEY) || localStorage.getItem(KEY);
-        if (state === 'logged-in' || state === 'logged-out') {
-          document.documentElement.setAttribute('data-nav-state', state);
-        } else {
-          document.documentElement.setAttribute('data-nav-state', 'pending');
-        }
+        document.documentElement.setAttribute('data-nav-state', state || 'pending');
       } catch (e) {
         document.documentElement.setAttribute('data-nav-state', 'pending');
       }
@@ -44,46 +40,40 @@
       </a>
       <div>
         <p class="eyebrow" style="margin: 0;">MusiMatch</p>
-        <h1 style="margin: 0;" id="messages-title">Messaggi</h1>
-        <p style="margin: 0;" class="muted">Conversazioni in corso.</p>
+        <h1 style="margin: 0;">Preferiti</h1>
+        <p style="margin: 0;" class="muted">I profili che hai salvato.</p>
       </div>
     </div>
   </header>
 
   <main class="page-content">
-    <section class="messages-layout">
-      <aside class="card threads-panel">
-        <div class="inline-header" style="align-items: center; gap: 0.5rem;">
-          <h3 style="margin: 0;">Chat</h3>
-          <span class="muted small" id="threads-count"></span>
-        </div>
-        <div class="threads-list" id="threads-list"></div>
-      </aside>
-      <section class="card chat-panel">
-        <div class="chat-header">
-          <div class="chat-header-left">
-            <button type="button" id="chat-back-btn" class="chat-back-btn" aria-label="Torna alle chat">← Chat</button>
-            <div>
-              <p class="eyebrow" style="margin: 0;">Conversazione</p>
-              <h3 style="margin: 0;" id="chat-name">Seleziona una chat</h3>
-            </div>
-          </div>
-          <p class="muted small" id="chat-info" style="margin: 0;"></p>
-        </div>
-        <div class="chat-history" id="chat-history">
-          <p class="muted" id="chat-empty">Nessun messaggio. Seleziona una chat per iniziare.</p>
-        </div>
-        <div class="chat-input">
-          <textarea id="chat-input-text" placeholder="Scrivi un messaggio..." rows="3"></textarea>
-          <button type="button" id="chat-send-btn">Invia</button>
-        </div>
-      </section>
+    <section class="card" id="favorites-card">
+      <div class="inline-header" style="align-items:center;gap:0.5rem;">
+        <h3 style="margin:0;">I tuoi preferiti</h3>
+        <p class="muted small" id="favorites-count" style="margin:0;"></p>
+      </div>
+      <div id="favorites-empty" class="muted" style="display:none;">Non hai ancora salvato profili nei preferiti.</div>
+      <div id="favorites-list" class="favorites-list"></div>
     </section>
   </main>
 
+  <div class="modal-backdrop" id="fav-message-modal" aria-hidden="true" style="display:none;">
+    <div class="modal-content">
+      <button class="modal-close" id="fav-message-close">✕</button>
+      <h3 style="margin-top:0;" id="fav-message-title">Invia un messaggio</h3>
+      <p class="muted" id="fav-message-sub" style="margin-top:-4px;">Scrivi al profilo selezionato.</p>
+      <label class="field-label" for="fav-message-text">Testo</label>
+      <textarea id="fav-message-text" rows="4" placeholder="Scrivi il testo del messaggio" style="width:100%;"></textarea>
+      <p id="fav-message-feedback" class="muted small"></p>
+      <div style="display:flex;gap:0.6rem;justify-content:flex-end;margin-top:0.5rem;">
+        <button type="button" class="primary" id="fav-message-send">Invia</button>
+      </div>
+    </div>
+  </div>
+
   <script type="module" src="js/theme.js"></script>
   <script type="module" src="js/nav.js"></script>
-  <script type="module" src="js/messages.js"></script>
+  <script type="module" src="js/favorites.js"></script>
   <nav class="floating-nav">
     <a href="home.html">
       <span class="nav-icon" aria-hidden="true"><img src="assets/icons/home.svg" alt=""></span>
@@ -93,11 +83,11 @@
       <span class="nav-icon" aria-hidden="true"><img src="assets/icons/search.svg" alt=""></span>
       <span class="nav-label">Ricerca</span>
     </a>
-    <a href="messages.html" id="nav-messages" class="active">
+    <a href="messages.html" id="nav-messages">
       <span class="nav-icon" aria-hidden="true"><img src="assets/icons/messages.svg" alt=""></span>
       <span class="nav-label">Messaggi</span>
     </a>
-    <a href="profile.html" id="nav-profile">
+    <a href="profile.html" id="nav-profile" class="active">
       <span class="nav-icon" aria-hidden="true"><img src="assets/icons/profile.svg" alt=""></span>
       <span class="nav-label">Profilo</span>
     </a>
