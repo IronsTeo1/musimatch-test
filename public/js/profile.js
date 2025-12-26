@@ -78,6 +78,14 @@ const ratesCloseModalBtn = document.getElementById('rates-close-modal');
 const ratesModal = document.getElementById('rates-modal');
 const profilePostsListEl = document.getElementById('profile-posts-list');
 const profilePostsEmptyEl = document.getElementById('profile-posts-empty');
+const videoOpenModalBtn = document.getElementById('video-open-modal');
+const videoModal = document.getElementById('video-modal');
+const videoCloseModalBtn = document.getElementById('video-close-modal');
+const videoListEl = document.getElementById('video-list');
+const videoAddBtn = document.getElementById('video-add-btn');
+const videoFileInput = document.getElementById('video-file-input');
+const videoErrorEl = document.getElementById('video-error');
+const videoOwnerActions = document.getElementById('video-owner-actions');
 const profilePostsEmptyDefaultText = (profilePostsEmptyEl?.textContent || '').trim() || 'Pubblica un annuncio per vederlo in questa sezione';
 const PAGE_SIZE_PROFILE = 10;
 const profilePagination = {
@@ -286,6 +294,7 @@ function setMessageSend(text, isError = false) {
 
 let favToastEl = null;
 let favToastTimer = null;
+const videoStorageKey = (id) => `musimatch-videos-${id || 'anon'}`;
 function getFavToastEl() {
   if (favToastEl) return favToastEl;
   favToastEl = document.createElement('div');
@@ -311,6 +320,125 @@ function showFavToast(text) {
   }, 1500);
 }
 
+function setVideoError(text) {
+  if (!videoErrorEl) return;
+  videoErrorEl.textContent = text || '';
+  videoErrorEl.style.color = text ? '#f87171' : 'var(--muted)';
+}
+
+function normalizeVideoList(raw) {
+  if (!raw) return [];
+  if (Array.isArray(raw)) return raw.filter(Boolean).slice(0, MAX_VIDEO_ITEMS);
+  return [];
+}
+
+function loadPersistedVideos(profileId) {
+  try {
+    const raw = sessionStorage.getItem(videoStorageKey(profileId));
+    if (!raw) return [];
+    const parsed = JSON.parse(raw);
+    return normalizeVideoList(parsed);
+  } catch (e) {
+    return [];
+  }
+}
+
+function persistVideos(profileId) {
+  try {
+    sessionStorage.setItem(videoStorageKey(profileId), JSON.stringify(profileVideos));
+  } catch (e) {
+    // ignore
+  }
+}
+
+function renderVideoList() {
+  if (!videoListEl) return;
+  videoListEl.innerHTML = '';
+  if (!profileVideos.length) {
+    const empty = document.createElement('p');
+    empty.className = 'muted video-empty';
+    empty.textContent = 'Nessun video caricato.';
+    videoListEl.appendChild(empty);
+    return;
+  }
+  profileVideos.forEach((src, idx) => {
+    const card = document.createElement('div');
+    card.className = 'video-card';
+    const header = document.createElement('header');
+    header.textContent = `Video ${idx + 1}`;
+    const video = document.createElement('video');
+    video.controls = true;
+    video.src = src;
+    card.appendChild(header);
+    card.appendChild(video);
+    videoListEl.appendChild(card);
+  });
+}
+
+function syncVideoButtonVisibility(isOwner) {
+  if (videoOpenModalBtn) {
+    // Mostra il bottone Video sia sul proprio profilo sia sui profili altrui,
+    // anche se non ci sono ancora clip (verrà mostrato l'empty state).
+    videoOpenModalBtn.style.display = targetProfileId ? '' : 'none';
+  }
+  if (videoOwnerActions) {
+    videoOwnerActions.style.display = isOwner ? '' : 'none';
+  }
+}
+
+function openVideoModal() {
+  if (!videoModal) return;
+  videoModal.style.display = 'grid';
+  videoModal.style.visibility = 'visible';
+  videoModal.style.pointerEvents = 'auto';
+  videoModal.setAttribute('aria-hidden', 'true');
+  requestAnimationFrame(() => {
+    videoModal.setAttribute('aria-hidden', 'false');
+    videoModal.classList.add('open');
+  });
+}
+
+function closeVideoModal() {
+  if (!videoModal) return;
+  videoModal.setAttribute('aria-hidden', 'true');
+  videoModal.classList.remove('open');
+  videoModal.style.visibility = 'hidden';
+  videoModal.style.pointerEvents = 'none';
+  setTimeout(() => {
+    if (videoModal.getAttribute('aria-hidden') === 'true') {
+      videoModal.style.display = 'none';
+    }
+  }, 260);
+}
+
+function validateAndAddVideo(file) {
+  if (!file) return;
+  if (profileVideos.length >= MAX_VIDEO_ITEMS) {
+    setVideoError(`Puoi caricare al massimo ${MAX_VIDEO_ITEMS} video.`);
+    return;
+  }
+  setVideoError('');
+  const tempUrl = URL.createObjectURL(file);
+  const probe = document.createElement('video');
+  probe.preload = 'metadata';
+  probe.onloadedmetadata = () => {
+    const duration = probe.duration;
+    if (duration && duration > MAX_VIDEO_SECONDS + 0.25) {
+      setVideoError('Il video supera i 45 secondi: accorcialo e riprova.');
+      URL.revokeObjectURL(tempUrl);
+      return;
+    }
+    profileVideos = [...profileVideos, tempUrl].slice(0, MAX_VIDEO_ITEMS);
+    renderVideoList();
+    setVideoError('');
+    if (targetProfileId) persistVideos(targetProfileId);
+  };
+  probe.onerror = () => {
+    setVideoError('Formato video non valido.');
+    URL.revokeObjectURL(tempUrl);
+  };
+  probe.src = tempUrl;
+}
 function setFavButtonState(isFav) {
   if (!profileFavToggle) return;
   const icon = profileFavToggle.querySelector('img');
@@ -627,6 +755,9 @@ function buildPostProfileUrl(post) {
 const authorPhotoCache = new Map();
 const authorProfileCache = new Map();
 const authUidToUserId = new Map();
+let profileVideos = [];
+const MAX_VIDEO_SECONDS = 45;
+const MAX_VIDEO_ITEMS = 3;
 
 async function fetchUserDocByAuthUid(authUid) {
   const usersCol = collection(db, 'users');
@@ -2234,6 +2365,7 @@ function guard(user) {
   targetProfileId = null;
   dataCache = {};
   viewerProfile = null;
+  profileVideos = [];
   syncCreatePostButton();
   const renderTargetProfile = async () => {
     try {
@@ -2252,6 +2384,13 @@ function guard(user) {
           populateForm(cached.data);
           const avatarUrlsCached = resolveAvatarUrls(cached.data);
           setProfileAvatarImage(avatarUrlsCached);
+          profileVideos = normalizeVideoList(cached.data?.videos) || [];
+          if (viewingOwnProfile) {
+            const persisted = loadPersistedVideos(cached.id);
+            if (persisted.length) profileVideos = persisted;
+          }
+          renderVideoList();
+          syncVideoButtonVisibility(viewingOwnProfile);
           setMessage('Profilo caricato dalla cache (connessione Firestore non disponibile).', true);
           loadProfilePosts(cached.id);
           return;
@@ -2289,6 +2428,13 @@ function guard(user) {
       populateForm(targetDoc.data);
       const avatarUrls = resolveAvatarUrls(targetDoc.data);
       setProfileAvatarImage(avatarUrls);
+      profileVideos = normalizeVideoList(targetDoc.data?.videos) || [];
+      if (isOwnProfile) {
+        const persisted = loadPersistedVideos(targetDoc.id);
+        if (persisted.length) profileVideos = persisted;
+      }
+      renderVideoList();
+      syncVideoButtonVisibility(isOwnProfile);
       loadProfilePosts(targetDoc.id);
       refreshFavoriteToggle();
       refreshLikeToggle();
@@ -2313,6 +2459,13 @@ function guard(user) {
           populateForm(cached.data);
           const avatarUrlsCached = resolveAvatarUrls(cached.data);
           setProfileAvatarImage(avatarUrlsCached);
+          profileVideos = normalizeVideoList(cached.data?.videos) || [];
+          if (viewingOwnProfile) {
+            const persisted = loadPersistedVideos(cached.id);
+            if (persisted.length) profileVideos = persisted;
+          }
+          renderVideoList();
+          syncVideoButtonVisibility(viewingOwnProfile);
           setMessage('Offline/Emulatore non raggiungibile: profilo caricato dalla cache.', true);
           loadProfilePosts(cached.id);
         } else {
@@ -2491,7 +2644,39 @@ if (profileFavToggle) {
     profileFavToggle.classList.add('fav-bounce');
   });
 }
+if (profileFavOpen) {
+  profileFavOpen.addEventListener('click', () => {
+    profileFavOpen.classList.remove('fav-bounce');
+    void profileFavOpen.offsetWidth;
+    profileFavOpen.classList.add('fav-bounce');
+  });
+}
+if (profileSettingsLink) {
+  profileSettingsLink.addEventListener('click', () => {
+    profileSettingsLink.classList.remove('fav-bounce');
+    void profileSettingsLink.offsetWidth;
+    profileSettingsLink.classList.add('fav-bounce');
+  });
+}
 setupModalSafeClose(messageModal, closeMessageModal);
+
+if (videoOpenModalBtn) {
+  videoOpenModalBtn.addEventListener('click', openVideoModal);
+}
+if (videoCloseModalBtn) {
+  videoCloseModalBtn.addEventListener('click', closeVideoModal);
+}
+setupModalSafeClose(videoModal, closeVideoModal);
+if (videoAddBtn) {
+  videoAddBtn.addEventListener('click', () => videoFileInput?.click());
+}
+if (videoFileInput) {
+  videoFileInput.addEventListener('change', (e) => {
+    const file = e.target?.files?.[0];
+    validateAndAddVideo(file);
+    if (videoFileInput) videoFileInput.value = '';
+  });
+}
 
 document.addEventListener('keydown', (e) => {
   if (e.key === 'Escape') {
