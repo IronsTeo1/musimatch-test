@@ -1873,8 +1873,13 @@ function filterAndRenderPosts(posts, { append = false } = {}) {
     const offerFormat = normalizeSearchToken(post.offerDetails?.format || '');
     const offerNotes = normalizeSearchToken(post.offerDetails?.genreNotes || post.offerDetails?.setupNotes || '');
     const bodyNormalized = normalizeSearchToken(post.body || '');
-    const authorName = normalizeSearchToken(post.authorName || '');
     const authorProfile = post.authorProfileData || {};
+    const authorName = normalizeSearchToken(post.authorName || '');
+    const authorDisplayName = normalizeSearchToken(authorProfile.displayName || authorProfile.name || authorName || '');
+    const ensembleProfileName =
+      (authorProfile.userType || '').toLowerCase() === 'ensemble'
+        ? authorDisplayName || authorName
+        : normalizeSearchToken(authorProfile.ensembleName || '');
     const locationStrings = [
       post.location?.city,
       post.location?.province,
@@ -1908,6 +1913,8 @@ function filterAndRenderPosts(posts, { append = false } = {}) {
         offerFormat,
         offerNotes,
         authorName,
+        authorDisplayName,
+        ensembleProfileName,
         normalizeSearchToken(post.ensembleWanted || ''),
         normalizeSearchToken(post.postType || '')
       ]

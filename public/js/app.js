@@ -70,6 +70,9 @@ function buildAvatarCandidates(data, searchTarget) {
   const base = 'assets/img/avatars';
   const gender = normalizeGenderSlug(data?.gender);
   const candidates = [];
+  const instrumentSlug = data?.mainInstrumentSlug || slugifyInstrument(data?.mainInstrument || '');
+  const voiceAliases = new Set(['soprano', 'contralto', 'mezzosoprano', 'tenore', 'baritono', 'basso', 'voce', 'vocalist', 'cantante']);
+  const isSingerProfile = data?.role === 'singer' || voiceAliases.has(instrumentSlug);
 
   const normalizedPhoto = data?.photoUrl ? normalizeAvatarUrl(data.photoUrl) : null;
   if (normalizedPhoto) candidates.push(normalizedPhoto);
@@ -78,14 +81,12 @@ function buildAvatarCandidates(data, searchTarget) {
     const ensembleSlug = (data?.ensembleType || '').toString().toLowerCase();
     if (ensembleSlug) candidates.push(`${base}/avatar-ensemble/avatar-${ensembleSlug}.webp?v=${AVATAR_VERSION}`);
     candidates.push(`${base}/avatar-ensemble/avatar-ensemble.webp?v=${AVATAR_VERSION}`);
-  } else {
-    if (data?.role === 'singer') {
-      candidates.push(`${base}/avatar-cantante-${gender}.webp?v=${AVATAR_VERSION}`);
-      candidates.push(`${base}/avatar-cantante-unknown.webp?v=${AVATAR_VERSION}`);
-    } else {
-      const instrumentSlug = data?.mainInstrumentSlug || slugifyInstrument(data?.mainInstrument || '');
-      if (instrumentSlug) candidates.push(`${base}/avatar-${instrumentSlug}-${gender}.webp?v=${AVATAR_VERSION}`);
-    }
+  } else if (isSingerProfile) {
+    candidates.push(`${base}/avatar-cantante-${gender}.webp?v=${AVATAR_VERSION}`);
+    candidates.push(`${base}/avatar-cantante-unknown.webp?v=${AVATAR_VERSION}`);
+  } else if (instrumentSlug) {
+    const slug = voiceAliases.has(instrumentSlug) ? 'cantante' : instrumentSlug;
+    candidates.push(`${base}/avatar-${slug}-${gender}.webp?v=${AVATAR_VERSION}`);
   }
 
   candidates.push(`${base}/avatar-default/avatar-default-${gender}.webp?v=${AVATAR_VERSION}`);

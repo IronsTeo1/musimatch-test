@@ -34,6 +34,7 @@ const LAST_PROFILE_NAME_KEY = 'musimatch-last-profile-name';
 
 const titleEl = document.getElementById('profile-title');
 const profileSettingsLink = document.getElementById('profile-settings-link');
+const profileLikeToggle = document.getElementById('profile-like-toggle');
 const profileFavToggle = document.getElementById('profile-fav-toggle');
 const profileFavOpen = document.getElementById('profile-fav-open');
 const messageOpenModalBtn = document.getElementById('message-open-modal');
@@ -124,6 +125,7 @@ const postOfferSetupEl = document.getElementById('post-offer-setup');
 const postRadiusRangeEl = document.getElementById('post-radius-range');
 const postRadiusEl = document.getElementById('post-radius');
 const urlUserId = new URLSearchParams(window.location.search).get('id');
+const openLikeParam = new URLSearchParams(window.location.search).get('openLike');
 const openMessageParam = new URLSearchParams(window.location.search).get('openMessage');
 let dataCache = {};
 let viewingOwnProfile = false;
@@ -201,6 +203,12 @@ function normalizeAvatarUrl(raw) {
   if (!raw) return null;
   const url = raw.trim();
   if (!url) return null;
+  const cleaned = url
+    .replace('/avatars/img/', '/avatars/')
+    .replace('/assets/img/img/', '/assets/img/')
+    .replace('/img/avatars/img/avatars/', '/assets/img/avatars/')
+    .replace('/img/avatars/avatars/', '/assets/img/avatars/')
+    .replace('//assets', '/assets');
   const pngMatch = url.match(/^(https?:\/\/[^/]+)?\/?(assets\/img\/avatars\/[^?]+)\.png(\?.*)?$/i);
   if (pngMatch) {
     const origin = pngMatch[1] || '';
@@ -208,7 +216,7 @@ function normalizeAvatarUrl(raw) {
     const qs = pngMatch[3] || '';
     return `${origin}/${path}.webp${qs}`;
   }
-  return url;
+  return cleaned;
 }
 
 const avatarContainer = document.getElementById('profile-avatar');
@@ -238,9 +246,19 @@ if (profileSettingsLink) {
   profileSettingsLink.style.display = 'none';
 }
 if (profileFavOpen) profileFavOpen.style.display = 'none';
+if (profileLikeToggle) profileLikeToggle.style.display = 'none';
 if (profileFavToggle) profileFavToggle.style.display = 'none';
 if (messageOpenModalBtn) {
   messageOpenModalBtn.style.display = 'none';
+}
+
+function addBounceOnClick(el, className) {
+  if (!el) return;
+  el.addEventListener('click', () => {
+    el.classList.remove(className);
+    void el.offsetWidth;
+    el.classList.add(className);
+  });
 }
 
 function clearLastProfileName() {
@@ -266,6 +284,33 @@ function setMessageSend(text, isError = false) {
   messageSendMsgEl.style.color = isError ? '#f87171' : 'var(--muted)';
 }
 
+let favToastEl = null;
+let favToastTimer = null;
+function getFavToastEl() {
+  if (favToastEl) return favToastEl;
+  favToastEl = document.createElement('div');
+  favToastEl.id = 'fav-toast';
+  favToastEl.className = 'fav-toast';
+  favToastEl.setAttribute('role', 'status');
+  favToastEl.setAttribute('aria-live', 'polite');
+  document.body.appendChild(favToastEl);
+  return favToastEl;
+}
+
+function showFavToast(text) {
+  if (!profileFavToggle) return;
+  const toast = getFavToastEl();
+  toast.textContent = text;
+  const rect = profileFavToggle.getBoundingClientRect();
+  toast.style.top = `${rect.bottom + 8}px`;
+  toast.style.left = `${rect.left + rect.width / 2}px`;
+  toast.classList.add('is-visible');
+  clearTimeout(favToastTimer);
+  favToastTimer = setTimeout(() => {
+    toast.classList.remove('is-visible');
+  }, 1500);
+}
+
 function setFavButtonState(isFav) {
   if (!profileFavToggle) return;
   const icon = profileFavToggle.querySelector('img');
@@ -275,6 +320,50 @@ function setFavButtonState(isFav) {
   }
   profileFavToggle.classList.toggle('is-active', !!isFav);
   profileFavToggle.setAttribute('aria-pressed', isFav ? 'true' : 'false');
+}
+
+function setLikeButtonState(isLiked) {
+  if (!profileLikeToggle) return;
+  const icon = profileLikeToggle.querySelector('img');
+  if (icon) {
+    icon.alt = isLiked ? 'Ti è piaciuto' : 'Metti mi piace';
+    icon.style.opacity = isLiked ? '1' : '0.7';
+  }
+  profileLikeToggle.classList.toggle('is-active', !!isLiked);
+  profileLikeToggle.setAttribute('aria-pressed', isLiked ? 'true' : 'false');
+}
+
+function playFavBounce(next) {
+  if (!profileFavToggle) {
+    if (typeof next === 'function') next();
+    return;
+  }
+  profileFavToggle.classList.remove('fav-bounce');
+  // force reflow to restart animation
+  void profileFavToggle.offsetWidth;
+  const done = () => {
+    profileFavToggle.classList.remove('fav-bounce');
+    if (typeof next === 'function') next();
+  };
+  profileFavToggle.addEventListener('animationend', done, { once: true });
+  setTimeout(done, 400);
+  profileFavToggle.classList.add('fav-bounce');
+}
+
+function playLikeBounce(next) {
+  if (!profileLikeToggle) {
+    if (typeof next === 'function') next();
+    return;
+  }
+  profileLikeToggle.classList.remove('like-bounce');
+  void profileLikeToggle.offsetWidth;
+  const done = () => {
+    profileLikeToggle.classList.remove('like-bounce');
+    if (typeof next === 'function') next();
+  };
+  profileLikeToggle.addEventListener('animationend', done, { once: true });
+  setTimeout(done, 400);
+  profileLikeToggle.classList.add('like-bounce');
 }
 
 function setPostMessage(text, isError = false) {
@@ -611,11 +700,16 @@ function createPostAvatar(name, url) {
   avatar.className = 'post-avatar';
   avatar.title = name || 'Profilo';
   const fallbackChar = ((name || 'M').trim()[0] || 'M').toUpperCase();
+  const fallbackSrc = '/assets/img/avatars/avatar-cantante-unknown.webp';
 
   if (safeUrl) {
     const img = document.createElement('img');
     img.src = safeUrl;
     img.alt = name || 'Avatar';
+    img.onerror = () => {
+      img.onerror = null;
+      img.src = fallbackSrc;
+    };
     avatar.appendChild(img);
   } else {
     const fallback = document.createElement('span');
@@ -882,7 +976,13 @@ function resolveAvatarUrls(data) {
     cornetta: 'tromba',
     flicorno: 'tromba',
     voce: 'cantante',
-    vocalist: 'cantante'
+    vocalist: 'cantante',
+    soprano: 'cantante',
+    contralto: 'cantante',
+    mezzosoprano: 'cantante',
+    tenore: 'cantante',
+    baritono: 'cantante',
+    basso: 'cantante'
   };
   const instrumentVariants = [];
   if (data?.role === 'singer' || data?.voiceType) {
@@ -1793,15 +1893,24 @@ async function refreshFavoriteToggle() {
   }
 }
 
+async function refreshLikeToggle() {
+  if (!profileLikeToggle) return;
+  profileLikeToggle.style.display = 'none';
+  if (!auth.currentUser || viewingOwnProfile || !targetProfileId) return;
+  setLikeButtonState(false);
+  profileLikeToggle.style.display = '';
+}
+
 async function toggleFavorite() {
   if (!auth.currentUser || viewingOwnProfile || !profileFavToggle || !targetProfileId || !viewerProfileId) return;
   try {
     profileFavToggle.disabled = true;
     const favRef = doc(db, 'users', viewerProfileId, 'favorites', targetProfileId);
     const currentSnap = await getDoc(favRef);
+    let nextIsFav = false;
     if (currentSnap.exists()) {
       await deleteDoc(favRef);
-      setFavButtonState(false);
+      nextIsFav = false;
     } else {
       const favType = getProfileTypeTag(dataCache);
       await setDoc(favRef, {
@@ -1810,12 +1919,36 @@ async function toggleFavorite() {
         targetName: dataCache?.displayName || '',
         createdAt: serverTimestamp()
       });
-      setFavButtonState(true);
+      nextIsFav = true;
     }
+    playFavBounce(() => {
+      setFavButtonState(nextIsFav);
+      showFavToast(nextIsFav ? 'Profilo aggiunto ai preferiti' : 'Profilo rimosso dai preferiti');
+    });
   } catch (err) {
     console.error('[MusiMatch] Errore toggle preferito:', err);
   } finally {
     profileFavToggle.disabled = false;
+  }
+}
+
+async function toggleLike() {
+  if (!auth.currentUser || viewingOwnProfile || !profileLikeToggle || !targetProfileId) return;
+  try {
+    profileLikeToggle.disabled = true;
+    const goToLikes = () => {
+      const url = new URL('likes.html', window.location.origin);
+      url.searchParams.set('id', targetProfileId);
+      window.location.href = url.toString();
+    };
+    playLikeBounce(() => {
+      setLikeButtonState(false);
+      setTimeout(goToLikes, 80);
+    });
+  } catch (err) {
+    console.error('[MusiMatch] Errore toggle like:', err);
+  } finally {
+    profileLikeToggle.disabled = false;
   }
 }
 
@@ -2158,6 +2291,12 @@ function guard(user) {
       setProfileAvatarImage(avatarUrls);
       loadProfilePosts(targetDoc.id);
       refreshFavoriteToggle();
+      refreshLikeToggle();
+      if (!isOwnProfile && openLikeParam === '1' && profileLikeToggle) {
+        playLikeBounce(() => setTimeout(() => {
+          window.location.href = `likes.html?id=${encodeURIComponent(targetDoc.id)}`;
+        }, 80));
+      }
       if (!isOwnProfile && openMessageParam === '1') {
         openMessageModal();
       }
@@ -2336,8 +2475,21 @@ if (messageCloseModalBtn) {
 if (messageSendBtn) {
   messageSendBtn.addEventListener('click', () => sendMessageToProfile(messageTextEl?.value || ''));
 }
+if (profileLikeToggle) {
+  profileLikeToggle.addEventListener('click', toggleLike);
+  profileLikeToggle.addEventListener('click', () => {
+    profileLikeToggle.classList.remove('like-bounce');
+    void profileLikeToggle.offsetWidth;
+    profileLikeToggle.classList.add('like-bounce');
+  });
+}
 if (profileFavToggle) {
   profileFavToggle.addEventListener('click', toggleFavorite);
+  profileFavToggle.addEventListener('click', () => {
+    profileFavToggle.classList.remove('fav-bounce');
+    void profileFavToggle.offsetWidth;
+    profileFavToggle.classList.add('fav-bounce');
+  });
 }
 setupModalSafeClose(messageModal, closeMessageModal);
 

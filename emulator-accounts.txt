@@ -1,0 +1,156 @@
+Firebase Emulator Accounts (password: 123456) – dati da scripts/seed-emulator.js
+
+- docId: user-giulia-verdi | email: giulia.verdi@example.com
+  type: musician (role: singer) | isPremium: true | isActive: true
+  mainInstrument: Soprano | instruments: Soprano, Pianoforte | voiceType: Soprano
+  activity: professional, 8 anni | maxTravelKm: 30 | willingToJoinForFree: true
+  gender: female (visible: true) | nationality: IT (visible: true)
+  rates: rehearsal 40; concert_or_mass 180; solo_performance 250
+  location: Milano (MI, Lombardia) lat 45.4642 lng 9.19
+  bio: Soprano lirico, disponibile per cori e ensemble da camera.
+  curriculum: Conservatorio Milano, tournée cori sinfonici.
+
+- docId: user-luca-rossi | email: luca.rossi@example.com
+  type: musician (role: musician) | isPremium: false | isActive: true
+  mainInstrument: Chitarra elettrica | instruments: Chitarra elettrica, Basso
+  activity: amateur, 3 anni | maxTravelKm: 20 | willingToJoinForFree: false
+  gender: male (visible: false) | nationality: IT (visible: false)
+  rates: rehearsal 20
+  location: Torino (TO, Piemonte) lat 45.0703 lng 7.6869
+  bio: Chitarrista rock, disponibile per prove serali.
+
+- docId: user-francesca-rosa | email: francesca.rosa@exemple.com
+  type: musician (role: musician) | isPremium: false | isActive: true
+  mainInstrument: Violino | instruments: Violino, Viola
+  activity: professional, 10 anni | maxTravelKm: 50 | willingToJoinForFree: false
+  gender: female (visible: true) | nationality: IT (visible: true)
+  rates: rehearsal 60; concert_or_mass 220
+  location: Verona (VR, Veneto) lat 45.4384 lng 10.9916
+  bio: Violino spalla freelance, disponibile per orchestra e quartetti.
+  curriculum: Esperienza in orchestre sinfoniche italiane.
+
+- docId: user-marco-bianchi | email: marco.bianchi@example.com
+  type: musician (role: musician) | isPremium: false | isActive: true
+  mainInstrument: Tromba | instruments: Tromba, Flicorno baritono
+  activity: professional, 12 anni | maxTravelKm: 80 | willingToJoinForFree: false
+  gender: n/d | nationality: n/d
+  rates: service_civil_trumpet_full 150; concert_or_mass 200
+  location: Napoli (NA, Campania) lat 40.8518 lng 14.2681
+  bio: Trombettista per cerimonie civili e religiose, disponibile anche per banda.
+
+- docId: user-roberto-viola | email: roberto.viola@example.it
+  type: musician (role: musician) | isPremium: false | isActive: true
+  mainInstrument: Viola | instruments: Viola
+  activity: professional, 7 anni | maxTravelKm: 25 | willingToJoinForFree: false
+  gender: n/d | nationality: n/d
+  rates: rehearsal 35; concert_or_mass 150
+  location: Firenze (FI, Toscana) lat 43.7696 lng 11.2558
+  bio: Viola per ensemble da camera e orchestre giovanili.
+
+- docId: user-banda-san-carlo | email: banda.sancarlo@example.com
+  type: ensemble (ensembleType: band) | members: 35 | isPremium: n/d
+  description: Banda di paese con repertorio tradizionale e concerti estivi.
+  website: https://sancarlo.example.com
+  rates: rehearsal 80; concert_or_mass 400
+  gender: mixed (visible: false) | nationality: IT (visible: false)
+  location: Parma (PR, Emilia-Romagna) lat 44.8015 lng 10.328
+
+- docId: user-coro-santa-maria | email: coro.santamaria@example.com
+  type: ensemble (ensembleType: choir) | members: 22 | isPremium: n/d
+  description: Coro polifonico con sezioni miste, cerca tenori e bassi.
+  rates: rehearsal 50; concert_or_mass 250
+  location: Bologna (BO, Emilia-Romagna) lat 44.4949 lng 11.3426
+
+- docId: user-orchestra-filarmonica | email: orchestra.filarmonica@example.com
+  type: ensemble (ensembleType: orchestra) | members: 80 | isPremium: n/d
+  description: Orchestra sinfonica completa, prove serali e produzioni stagionali.
+  website: https://orchestra.example.com
+  rates: rehearsal 180; concert_or_mass 1200
+  location: Torino (TO, Piemonte) lat 45.0703 lng 7.6869
+
+- docId: user-tenore-rossi | email: tenore.pop@example.com
+  type: musician (role: singer) | isPremium: false | isActive: true
+  mainInstrument: Tenore | instruments: Tenore, Chitarra acustica | voiceType: Tenore
+  activity: amateur, 4 anni | maxTravelKm: 40 | willingToJoinForFree: true
+  gender: male (visible: true) | nationality: IT (visible: true)
+  rates: n/d
+  location: Roma (RM, Lazio) lat 41.9028 lng 12.4964
+  bio: Tenore leggero, disponibile per cori pop e liturgici.
+
+- docId: user-chiara-neri | email: chiara.neri@example.com
+  type: musician (role: singer) | isPremium: false | isActive: true
+  mainInstrument: Mezzosoprano | instruments: Mezzosoprano, Contralto | voiceType: Mezzosoprano | voiceTypeSecondary: Contralto
+  activity: professional, 6 anni | maxTravelKm: 60 | willingToJoinForFree: false
+  gender: female (visible: true) | nationality: IT (visible: true)
+  rates: rehearsal 50; concert_or_mass 220; solo_performance 320
+  location: Bari (BA, Puglia) lat 41.1171 lng 16.8719
+  bio: Mezzosoprano lirico, repertorio sacro e barocco.
+  curriculum: Festival barocco, produzioni regionali.
+
+- docId: user-antonio-falco | email: antonio.falco@example.com
+  type: musician (role: singer) | isPremium: false | isActive: true
+  mainInstrument: Basso | instruments: Basso, Baritono | voiceType: Basso | voiceTypeSecondary: Baritono
+  activity: professional, 15 anni | maxTravelKm: 25 | willingToJoinForFree: false
+  gender: male (visible: true) | nationality: IT (visible: true)
+  rates: rehearsal 55; concert_or_mass 260
+  location: Palermo (PA, Sicilia) lat 38.1157 lng 13.3615
+  bio: Basso profondo per cori sinfonici e liturgia.
+
+- docId: user-alessio-greco | email: alessio.greco@example.com
+  type: musician (role: musician) | isPremium: false | isActive: true
+  mainInstrument: Batteria | instruments: Batteria, Percussioni, Cajon
+  activity: amateur, 2 anni | maxTravelKm: 15 | willingToJoinForFree: true
+  gender: male (visible: false) | nationality: IT (visible: false)
+  rates: rehearsal 25
+  location: Cagliari (CA, Sardegna) lat 39.2238 lng 9.1217
+  bio: Batterista per cover band e serate acustiche.
+
+- docId: user-ilaria-fontana | email: ilaria.fontana@example.com
+  type: musician (role: musician) | isPremium: true | isActive: true
+  mainInstrument: Organo | instruments: Organo, Pianoforte
+  activity: professional, 11 anni | maxTravelKm: 120 | willingToJoinForFree: false
+  gender: female (visible: true) | nationality: IT (visible: true)
+  rates: rehearsal 90; concert_or_mass 450; service_civil_religious 250
+  location: Perugia (PG, Umbria) lat 43.1107 lng 12.3908
+  bio: Organista liturgica e pianista accompagnatrice.
+  curriculum: Conservatorio, organista stabile in cattedrale.
+
+- docId: user-nicole-mendes | email: nicole.mendes@example.com
+  type: musician (role: musician) | isPremium: false | isActive: true
+  mainInstrument: Sax contralto | instruments: Sax contralto, Flauto
+  activity: professional, 5 anni | maxTravelKm: 80 | willingToJoinForFree: false
+  gender: non_binary (visible: true) | nationality: PT (visible: false)
+  rates: rehearsal 70; concert_or_mass 320; solo_performance 420
+  photoUrl: /assets/img/avatars/avatar-sax-contralto-non_binary.webp
+  location: Genova (GE, Liguria) lat 44.4056 lng 8.9463
+  bio: Sassofonista per funk/jazz, disponibile per tour brevi.
+
+- docId: user-davide-marini | email: davide.marini@example.com
+  type: musician (role: musician) | isPremium: false | isActive: false
+  mainInstrument: Basso elettrico | instruments: Basso elettrico, Contrabbasso
+  activity: amateur, 5 anni | maxTravelKm: 35 | willingToJoinForFree: false
+  gender: male (visible: true) | nationality: IT (visible: true)
+  rates: rehearsal 30; concert_or_mass 110
+  location: Ancona (AN, Marche) lat 43.6158 lng 13.5189
+  bio: Bassista rock, disponibile per sostituzioni veloci.
+
+- docId: user-coro-gospel-milano | email: coro.gospel@example.com
+  type: ensemble (ensembleType: choir) | members: 18 | isPremium: n/d
+  description: Coro gospel con sezione band interna, disponibile per eventi e matrimoni.
+  website: https://gospelmilano.example.com
+  rates: rehearsal 70; concert_or_mass 500
+  gender: mixed (visible: false) | nationality: IT (visible: false)
+  location: Monza (MB, Lombardia) lat 45.5845 lng 9.2744
+
+- docId: user-quartetto-aurora | email: quartetto.aurora@example.com
+  type: ensemble (ensembleType: string_quartet) | members: 4 | isPremium: n/d
+  description: Quartetto d'archi per cerimonie, eventi aziendali e rassegne.
+  website: https://quartettoaurora.example.com
+  rates: rehearsal 150; concert_or_mass 800; solo_performance 1200
+  location: Trento (TN, Trentino-Alto Adige) lat 46.0701 lng 11.119
+
+- docId: user-banda-del-salento | email: banda.salento@example.com
+  type: ensemble (ensembleType: band) | members: 28 | isPremium: n/d
+  description: Banda da giro con repertorio tradizionale salentino.
+  rates: rehearsal 90; concert_or_mass 350
+  location: Lecce (LE, Puglia) lat 40.3529 lng 18.174
