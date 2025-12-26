@@ -108,15 +108,17 @@ async function fetchLikerNames(ids = []) {
 function setupBackFallback() {
   const returnUrl = referrerProfile;
   if (!returnUrl) return;
+  let handled = false;
   try {
-    const stateData = { refProfile: returnUrl };
+    const stateData = { refProfile: returnUrl, guard: true };
     history.replaceState(stateData, '');
     history.pushState(stateData, '');
     window.addEventListener('popstate', (e) => {
+      if (handled) return;
+      handled = true;
       const ref = (e.state && e.state.refProfile) || returnUrl;
-      if (ref) {
-        window.location.href = ref;
-      }
+      if (ref) window.location.replace(ref);
+      else history.back();
     });
   } catch (err) {
     console.error('[likes] Errore gestione back al profilo:', err);

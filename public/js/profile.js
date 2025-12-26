@@ -86,6 +86,7 @@ const videoAddBtn = document.getElementById('video-add-btn');
 const videoFileInput = document.getElementById('video-file-input');
 const videoErrorEl = document.getElementById('video-error');
 const videoOwnerActions = document.getElementById('video-owner-actions');
+const videoOwnerHint = document.getElementById('video-owner-hint');
 const profilePostsEmptyDefaultText = (profilePostsEmptyEl?.textContent || '').trim() || 'Pubblica un annuncio per vederlo in questa sezione';
 const PAGE_SIZE_PROFILE = 10;
 const profilePagination = {
@@ -384,6 +385,9 @@ function syncVideoButtonVisibility(isOwner) {
   if (videoOwnerActions) {
     videoOwnerActions.style.display = isOwner ? '' : 'none';
   }
+  if (videoOwnerHint) {
+    videoOwnerHint.style.display = isOwner ? '' : 'none';
+  }
 }
 
 function openVideoModal() {
@@ -424,7 +428,7 @@ function validateAndAddVideo(file) {
   probe.onloadedmetadata = () => {
     const duration = probe.duration;
     if (duration && duration > MAX_VIDEO_SECONDS + 0.25) {
-      setVideoError('Il video supera i 45 secondi: accorcialo e riprova.');
+      setVideoError('Il video supera i 30 secondi: accorcialo e riprova.');
       URL.revokeObjectURL(tempUrl);
       return;
     }
@@ -756,7 +760,7 @@ const authorPhotoCache = new Map();
 const authorProfileCache = new Map();
 const authUidToUserId = new Map();
 let profileVideos = [];
-const MAX_VIDEO_SECONDS = 45;
+const MAX_VIDEO_SECONDS = 30;
 const MAX_VIDEO_ITEMS = 3;
 
 async function fetchUserDocByAuthUid(authUid) {
@@ -2645,17 +2649,25 @@ if (profileFavToggle) {
   });
 }
 if (profileFavOpen) {
-  profileFavOpen.addEventListener('click', () => {
+  profileFavOpen.addEventListener('click', (e) => {
+    e.preventDefault();
+    const navigate = () => (window.location.href = 'favorites.html');
     profileFavOpen.classList.remove('fav-bounce');
     void profileFavOpen.offsetWidth;
     profileFavOpen.classList.add('fav-bounce');
+    profileFavOpen.addEventListener('animationend', navigate, { once: true });
+    setTimeout(navigate, 380);
   });
 }
 if (profileSettingsLink) {
-  profileSettingsLink.addEventListener('click', () => {
+  profileSettingsLink.addEventListener('click', (e) => {
+    e.preventDefault();
+    const navigate = () => (window.location.href = 'settings.html');
     profileSettingsLink.classList.remove('fav-bounce');
     void profileSettingsLink.offsetWidth;
     profileSettingsLink.classList.add('fav-bounce');
+    profileSettingsLink.addEventListener('animationend', navigate, { once: true });
+    setTimeout(navigate, 380);
   });
 }
 setupModalSafeClose(messageModal, closeMessageModal);

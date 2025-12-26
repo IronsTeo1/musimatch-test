@@ -283,10 +283,11 @@
     <div class="modal-dialog modal-compact">
       <section class="card" style="position: relative;">
         <button type="button" class="ghost ghost-primary btn-compact modal-close" id="video-close-modal" aria-label="Chiudi video">✕</button>
-        <div class="inline-header" style="align-items:flex-end;gap:0.5rem;flex-wrap:wrap;">
+        <div class="inline-header" style="align-items:baseline;gap:0.25rem;flex-wrap:wrap;flex-grow:1;">
           <h3 style="margin:0;" id="video-modal-title">Video</h3>
-          <p class="muted helper-text" style="margin:0;">Fino a 3 clip da max 45 secondi.</p>
+          <span class="muted helper-text" style="line-height:1; font-size:0.7rem;">(Fino a 3 clip da max 30 secondi)</span>
         </div>
+        <p class="muted helper-text" id="video-owner-hint" style="margin:0; display:none;">Fai vedere agli altri cosa sai fare!</p>
         <div class="video-grid" id="video-list"></div>
         <p class="helper-text" id="video-error" style="min-height:1.2em;"></p>
         <div id="video-owner-actions" class="video-actions">

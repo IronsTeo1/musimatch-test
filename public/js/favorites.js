@@ -31,6 +31,9 @@ const AVATAR_ROOT = '/assets/img/avatars';
 let currentUserDocId = null;
 let currentUserAuthId = null;
 let currentMessageTarget = null;
+const params = new URLSearchParams(window.location.search);
+const referrerProfile =
+  document.referrer && document.referrer.includes('profile.html') ? document.referrer : null;
 
 function getProfileTypeTag(data = {}) {
   const userType = (data.userType || '').toLowerCase();
@@ -74,6 +77,26 @@ function normalizeAvatarUrl(raw) {
     return `${origin}/${path}.webp${qs}`;
   }
   return url;
+}
+
+function setupBackFallback() {
+  const returnUrl = referrerProfile;
+  if (!returnUrl) return;
+  let handled = false;
+  try {
+    const stateData = { refProfile: returnUrl, guard: true };
+    history.replaceState(stateData, '');
+    history.pushState(stateData, '');
+    window.addEventListener('popstate', (e) => {
+      if (handled) return;
+      handled = true;
+      const ref = (e.state && e.state.refProfile) || returnUrl;
+      if (ref) window.location.replace(ref);
+      else history.back();
+    });
+  } catch (err) {
+    console.error('[favorites] Errore gestione back al profilo:', err);
+  }
 }
 
 function normalizeGenderSlug(raw) {
@@ -356,6 +379,7 @@ function init() {
       const items = await loadFavorites(userDoc.id);
       const groups = groupAndSort(items);
       renderFavorites(groups);
+      setupBackFallback();
     } catch (err) {
       console.error('[MusiMatch] Errore caricamento preferiti:', err);
       if (emptyEl) {
