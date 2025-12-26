@@ -1,0 +1,87 @@
+<!doctype html>
+<html lang="it" data-theme="light">
+<head>
+  <meta charset="utf-8">
+  <title>MusiMatch – Assistenza</title>
+  <meta name="viewport" content="width=device-width, initial-scale=1">
+  <script>
+    (function() {
+      const KEY = 'musimatch-theme';
+      let theme = 'light';
+      try {
+        const stored = localStorage.getItem(KEY);
+        if (stored === 'dark' || stored === 'light') theme = stored;
+      } catch (e) {}
+      document.documentElement.setAttribute('data-theme', theme);
+    })();
+  </script>
+  <link rel="preconnect" href="https://fonts.googleapis.com">
+  <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+  <link href="https://fonts.googleapis.com/css2?family=Manrope:wght@400;500;600;700&display=swap" rel="stylesheet">
+  <link rel="stylesheet" href="css/main.css">
+  <link rel="stylesheet" href="css/ui.css">
+</head>
+<body>
+  <header class="page-header">
+    <div class="logo-link">
+      <a href="home.html" class="logo-img">
+        <img src="assets/img/logo.svg" alt="MusiMatch">
+      </a>
+      <div>
+        <p class="eyebrow" style="margin:0;">MusiMatch</p>
+        <h1 style="margin:0;">Assistenza</h1>
+        <p class="muted" style="margin:0;">Inviaci un messaggio, risponderemo il prima possibile.</p>
+      </div>
+    </div>
+  </header>
+
+  <main class="page-content">
+    <section class="card">
+      <form class="stack" id="support-form">
+        <label class="field">
+          <span class="field-label">La tua email</span>
+          <input type="email" id="support-email" placeholder="es. nome@example.com" required>
+        </label>
+        <div class="grid">
+          <label class="field">
+            <span class="field-label">Nome</span>
+            <input type="text" id="support-firstName" placeholder="Nome" required>
+          </label>
+          <label class="field">
+            <span class="field-label">Cognome</span>
+            <input type="text" id="support-lastName" placeholder="Cognome" required>
+          </label>
+        </div>
+        <label class="field">
+          <span class="field-label">Scrivi il messaggio</span>
+          <textarea id="support-message" rows="5" placeholder="Descrivi il problema o la richiesta..." required></textarea>
+        </label>
+        <button type="submit" class="primary">Invia</button>
+        <p id="support-feedback" class="helper-text"></p>
+      </form>
+    </section>
+  </main>
+
+  <script type="module" src="js/theme.js"></script>
+  <script type="module" src="js/nav.js"></script>
+  <script type="module" src="js/support.js"></script>
+  <nav class="floating-nav">
+    <a href="home.html">
+      <span class="nav-icon" aria-hidden="true"><img src="assets/icons/home.svg" alt=""></span>
+      <span class="nav-label">Home</span>
+    </a>
+    <a href="ricerca.html">
+      <span class="nav-icon" aria-hidden="true"><img src="assets/icons/search.svg" alt=""></span>
+      <span class="nav-label">Ricerca</span>
+    </a>
+    <a href="messages.html" id="nav-messages">
+      <span class="nav-icon" aria-hidden="true"><img src="assets/icons/messages.svg" alt=""></span>
+      <span class="nav-label">Messaggi</span>
+    </a>
+    <a href="profile.html" id="nav-profile">
+      <span class="nav-icon" aria-hidden="true"><img src="assets/icons/profile.svg" alt=""></span>
+      <span class="nav-label">Profilo</span>
+    </a>
+  </nav>
+</body>
+</html>

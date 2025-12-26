@@ -94,6 +94,7 @@ const nationalityToggleEnsemble = document.getElementById('e-nationality-toggle'
 const voiceFields = document.getElementById('voice-fields');
 const voiceTypeEl = document.getElementById('m-voiceType');
 const voiceTypeSecondaryEl = document.getElementById('m-voiceType-secondary');
+const privacyCheckbox = document.getElementById('reg-privacy');
 
 let cityList = [];
 let countryList = [];
@@ -473,6 +474,10 @@ async function submitForm(event) {
   const selected = Array.from(typeRadios).find((r) => r.checked);
   if (!selected) {
     setMessage('Seleziona chi sei per continuare.', true);
+    return;
+  }
+  if (privacyCheckbox && !privacyCheckbox.checked) {
+    setMessage('Devi accettare l’informativa privacy per proseguire.', true);
     return;
   }
   const kind = selected.value;

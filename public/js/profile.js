@@ -986,6 +986,7 @@ const profilePostMenus = new Set();
 function closeAllProfilePostMenus() {
   profilePostMenus.forEach((menu) => {
     menu.hidden = true;
+    menu.classList.remove('open');
     menu.style.visibility = '';
     menu.style.position = '';
     menu.style.left = '';
@@ -1011,6 +1012,7 @@ function isFirestoreOfflineError(err) {
 function positionProfilePostMenu(menu) {
   if (!menu) return;
   menu.hidden = false;
+  menu.classList.add('open');
   menu.style.visibility = 'visible';
   menu.style.position = '';
   menu.style.left = '';
@@ -1062,6 +1064,7 @@ function buildProfilePostMenu(post) {
       positionProfilePostMenu(menu);
     } else {
       menu.hidden = true;
+      menu.classList.remove('open');
     }
   });
 

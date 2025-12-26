@@ -1,0 +1,110 @@
+<!doctype html>
+<html lang="it" data-theme="light">
+<head>
+  <meta charset="utf-8">
+  <title>MusiMatch – Informativa privacy</title>
+  <meta name="viewport" content="width=device-width, initial-scale=1">
+  <script>
+    (function() {
+      const KEY = 'musimatch-theme';
+      let theme = 'light';
+      try {
+        const stored = localStorage.getItem(KEY);
+        if (stored === 'dark' || stored === 'light') theme = stored;
+      } catch (e) {}
+      document.documentElement.setAttribute('data-theme', theme);
+    })();
+  </script>
+  <link rel="preconnect" href="https://fonts.googleapis.com">
+  <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+  <link href="https://fonts.googleapis.com/css2?family=Manrope:wght@400;500;600;700&display=swap" rel="stylesheet">
+  <link rel="stylesheet" href="css/main.css">
+  <link rel="stylesheet" href="css/ui.css">
+</head>
+<body>
+  <header class="page-header">
+    <div class="logo-link">
+      <a href="home.html" class="logo-img">
+        <img src="assets/img/logo.svg" alt="MusiMatch">
+      </a>
+      <div>
+        <p class="eyebrow" style="margin:0;">MusiMatch</p>
+        <h1 style="margin:0;">Informativa privacy</h1>
+        <p class="muted" style="margin:0;">Ai sensi degli artt. 13-14 GDPR (Reg. UE 2016/679).</p>
+      </div>
+    </div>
+  </header>
+
+  <main class="page-content">
+    <section class="card">
+      <h2>Titolare del trattamento</h2>
+      <p class="muted">MusiMatch (progetto dimostrativo) – Contatti: <a href="mailto:privacy@musimatch.example">privacy@musimatch.example</a>.</p>
+    </section>
+
+    <section class="card">
+      <h2>Dati trattati</h2>
+      <ul>
+        <li>Dati di account: nome, cognome, email, password (hash), tipo profilo.</li>
+        <li>Dati profilo pubblico: città, strumenti/voce, bio, esperienza, disponibilità, foto/avatar.</li>
+        <li>Dati tecnici: log di accesso, identificativi dispositivo, cookie tecnici/sessione.</li>
+        <li>Contenuti generati: annunci, messaggi, preferiti.</li>
+      </ul>
+    </section>
+
+    <section class="card">
+      <h2>Finalità e basi giuridiche</h2>
+      <ul>
+        <li>Creazione e gestione dell’account e del profilo (esecuzione del contratto, art. 6.1.b).</li>
+        <li>Pubblicazione annunci, messaggistica e preferiti (esecuzione del contratto, art. 6.1.b).</li>
+        <li>Comunicazioni di servizio e sicurezza (interesse legittimo, art. 6.1.f).</li>
+      </ul>
+    </section>
+
+    <section class="card">
+      <h2>Conservazione</h2>
+      <p class="muted">I dati di account e profilo sono conservati finché l’account resta attivo. Log tecnici fino a 12 mesi. Su richiesta di cancellazione, i dati vengono rimossi o anonimizzati salvo obblighi di legge.</p>
+    </section>
+
+    <section class="card">
+      <h2>Diritti dell’utente</h2>
+      <p class="muted">Puoi esercitare accesso, rettifica, cancellazione, limitazione, portabilità, opposizione. Puoi revocare il consenso (se presente) in qualsiasi momento. Reclamo all’Autorità Garante Privacy.</p>
+    </section>
+
+    <section class="card">
+      <h2>Destinatari e trasferimenti</h2>
+      <p class="muted">I dati possono essere trattati da fornitori cloud e di hosting UE/SEE o con adeguate garanzie. Nessuna vendita o diffusione non autorizzata dei dati.</p>
+    </section>
+
+    <section class="card">
+      <h2>Sicurezza</h2>
+      <p class="muted">Utilizziamo autenticazione protetta, cifratura in transito e controlli di accesso per proteggere i dati.</p>
+    </section>
+
+    <section class="card">
+      <h2>Contatti privacy</h2>
+      <p class="muted">Per richieste privacy scrivi a <a href="mailto:privacy@musimatch.example">privacy@musimatch.example</a>.</p>
+    </section>
+  </main>
+
+  <script type="module" src="js/theme.js"></script>
+  <script type="module" src="js/nav.js"></script>
+  <nav class="floating-nav">
+    <a href="home.html">
+      <span class="nav-icon" aria-hidden="true"><img src="assets/icons/home.svg" alt=""></span>
+      <span class="nav-label">Home</span>
+    </a>
+    <a href="ricerca.html">
+      <span class="nav-icon" aria-hidden="true"><img src="assets/icons/search.svg" alt=""></span>
+      <span class="nav-label">Ricerca</span>
+    </a>
+    <a href="messages.html" id="nav-messages">
+      <span class="nav-icon" aria-hidden="true"><img src="assets/icons/messages.svg" alt=""></span>
+      <span class="nav-label">Messaggi</span>
+    </a>
+    <a href="profile.html" id="nav-profile">
+      <span class="nav-icon" aria-hidden="true"><img src="assets/icons/profile.svg" alt=""></span>
+      <span class="nav-label">Profilo</span>
+    </a>
+  </nav>
+</body>
+</html>

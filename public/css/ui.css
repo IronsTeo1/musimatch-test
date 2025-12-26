@@ -172,11 +172,11 @@
   display: flex;
   justify-content: center;
   align-items: center;
-  background: color-mix(in srgb, var(--primary) 12%, transparent);
-  border: 1px dashed var(--surface-border);
+  background: transparent;
+  border: none;
   border-radius: calc(var(--radius) - 4px);
-  padding: 1rem;
-  min-height: 220px;
+  padding: 0;
+  min-height: 0;
 }
 
 .guest-hero-img {
@@ -206,8 +206,8 @@
   width: 56px;
   height: 56px;
   border-radius: 14px;
-  background: color-mix(in srgb, var(--primary) 12%, transparent);
-  border: 1px solid color-mix(in srgb, var(--primary) 28%, var(--surface-border));
+  background: transparent;
+  border: none;
   display: grid;
   place-items: center;
   flex: 0 0 auto;
@@ -873,7 +873,17 @@
 }
 
 :root[data-theme="dark"] .floating-nav .nav-icon img {
-  filter: brightness(1.18) contrast(1.12) saturate(1.08);
+  filter: brightness(1.35) contrast(1.25) saturate(1.2);
+}
+
+:root[data-theme="dark"] img[src*="assets/icons/"],
+:root[data-theme="dark"] .guest-feature-icon img,
+:root[data-theme="dark"] .home-feature-icon img {
+  filter: brightness(1.35) contrast(1.25) saturate(1.2);
+}
+
+:root[data-theme="dark"] img[src*="assets/icons/guest/hero-"] {
+  filter: brightness(1.5) contrast(1.32) saturate(1.25);
 }
 
 .floating-nav .theme-toggle {
@@ -1614,13 +1624,15 @@
   }
 }
 
-.kebab-btn {
+.kebab-btn,
+.fav-menu-btn,
+.thread-menu-btn {
   background: transparent;
   border: none;
   color: var(--muted);
-  padding: 0.1rem 0.2rem;
+  padding: 0.2rem 0.35rem;
   margin: 0;
-  border-radius: 6px;
+  border-radius: 8px;
   cursor: pointer;
   font-size: 1.1rem;
   line-height: 1;
@@ -1630,56 +1642,77 @@
 }
 
 .kebab-btn:hover,
-.kebab-btn:focus-visible {
+.kebab-btn:focus-visible,
+.fav-menu-btn:hover,
+.fav-menu-btn:focus-visible,
+.thread-menu-btn:hover,
+.thread-menu-btn:focus-visible {
   color: var(--text);
   background: transparent !important;
   box-shadow: none !important;
   outline: none;
+  transform: none !important;
 }
 
-.card-menu-wrapper {
+.card-menu-wrapper,
+.thread-menu-wrapper,
+.fav-menu-wrapper {
   position: relative;
   margin-left: auto;
   z-index: 20000;
 }
 
-.card-menu {
+.card-menu,
+.thread-menu,
+.fav-menu {
   position: absolute;
-  bottom: calc(100% + 6px);
+  top: 0;
   right: 0;
+  min-width: 150px;
   background: var(--surface);
   border: 1px solid var(--surface-border);
   border-radius: 10px;
-  box-shadow: none;
-  display: flex;
+  box-shadow: 0 12px 30px rgba(0, 0, 0, 0.16);
+  display: none;
+  z-index: 20010;
+  padding: 0.1rem 0;
   flex-direction: column;
-  min-width: 150px;
-  z-index: 20000;
-  pointer-events: auto;
 }
 
-.card-menu button {
+.card-menu.open,
+.thread-menu.open,
+.fav-menu.open {
+  display: block;
+}
+
+.card-menu button,
+.thread-menu button,
+.fav-menu button {
+  width: 100%;
   background: transparent;
   border: none;
   color: var(--text);
   padding: 0.45rem 0.65rem;
   text-align: left;
   font-weight: 500;
-  font-size: 0.92rem;
+  font-size: 0.9rem;
   cursor: pointer;
 }
 
-.card-menu button:hover {
-  background: color-mix(in srgb, var(--primary) 8%, transparent);
+.card-menu button:hover,
+.card-menu button:focus-visible,
+.thread-menu button:hover,
+.thread-menu button:focus-visible,
+.fav-menu button:hover,
+.fav-menu button:focus-visible {
+  background: color-mix(in srgb, var(--primary) 10%, transparent);
 }
 
-.card-menu button:disabled {
+.card-menu button:disabled,
+.thread-menu button:disabled,
+.fav-menu button:disabled {
   color: var(--muted);
   cursor: default;
-}
-
-.card-menu[hidden] {
-  display: none !important;
 }
 
 .post-resolved {
@@ -1773,8 +1806,8 @@
   position: absolute;
   top: 10px;
   right: 10px;
-  background: transparent;
-  border: none;
+  background: transparent !important;
+  border: none !important;
   color: var(--text);
   border-radius: 8px;
   width: 34px;
@@ -1784,7 +1817,19 @@
   justify-content: center;
   cursor: pointer;
   padding: 0;
-  box-shadow: none;
+  box-shadow: none !important;
+  transition: none;
+}
+
+.modal-close:hover,
+.modal-close:focus,
+.modal-close:focus-visible,
+.modal-close:active {
+  background: transparent !important;
+  border: none !important;
+  box-shadow: none !important;
+  outline: none;
+  color: var(--text);
 }
 
 .modal-backdrop.active .modal-content {
@@ -1891,17 +1936,18 @@
   background: color-mix(in srgb, var(--surface) 96%, transparent);
   color: var(--text);
   cursor: pointer;
-  transition: border-color 0.15s ease, background 0.15s ease;
+  transition: none;
 }
 
 .thread-item:hover,
 .thread-item:focus-visible {
-  border-color: var(--primary);
+  border-color: var(--surface-border);
+  background: color-mix(in srgb, var(--surface) 96%, transparent);
 }
 
 .thread-item.active {
-  border-color: var(--primary);
-  background: color-mix(in srgb, var(--primary) 10%, var(--surface));
+  border-color: var(--surface-border);
+  background: color-mix(in srgb, var(--surface) 96%, transparent);
 }
 
 .thread-name {
@@ -1948,15 +1994,17 @@
 
 .thread-menu {
   position: absolute;
-  bottom: calc(100% + 6px);
+  top: 0;
   right: 0;
-  min-width: 140px;
+  min-width: 150px;
   background: var(--surface);
   border: 1px solid var(--surface-border);
   border-radius: 10px;
-  box-shadow: none;
+  box-shadow: 0 12px 30px rgba(0, 0, 0, 0.16);
   display: none;
   z-index: 50;
+  padding: 0;
+  overflow: hidden;
 }
 
 .thread-menu.open {
@@ -2158,6 +2206,8 @@
   display: flex;
   align-items: center;
   gap: 0.75rem;
+  flex: 1 1 0;
+  min-width: 0;
 }
 
 .favorite-avatar {
@@ -2214,73 +2264,12 @@
   gap: 0.5rem;
   justify-content: flex-end;
   align-items: center;
-  margin-left: 0;
+  margin-left: auto;
+  flex-shrink: 0;
 }
 
 .favorite-actions .ghost {
   padding: 0.45rem 0.75rem;
-}
-
-.fav-menu-wrapper {
-  position: relative;
-}
-
-.fav-menu-btn {
-  background: transparent;
-  border: none;
-  padding: 0.2rem 0.4rem;
-  font-size: 1.1rem;
-  cursor: pointer;
-  color: var(--muted);
-  box-shadow: none;
-  transition: none;
-  transform: none !important;
-}
-
-.fav-menu-btn:hover,
-.fav-menu-btn:focus,
-.fav-menu-btn:focus-visible,
-.fav-menu-btn:active {
-  background: transparent !important;
-  box-shadow: none !important;
-  outline: none !important;
-  transform: none !important;
-}
-
-.fav-menu {
-  position: absolute;
-  top: -4px;
-  right: -2px;
-  min-width: 150px;
-  background: var(--surface);
-  border: none;
-  border-radius: 6px;
-  box-shadow: none !important;
-  display: none;
-  z-index: 40;
-  padding: 0.1rem 0;
-}
-
-.fav-menu.open {
-  display: block;
-}
-
-.fav-menu button {
-  width: 100%;
-  background: transparent;
-  border: none;
-  color: var(--text);
-  padding: 0.45rem 0.65rem;
-  text-align: left;
-  cursor: pointer;
-  font-size: 0.9rem;
-  font-weight: 500;
-  border: none;
-}
-
-.fav-menu button:hover,
-.fav-menu button:focus-visible {
-  background: color-mix(in srgb, var(--primary) 10%, transparent);
 }
 
 .chat-name-link {
@@ -2306,6 +2295,7 @@
     justify-content: flex-end;
     align-items: center;
     margin-left: 0;
+    flex-shrink: 0;
   }
   .favorite-actions .ghost {
     width: 100%;

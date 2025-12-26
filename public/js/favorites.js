@@ -375,9 +375,15 @@ if (document.readyState === 'loading') {
 document.addEventListener('click', () => {
   document.querySelectorAll('.fav-menu.open').forEach((m) => m.classList.remove('open'));
 });
+document.addEventListener('pointerdown', (e) => {
+  if (e.target.closest('.fav-menu-wrapper')) return;
+  document.querySelectorAll('.fav-menu.open').forEach((m) => m.classList.remove('open'));
+}, { capture: true });
 
 async function removeFavorite(targetId) {
   if (!currentUserDocId || !targetId) return;
+  const ok = window.confirm('Vuoi rimuovere questo profilo dai preferiti?');
+  if (!ok) return;
   await deleteDoc(doc(db, 'users', currentUserDocId, 'favorites', targetId));
   const items = await loadFavorites(currentUserDocId);
   const groups = groupAndSort(items);

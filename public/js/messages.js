@@ -122,9 +122,9 @@ function renderThreads(list) {
 
     const menu = document.createElement('div');
     menu.className = 'thread-menu';
-    if (openThreadMenuId === thread.id) {
-      menu.classList.add('open');
-    }
+    const isOpen = openThreadMenuId === thread.id;
+    menu.classList.toggle('open', isOpen);
+    menu.hidden = !isOpen;
     const visitBtn = document.createElement('button');
     visitBtn.type = 'button';
     visitBtn.textContent = 'Visita profilo';
@@ -138,7 +138,7 @@ function renderThreads(list) {
     deleteBtn.textContent = 'Cancella chat';
     deleteBtn.addEventListener('click', async (e) => {
       e.stopPropagation();
-      const ok = window.confirm('Cancella chat?');
+      const ok = window.confirm('Vuoi cancellare questa chat?');
       if (!ok) return;
       openThreadMenuId = null;
       await deleteDoc(doc(db, 'threads', thread.id));
@@ -178,7 +178,7 @@ function renderChat(thread) {
     chatHistoryEl.innerHTML = '';
     const p = document.createElement('p');
     p.className = 'muted';
-    p.textContent = 'Nessun messaggio. Seleziona una chat.';
+    p.textContent = 'Clicca su una chat per visualizzarne i messaggi.';
     chatHistoryEl.appendChild(p);
     return;
   }
@@ -202,7 +202,7 @@ function renderChat(thread) {
   if (!messages.length) {
     const p = document.createElement('p');
     p.className = 'muted';
-    p.textContent = 'Nessun messaggio in questa chat.';
+    p.textContent = thread ? 'Nessun messaggio in questa chat.' : 'Clicca su una chat per visualizzarne i messaggi.';
     chatHistoryEl.appendChild(p);
     return;
   }
@@ -258,7 +258,7 @@ function subscribeMessages(threadId, threadData) {
       oldestMsgDoc = snap.docs[snap.docs.length - 1];
     }
     if (snap.docs.length < MSG_PAGE_SIZE) messagesDone = true;
-    messages = mergeMessages(messages, batch);
+    messages = mergeMessages([], batch);
     activeThreadData = threadData;
     renderChat(threadData);
   });
@@ -332,11 +332,11 @@ function subscribeThreads(userId) {
   unsubThreads = onSnapshot(qThreads, (snap) => {
     threads = snap.docs.map((d) => ({ id: d.id, ...d.data() })).filter((t) => Array.isArray(t.participants));
     threads.sort((a, b) => (b.updatedAt?.toMillis?.() || 0) - (a.updatedAt?.toMillis?.() || 0));
-    if (!activeThreadId || !threads.find((t) => t.id === activeThreadId)) {
-      activeThreadId = threads.length ? threads[0].id : null;
-      activeThreadData = threads.length ? threads[0] : null;
-      if (activeThreadId) subscribeMessages(activeThreadId, activeThreadData);
-      else subscribeMessages(null, null);
+    const currentStillExists = activeThreadId && threads.find((t) => t.id === activeThreadId);
+    if (!currentStillExists) {
+      activeThreadId = null;
+      activeThreadData = null;
+      subscribeMessages(null, null);
     }
     renderThreads(threads);
     if (activeThreadId) {
@@ -368,6 +368,9 @@ function initMessages() {
     }
     subscribeThreads(currentUserId);
   });
+  // Desktop: nessuna chat aperta di default
+  activeThreadId = null;
+  activeThreadData = null;
 
   const handlerSend = () => {
     if (!chatInputEl) return;
@@ -421,6 +424,13 @@ function initMessages() {
       renderThreads(threads);
     }
   });
+  document.addEventListener('pointerdown', (e) => {
+    if (e.target.closest('.thread-menu-wrapper')) return;
+    if (openThreadMenuId) {
+      openThreadMenuId = null;
+      renderThreads(threads);
+    }
+  }, { capture: true });
 }
 
 if (document.readyState === 'loading') {

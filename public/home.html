@@ -62,7 +62,7 @@
           <div class="guest-title-row">
             <h2 class="guest-title">Trova musicisti e cantanti vicino a te</h2>
             <a class="ghost ghost-compact guest-title-action" href="ricerca.html" aria-label="Vai alla ricerca">
-              <img src="assets/img/guest/guest-refresh.svg" alt="" class="guest-title-icon">
+              <img src="assets/icons/guest/guest-refresh.svg" alt="" class="guest-title-icon">
             </a>
           </div>
           <p class="muted">Scopri chi suona nella tua zona, pubblica un annuncio “Cercasi” e fai conoscere il tuo profilo.</p>
@@ -70,17 +70,19 @@
             <span class="pill pill-quiet">Annunci “Cercasi” geolocalizzati</span>
             <span class="pill pill-quiet">Filtri per città + raggio</span>
             <span class="pill pill-quiet">Profili con bio e tariffe</span>
+            <span class="pill pill-quiet">Salva tra i preferiti</span>
+            <span class="pill pill-quiet">Messaggi diretti ai profili</span>
           </div>
         </div>
         <div class="guest-hero-visual" aria-hidden="true">
-          <img src="assets/img/guest/guest-nearby.svg" alt="" class="guest-hero-img">
+          <img src="assets/icons/guest/guest-nearby.svg" alt="" class="guest-hero-img">
         </div>
       </section>
 
       <section class="card guest-card guest-feature-grid">
         <article class="guest-feature">
           <div class="guest-feature-icon">
-            <img src="assets/img/guest/guest-find.svg" alt="" loading="lazy">
+            <img src="assets/icons/guest/guest-find.svg" alt="" loading="lazy">
           </div>
           <div>
             <h4>Ricerca mirata</h4>
@@ -89,7 +91,7 @@
         </article>
         <article class="guest-feature">
           <div class="guest-feature-icon">
-            <img src="assets/img/guest/guest-create.svg" alt="" loading="lazy">
+            <img src="assets/icons/guest/guest-create.svg" alt="" loading="lazy">
           </div>
           <div>
             <h4>Annunci semplici</h4>
@@ -98,7 +100,7 @@
         </article>
         <article class="guest-feature">
           <div class="guest-feature-icon">
-            <img src="assets/img/guest/guest-profile.svg" alt="" loading="lazy">
+            <img src="assets/icons/guest/guest-profile.svg" alt="" loading="lazy">
           </div>
           <div>
             <h4>Profilo curato</h4>
@@ -106,6 +108,29 @@
           </div>
         </article>
       </section>
+
+      <section class="card guest-card guest-feature-grid">
+        <article class="guest-feature">
+          <div class="guest-feature-icon">
+            <img src="assets/icons/guest/hero-messages.svg" alt="" loading="lazy">
+          </div>
+          <div>
+            <h4>Messaggistica semplice</h4>
+            <p class="muted">Scrivi subito ai profili che trovi. Chat diretta, notifiche rapide e cronologia salvata.</p>
+          </div>
+        </article>
+        <article class="guest-feature">
+          <div class="guest-feature-icon">
+            <img src="assets/icons/guest/hero-favorites.svg" alt="" loading="lazy">
+          </div>
+          <div>
+            <h4>Preferiti senza perdere nessuno</h4>
+            <p class="muted">Aggiungi i profili migliori ai preferiti, ritrovali in un clic e contattali quando sei pronto.</p>
+          </div>
+        </article>
+      </section>
+
+      <button type="button" class="theme-toggle theme-fab" id="theme-toggle" aria-label="Cambia tema"></button>
 
       <section class="card guest-card guest-steps">
         <div class="guest-steps-header">
@@ -139,6 +164,11 @@
           </article>
         </div>
       </section>
+
+      <p class="muted small" style="text-align:center; margin-top:0.6rem; display:flex; gap:0.8rem; justify-content:center; flex-wrap:wrap;">
+        <a href="privacy.html">Informativa privacy</a>
+        <a href="support.html">Assistenza</a>
+      </p>
     </div>
 
     <div id="home-user" style="display: none;">
@@ -192,7 +222,7 @@
               <div id="post-seeking-fields" class="stack" style="gap: 0.6rem;">
                 <div class="grid">
                   <label class="field">
-                    <span class="field-label">Strumenti richiesti (opzionale)</span>
+                    <span class="field-label">Strumenti cercati (opzionale)</span>
                     <span class="field-hint muted xsmall">Digita e premi virgola per aggiungere.</span>
                     <div class="autocomplete with-clear">
                       <input type="text" id="post-instruments" autocomplete="off" placeholder="Es. Chitarra, Violino" />
@@ -200,7 +230,7 @@
                     </div>
                   </label>
                   <label class="field">
-                    <span class="field-label">Voci richieste (opzionale)</span>
+                    <span class="field-label">Voci cercate (opzionale)</span>
                     <div class="autocomplete with-clear">
                       <input type="text" id="post-voices" class="select-clean-input" readonly placeholder="Seleziona voci">
                       <button type="button" class="clear-input" id="post-voices-clear" aria-label="Pulisci voci" hidden>✕</button>

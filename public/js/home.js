@@ -1514,19 +1514,27 @@ function isPostOwner(post) {
 const openPostMenus = new Set();
 
 function closeAllPostMenus() {
+  // Chiude i menu tracciati
   openPostMenus.forEach((menu) => {
     menu.hidden = true;
+    menu.classList.remove('open');
     menu.style.visibility = '';
     menu.style.position = '';
     menu.style.left = '';
     menu.style.top = '';
     menu.style.right = '';
   });
+  // Chiude eventuali menu rimasti fuori dal set
+  document.querySelectorAll('.card-menu.open, .card-menu:not([hidden])').forEach((menu) => {
+    menu.hidden = true;
+    menu.classList.remove('open');
+  });
 }
 
 function positionPostMenu(menu, trigger) {
   if (!menu) return;
   menu.hidden = false;
+  menu.classList.add('open');
   menu.style.visibility = 'visible';
   menu.style.position = '';
   menu.style.left = '';
@@ -1578,6 +1586,7 @@ function buildPostMenu(post) {
       positionPostMenu(menu);
     } else {
       menu.hidden = true;
+      menu.classList.remove('open');
     }
   });
 
@@ -2451,7 +2460,29 @@ document.addEventListener('keydown', (e) => {
   }
 });
 
-document.addEventListener('click', () => closeAllPostMenus());
+document.addEventListener(
+  'click',
+  (e) => {
+    if (!e.target.closest('.card-menu-wrapper')) closeAllPostMenus();
+  },
+  { capture: true }
+);
+document.addEventListener(
+  'pointerdown',
+  (e) => {
+    if (!e.target.closest('.card-menu-wrapper')) closeAllPostMenus();
+  },
+  { capture: true }
+);
+document.addEventListener(
+  'pointerup',
+  (e) => {
+    if (!e.target.closest('.card-menu-wrapper')) closeAllPostMenus();
+  },
+  { capture: true }
+);
+window.addEventListener('scroll', closeAllPostMenus, { capture: true });
+window.addEventListener('blur', closeAllPostMenus);
 
 // Sync initial clear button state
 renderVoiceChips();
