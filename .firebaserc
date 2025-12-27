@@ -3,6 +3,14 @@
     "default": "musimatch-test",
     "test": "musimatch-test"
   },
-  "targets": {},
+  "targets": {
+    "musimatch-test": {
+      "hosting": {
+        "musimatch-test-site": [
+          "musimatch-test"
+        ]
+      }
+    }
+  },
   "etags": {}
 }
